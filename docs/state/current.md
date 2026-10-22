@@ -1,8 +1,8 @@
 # Current state
 
 ## Current milestone: M0 — Foundation
-## Current run: (none)
-## Cycle step: (none)
+## Current run: RUN-M0-1
+## Cycle step: 3 (spec)
 ## Active waves: (none)
 
 ## Run groups (order of execution)
