@@ -1,0 +1,5 @@
+* text=auto eol=lf
+*.png binary
+frontend/src/shared/api/schema.gen.ts linguist-generated=true
+frontend/pnpm-lock.yaml linguist-generated=true -diff
+backend/go.sum linguist-generated=true -diff

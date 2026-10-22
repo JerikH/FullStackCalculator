@@ -1,0 +1,13 @@
+# Every Dockerfile builds with the repository root as context.
+.git
+**/node_modules
+**/dist
+!backend/internal/web/dist/.gitkeep
+coverage
+bin
+docs
+frontend/test-results
+frontend/playwright-report
+frontend/blob-report
+**/*.tsbuildinfo
+.env*
