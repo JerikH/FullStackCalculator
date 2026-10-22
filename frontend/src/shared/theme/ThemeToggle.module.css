@@ -1,0 +1,55 @@
+.group {
+  display: flex;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-surface);
+}
+
+.segment {
+  position: relative;
+  display: block;
+  min-width: 3rem;
+  cursor: pointer;
+}
+
+/* The native radio stays focusable (global .visually-hidden clips it); its segment draws the state. */
+.input {
+  pointer-events: none;
+}
+
+.text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3rem;
+  min-height: 3rem;
+  padding: 0 var(--space-3);
+  border-radius: calc(var(--radius-sm) - 1px);
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+  transition: background-color var(--transition-fast);
+}
+
+@media (hover: hover) {
+  .segment:hover .input:not(:checked) + .text {
+    background-color: var(--color-surface-raised);
+  }
+}
+
+/* State by fill and weight together, never by hue alone. */
+.input:checked + .text {
+  background-color: var(--color-key-operator);
+  color: var(--color-key-operator-text);
+  font-weight: 600;
+}
+
+.input:focus-visible + .text {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}

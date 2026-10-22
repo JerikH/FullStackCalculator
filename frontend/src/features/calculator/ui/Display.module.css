@@ -1,0 +1,117 @@
+.display {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: var(--space-1);
+  width: 100%;
+  min-width: 0;
+  /* Padding, one secondary line (1rem x 1.4) and one xl line (2.5rem x 1.15): the layout does not jump. */
+  min-height: calc(2 * var(--space-4) + 1.4rem + 2.875rem);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background-color: var(--color-display-bg);
+  color: var(--color-display-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.expression {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 1.4rem;
+  margin: 0;
+  color: var(--color-display-muted);
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.4;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.spinner {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid var(--color-display-muted);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 800ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Static ring: nothing rotates for a visitor who asked for reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    border-top-color: var(--color-display-muted);
+    animation: none;
+  }
+}
+
+.alert {
+  min-width: 0;
+  text-align: right;
+}
+
+.error {
+  margin: 0;
+  color: var(--color-display-danger);
+  font-size: 1.25rem;
+  font-weight: 500;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.reference {
+  margin: 0;
+  color: var(--color-display-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.value {
+  display: block;
+  min-width: 0;
+  margin: 0;
+  font-weight: 500;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.xl {
+  font-size: clamp(1.75rem, 9vw, 2.5rem);
+  line-height: 1.15;
+}
+
+.lg {
+  font-size: clamp(1.25rem, 6vw, 1.75rem);
+  line-height: 1.2;
+}
+
+.md {
+  font-size: 1.125rem;
+  line-height: 1.35;
+}
+
+.approx {
+  margin-inline-end: var(--space-1);
+  color: var(--color-display-muted);
+  font-size: 0.75em;
+}
+
+/* Only the digits dim while busy: the marker and the expression keep their measured contrast. */
+.dimmed {
+  opacity: 0.6;
+}

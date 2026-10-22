@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-22T19:33:05Z",
+  "generatedAt": "2026-10-22T21:34:47Z",
   "title": "Design System: FullStackCalculator",
   "extensions": {
     "colorMeta": {
@@ -530,7 +530,7 @@
       },
       "display-secondary": {
         "displayName": "Display Secondary",
-        "purpose": "Pending expression line."
+        "purpose": "Pending expression line; right-aligned, wraps."
       },
       "display-error": {
         "displayName": "Display Error",
@@ -550,7 +550,11 @@
       },
       "label": {
         "displayName": "Label",
-        "purpose": "Theme segments, history rows, the Ref line."
+        "purpose": "Theme segments, history rows, Clear history, the Ref line."
+      },
+      "summary": {
+        "displayName": "Summary",
+        "purpose": "The History disclosure label."
       }
     },
     "shadows": [
@@ -569,18 +573,32 @@
       {
         "name": "transition-fast",
         "value": "120ms ease-out",
-        "purpose": "Key background tone changes; removed under reduced motion."
+        "purpose": "Key, history row, Clear history and theme segment background tone changes; shrunk to 0.01ms under reduced motion."
       },
       {
         "name": "spinner-delay",
         "value": "150ms",
         "purpose": "Delay before the busy spinner appears."
+      },
+      {
+        "name": "spinner-rotation",
+        "value": "800ms linear infinite",
+        "purpose": "Busy spinner ring; a static full ring under reduced motion."
       }
     ],
     "breakpoints": [
       {
         "name": "two-column",
-        "value": "768px"
+        "value": "768px",
+        "purpose": "Written in px because the history panel reads the same query in JavaScript; two fixed columns of 22.5rem and 18rem, history open by default."
+      },
+      {
+        "name": "column-calculator",
+        "value": "22.5rem"
+      },
+      {
+        "name": "column-history",
+        "value": "18rem"
       }
     ]
   },
@@ -589,70 +607,86 @@
       "name": "Digit key",
       "kind": "button",
       "refersTo": "key-digit",
-      "description": "Keypad digit variant; tone change on hover and press, amber ring on keyboard focus.",
+      "description": "Keypad digit variant; hover tone only where a hover exists, active tone on press, amber ring on keyboard focus.",
       "html": "<button type=\"button\" class=\"ds-key ds-key-digit\" aria-label=\"7\">7</button>",
-      "css": ".ds-key { min-height: var(--key-size, 3.5rem); min-width: 3rem; border: 0; border-radius: var(--radius-sm, 0.5rem); font: 500 1.25rem/1 var(--font-sans, system-ui, sans-serif); cursor: pointer; transition: background-color var(--transition-fast, 120ms ease-out); } .ds-key:focus-visible { outline: 3px solid var(--color-focus, #b45309); outline-offset: 2px; } @media (prefers-reduced-motion: reduce) { .ds-key { transition: none; } } .ds-key-digit { background: var(--color-key-digit); color: var(--color-key-digit-text); } .ds-key-digit:hover { background: color-mix(in srgb, var(--color-key-digit), var(--color-text) 8%); } .ds-key-digit:active { background: color-mix(in srgb, var(--color-key-digit), var(--color-text) 16%); }"
+      "css": ".ds-key { width: 100%; min-height: var(--key-size, 3.5rem); border: 0; border-radius: var(--radius-sm, 0.5rem); font: 500 1.25rem/1 var(--font-sans, system-ui, sans-serif); font-variant-numeric: tabular-nums; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background-color var(--transition-fast, 120ms ease-out); } .ds-key:focus-visible { outline: 3px solid var(--color-focus, #b45309); outline-offset: 2px; } @media (prefers-reduced-motion: reduce) { .ds-key { transition-duration: 0.01ms; } } .ds-key-digit { background: var(--color-key-digit); color: var(--color-key-digit-text); } @media (hover: hover) { .ds-key-digit:hover { background: color-mix(in srgb, var(--color-key-digit), var(--color-text) 8%); } } .ds-key-digit:active { background: color-mix(in srgb, var(--color-key-digit), var(--color-text) 16%); }"
     },
     {
       "name": "Function key",
       "kind": "button",
       "refersTo": "key-function",
-      "description": "Keypad function variant; tone change on hover and press, amber ring on keyboard focus.",
+      "description": "Keypad function variant; hover tone only where a hover exists, active tone on press, amber ring on keyboard focus.",
       "html": "<button type=\"button\" class=\"ds-key ds-key-function\" aria-label=\"all clear\">AC</button>",
-      "css": ".ds-key { min-height: var(--key-size, 3.5rem); min-width: 3rem; border: 0; border-radius: var(--radius-sm, 0.5rem); font: 500 1.25rem/1 var(--font-sans, system-ui, sans-serif); cursor: pointer; transition: background-color var(--transition-fast, 120ms ease-out); } .ds-key:focus-visible { outline: 3px solid var(--color-focus, #b45309); outline-offset: 2px; } @media (prefers-reduced-motion: reduce) { .ds-key { transition: none; } } .ds-key-function { background: var(--color-key-function); color: var(--color-key-function-text); } .ds-key-function:hover { background: color-mix(in srgb, var(--color-key-function), var(--color-text) 8%); } .ds-key-function:active { background: color-mix(in srgb, var(--color-key-function), var(--color-text) 16%); }"
+      "css": ".ds-key { width: 100%; min-height: var(--key-size, 3.5rem); border: 0; border-radius: var(--radius-sm, 0.5rem); font: 500 1.25rem/1 var(--font-sans, system-ui, sans-serif); font-variant-numeric: tabular-nums; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background-color var(--transition-fast, 120ms ease-out); } .ds-key:focus-visible { outline: 3px solid var(--color-focus, #b45309); outline-offset: 2px; } @media (prefers-reduced-motion: reduce) { .ds-key { transition-duration: 0.01ms; } } .ds-key-function { background: var(--color-key-function); color: var(--color-key-function-text); } @media (hover: hover) { .ds-key-function:hover { background: color-mix(in srgb, var(--color-key-function), var(--color-text) 8%); } } .ds-key-function:active { background: color-mix(in srgb, var(--color-key-function), var(--color-text) 16%); }"
     },
     {
       "name": "Operator key",
       "kind": "button",
       "refersTo": "key-operator",
-      "description": "Keypad operator variant; tone change on hover and press, amber ring on keyboard focus.",
+      "description": "Keypad operator variant; hover tone only where a hover exists, active tone on press, amber ring on keyboard focus.",
       "html": "<button type=\"button\" class=\"ds-key ds-key-operator\" aria-label=\"divide\">÷</button>",
-      "css": ".ds-key { min-height: var(--key-size, 3.5rem); min-width: 3rem; border: 0; border-radius: var(--radius-sm, 0.5rem); font: 500 1.25rem/1 var(--font-sans, system-ui, sans-serif); cursor: pointer; transition: background-color var(--transition-fast, 120ms ease-out); } .ds-key:focus-visible { outline: 3px solid var(--color-focus, #b45309); outline-offset: 2px; } @media (prefers-reduced-motion: reduce) { .ds-key { transition: none; } } .ds-key-operator { background: var(--color-key-operator); color: var(--color-key-operator-text); } .ds-key-operator:hover { background: color-mix(in srgb, var(--color-key-operator), var(--color-text) 8%); } .ds-key-operator:active { background: color-mix(in srgb, var(--color-key-operator), var(--color-text) 16%); }"
+      "css": ".ds-key { width: 100%; min-height: var(--key-size, 3.5rem); border: 0; border-radius: var(--radius-sm, 0.5rem); font: 500 1.25rem/1 var(--font-sans, system-ui, sans-serif); font-variant-numeric: tabular-nums; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background-color var(--transition-fast, 120ms ease-out); } .ds-key:focus-visible { outline: 3px solid var(--color-focus, #b45309); outline-offset: 2px; } @media (prefers-reduced-motion: reduce) { .ds-key { transition-duration: 0.01ms; } } .ds-key-operator { background: var(--color-key-operator); color: var(--color-key-operator-text); } @media (hover: hover) { .ds-key-operator:hover { background: color-mix(in srgb, var(--color-key-operator), var(--color-text) 8%); } } .ds-key-operator:active { background: color-mix(in srgb, var(--color-key-operator), var(--color-text) 16%); }"
     },
     {
       "name": "Equals key",
       "kind": "button",
       "refersTo": "key-equals",
-      "description": "Keypad equals variant; tone change on hover and press, amber ring on keyboard focus.",
+      "description": "Keypad equals variant, two rows tall; hover tone only where a hover exists, active tone on press, amber ring on keyboard focus.",
       "html": "<button type=\"button\" class=\"ds-key ds-key-equals\" aria-label=\"equals\">=</button>",
-      "css": ".ds-key { min-height: var(--key-size, 3.5rem); min-width: 3rem; border: 0; border-radius: var(--radius-sm, 0.5rem); font: 500 1.25rem/1 var(--font-sans, system-ui, sans-serif); cursor: pointer; transition: background-color var(--transition-fast, 120ms ease-out); } .ds-key:focus-visible { outline: 3px solid var(--color-focus, #b45309); outline-offset: 2px; } @media (prefers-reduced-motion: reduce) { .ds-key { transition: none; } } .ds-key-equals { background: var(--color-key-equals); color: var(--color-key-equals-text); } .ds-key-equals:hover { background: color-mix(in srgb, var(--color-key-equals), var(--color-text) 8%); } .ds-key-equals:active { background: color-mix(in srgb, var(--color-key-equals), var(--color-text) 16%); }"
+      "css": ".ds-key { width: 100%; min-height: var(--key-size, 3.5rem); border: 0; border-radius: var(--radius-sm, 0.5rem); font: 500 1.25rem/1 var(--font-sans, system-ui, sans-serif); font-variant-numeric: tabular-nums; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background-color var(--transition-fast, 120ms ease-out); } .ds-key:focus-visible { outline: 3px solid var(--color-focus, #b45309); outline-offset: 2px; } @media (prefers-reduced-motion: reduce) { .ds-key { transition-duration: 0.01ms; } } .ds-key-equals { background: var(--color-key-equals); color: var(--color-key-equals-text); } @media (hover: hover) { .ds-key-equals:hover { background: color-mix(in srgb, var(--color-key-equals), var(--color-text) 8%); } } .ds-key-equals:active { background: color-mix(in srgb, var(--color-key-equals), var(--color-text) 16%); }"
     },
     {
       "name": "Readout",
       "kind": "custom",
       "refersTo": "display",
-      "description": "Dark display panel in both themes: expression line, value with tabular numerals, rounded marker.",
-      "html": "<div class=\"ds-display\"><p class=\"ds-display-expr\">12 ×</p><p class=\"ds-display-value\"><span class=\"ds-display-approx\" title=\"Rounded to 34 significant digits\">≈</span><output>0.3333333333</output></p></div>",
-      "css": ".ds-display { background: var(--color-display-bg); color: var(--color-display-text); border-radius: var(--radius-md, 0.875rem); padding: var(--space-4, 1rem); text-align: right; font-variant-numeric: tabular-nums; font-family: var(--font-sans, system-ui, sans-serif); } .ds-display p { margin: 0; } .ds-display-expr { color: var(--color-display-muted); font-size: 1rem; line-height: 1.4; } .ds-display-value { font-size: clamp(1.75rem, 9vw, 2.5rem); font-weight: 500; line-height: 1.15; overflow-wrap: anywhere; } .ds-display-approx { color: var(--color-display-muted); font-size: 0.75em; margin-inline-end: 0.25em; }"
+      "description": "Dark display panel in both themes: expression row, persistent alert region, value in an output with tabular numerals and the rounded marker.",
+      "html": "<div class=\"ds-display\"><div class=\"ds-display-top\"><p class=\"ds-display-expr\">12 ×</p></div><div role=\"alert\" class=\"ds-display-alert\"></div><output class=\"ds-display-value\" aria-label=\"Result\"><span class=\"ds-display-approx\" title=\"Rounded to 34 significant digits\">≈</span><span>0.3333333333</span></output></div>",
+      "css": ".ds-display { display: flex; flex-direction: column; justify-content: flex-end; gap: var(--space-1, 0.25rem); padding: var(--space-4, 1rem); border-radius: var(--radius-md, 0.875rem); background: var(--color-display-bg); color: var(--color-display-text); font-family: var(--font-sans, system-ui, sans-serif); font-variant-numeric: tabular-nums; } .ds-display p { margin: 0; } .ds-display-top { display: flex; align-items: center; gap: var(--space-2, 0.5rem); } .ds-display-expr { flex: 1 1 0; min-height: 1.4rem; color: var(--color-display-muted); font-size: 1rem; line-height: 1.4; text-align: right; overflow-wrap: anywhere; } .ds-display-alert { text-align: right; } .ds-display-value { display: block; margin: 0; font-size: clamp(1.75rem, 9vw, 2.5rem); font-weight: 500; line-height: 1.15; text-align: right; overflow-wrap: anywhere; } .ds-display-approx { margin-inline-end: var(--space-1, 0.25rem); color: var(--color-display-muted); font-size: 0.75em; }"
+    },
+    {
+      "name": "Readout busy",
+      "kind": "custom",
+      "refersTo": "display",
+      "description": "Busy state: only the digits dim; after 150 ms a spinner ring appears at the left of the expression row.",
+      "html": "<div class=\"ds-display\" aria-busy=\"true\"><div class=\"ds-display-top\"><span class=\"ds-display-spinner\" aria-hidden=\"true\"></span><p class=\"ds-display-expr\">12 ×</p></div><div role=\"alert\" class=\"ds-display-alert\"></div><output class=\"ds-display-value\" aria-label=\"Result\"><span class=\"ds-display-dim\">36</span></output></div>",
+      "css": ".ds-display { display: flex; flex-direction: column; justify-content: flex-end; gap: var(--space-1, 0.25rem); padding: var(--space-4, 1rem); border-radius: var(--radius-md, 0.875rem); background: var(--color-display-bg); color: var(--color-display-text); font-family: var(--font-sans, system-ui, sans-serif); font-variant-numeric: tabular-nums; } .ds-display p { margin: 0; } .ds-display-top { display: flex; align-items: center; gap: var(--space-2, 0.5rem); } .ds-display-expr { flex: 1 1 0; min-height: 1.4rem; color: var(--color-display-muted); font-size: 1rem; line-height: 1.4; text-align: right; overflow-wrap: anywhere; } .ds-display-alert { text-align: right; } .ds-display-value { display: block; margin: 0; font-size: clamp(1.75rem, 9vw, 2.5rem); font-weight: 500; line-height: 1.15; text-align: right; overflow-wrap: anywhere; } .ds-display-approx { margin-inline-end: var(--space-1, 0.25rem); color: var(--color-display-muted); font-size: 0.75em; } .ds-display-dim { opacity: 0.6; } .ds-display-spinner { flex: none; width: 1rem; height: 1rem; border: 2px solid var(--color-display-muted); border-top-color: transparent; border-radius: 50%; animation: ds-spin 800ms linear infinite; } @keyframes ds-spin { to { transform: rotate(360deg); } } @media (prefers-reduced-motion: reduce) { .ds-display-spinner { border-top-color: var(--color-display-muted); animation: none; } }"
     },
     {
       "name": "Readout error",
       "kind": "custom",
       "refersTo": "display",
-      "description": "Error state: fixed sentence in Readout Coral inside an alert, with the request reference.",
-      "html": "<div class=\"ds-display\"><p class=\"ds-display-error\" role=\"alert\">Cannot divide by zero</p><p class=\"ds-display-ref\">Ref: 9f2b7c1d</p></div>",
-      "css": ".ds-display { background: var(--color-display-bg); border-radius: var(--radius-md, 0.875rem); padding: var(--space-4, 1rem); text-align: right; font-family: var(--font-sans, system-ui, sans-serif); } .ds-display p { margin: 0; } .ds-display-error { color: var(--color-display-danger); font-size: 1.25rem; font-weight: 500; line-height: 1.3; } .ds-display-ref { color: var(--color-display-muted); font-size: 0.875rem; font-variant-numeric: tabular-nums; }"
+      "description": "Error state: fixed sentence in Readout Coral inside the alert region, with the request reference; the output is empty.",
+      "html": "<div class=\"ds-display\"><div class=\"ds-display-top\"><p class=\"ds-display-expr\"></p></div><div role=\"alert\" class=\"ds-display-alert\"><p class=\"ds-display-error\">Cannot divide by zero</p><p class=\"ds-display-ref\">Ref: 9f2b7c1d</p></div><output class=\"ds-display-value\" aria-label=\"Result\"></output></div>",
+      "css": ".ds-display { display: flex; flex-direction: column; justify-content: flex-end; gap: var(--space-1, 0.25rem); padding: var(--space-4, 1rem); border-radius: var(--radius-md, 0.875rem); background: var(--color-display-bg); color: var(--color-display-text); font-family: var(--font-sans, system-ui, sans-serif); font-variant-numeric: tabular-nums; } .ds-display p { margin: 0; } .ds-display-top { display: flex; align-items: center; gap: var(--space-2, 0.5rem); } .ds-display-expr { flex: 1 1 0; min-height: 1.4rem; color: var(--color-display-muted); font-size: 1rem; line-height: 1.4; text-align: right; overflow-wrap: anywhere; } .ds-display-alert { text-align: right; } .ds-display-value { display: block; margin: 0; font-size: clamp(1.75rem, 9vw, 2.5rem); font-weight: 500; line-height: 1.15; text-align: right; overflow-wrap: anywhere; } .ds-display-approx { margin-inline-end: var(--space-1, 0.25rem); color: var(--color-display-muted); font-size: 0.75em; } .ds-display-error { color: var(--color-display-danger); font-size: 1.25rem; font-weight: 500; line-height: 1.3; overflow-wrap: anywhere; } .ds-display-ref { color: var(--color-display-muted); font-size: 0.875rem; font-weight: 500; line-height: 1.4; overflow-wrap: anywhere; }"
     },
     {
       "name": "Theme control",
       "kind": "nav",
       "refersTo": "theme-segment",
-      "description": "Native radio group drawn as a segmented control; the checked segment takes the operator fill and weight 600.",
-      "html": "<fieldset class=\"ds-theme\"><legend class=\"ds-vh\">Theme</legend><label><input type=\"radio\" name=\"ds-theme\" checked><span>System</span></label><label><input type=\"radio\" name=\"ds-theme\"><span>Light</span></label><label><input type=\"radio\" name=\"ds-theme\"><span>Dark</span></label></fieldset>",
-      "css": ".ds-theme { display: inline-flex; gap: 0.25rem; margin: 0; padding: 0.25rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm, 0.5rem); background: var(--color-surface); } .ds-vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } .ds-theme label { position: relative; } .ds-theme input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; } .ds-theme span { display: flex; align-items: center; justify-content: center; min-height: 3rem; min-width: 3rem; padding: 0 0.75rem; border-radius: var(--radius-sm, 0.5rem); color: var(--color-text-muted); font: 500 0.875rem/1.4 var(--font-sans, system-ui, sans-serif); } .ds-theme input:checked + span { background: var(--color-key-operator); color: var(--color-key-operator-text); font-weight: 600; } .ds-theme input:focus-visible + span { outline: 3px solid var(--color-focus, #b45309); outline-offset: 2px; }"
+      "description": "Native radio group drawn as a segmented control; the checked segment takes the operator fill and weight 600, unchecked segments tint on hover only where a hover exists.",
+      "html": "<fieldset role=\"radiogroup\" class=\"ds-theme\"><legend class=\"ds-vh\">Theme</legend><label class=\"ds-seg\"><input type=\"radio\" name=\"ds-theme\" class=\"ds-vh\" checked><span>System</span></label><label class=\"ds-seg\"><input type=\"radio\" name=\"ds-theme\" class=\"ds-vh\"><span>Light</span></label><label class=\"ds-seg\"><input type=\"radio\" name=\"ds-theme\" class=\"ds-vh\"><span>Dark</span></label></fieldset>",
+      "css": ".ds-theme { display: flex; margin: 0; padding: 0; border: 1px solid var(--color-border); border-radius: var(--radius-sm, 0.5rem); background: var(--color-surface); } .ds-vh { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; pointer-events: none; } .ds-seg { position: relative; display: block; min-width: 3rem; cursor: pointer; -webkit-tap-highlight-color: transparent; } .ds-seg span { display: flex; align-items: center; justify-content: center; min-width: 3rem; min-height: 3rem; padding: 0 var(--space-3, 0.75rem); border-radius: calc(var(--radius-sm, 0.5rem) - 1px); color: var(--color-text-muted); font: 500 0.875rem/1.4 var(--font-sans, system-ui, sans-serif); font-variant-numeric: tabular-nums; transition: background-color var(--transition-fast, 120ms ease-out); } @media (hover: hover) { .ds-seg:hover input:not(:checked) + span { background: var(--color-surface-raised); } } .ds-seg input:checked + span { background: var(--color-key-operator); color: var(--color-key-operator-text); font-weight: 600; } .ds-seg input:focus-visible + span { outline: 3px solid var(--color-focus, #b45309); outline-offset: 2px; }"
     },
     {
       "name": "History row",
       "kind": "button",
       "refersTo": "history-row",
-      "description": "Full-width native button recalling a past result; tabular label text.",
+      "description": "Full-width native button on a transparent fill recalling a past result; tabular label text; surface-raised tint on hover only where a hover exists.",
       "html": "<button type=\"button\" class=\"ds-history-row\" aria-label=\"Use result 36\">12 × 3 = 36</button>",
-      "css": ".ds-history-row { display: block; width: 100%; min-height: 3rem; padding: 0.75rem; border: 0; border-radius: var(--radius-sm, 0.5rem); background: var(--color-surface); color: var(--color-text); text-align: left; font: 500 0.875rem/1.4 var(--font-sans, system-ui, sans-serif); font-variant-numeric: tabular-nums; cursor: pointer; } .ds-history-row:hover { background: var(--color-surface-raised); } .ds-history-row:focus-visible { outline: 3px solid var(--color-focus, #b45309); outline-offset: 2px; }"
+      "css": ".ds-history-row { display: block; width: 100%; min-height: 3rem; margin: 0; padding: var(--space-3, 0.75rem); border: 0; border-radius: var(--radius-sm, 0.5rem); background: transparent; color: var(--color-text); text-align: left; font: 500 0.875rem/1.4 var(--font-sans, system-ui, sans-serif); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background-color var(--transition-fast, 120ms ease-out); } @media (hover: hover) { .ds-history-row:hover { background: var(--color-surface-raised); } } .ds-history-row:focus-visible { outline: 3px solid var(--color-focus, #b45309); outline-offset: 2px; }"
+    },
+    {
+      "name": "Clear history",
+      "kind": "button",
+      "refersTo": "history-clear",
+      "description": "Function-key styled button under the history list; tone change on hover (where a hover exists) and press.",
+      "html": "<button type=\"button\" class=\"ds-history-clear\">Clear history</button>",
+      "css": ".ds-history-clear { min-width: 3rem; min-height: 3rem; margin: var(--space-3, 0.75rem) 0 0; padding: 0 var(--space-4, 1rem); border: 0; border-radius: var(--radius-sm, 0.5rem); background: var(--color-key-function); color: var(--color-key-function-text); font: 500 0.875rem/1.4 var(--font-sans, system-ui, sans-serif); cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background-color var(--transition-fast, 120ms ease-out); } @media (hover: hover) { .ds-history-clear:hover { background: color-mix(in srgb, var(--color-key-function), var(--color-text) 8%); } } .ds-history-clear:active { background: color-mix(in srgb, var(--color-key-function), var(--color-text) 16%); } .ds-history-clear:focus-visible { outline: 3px solid var(--color-focus, #b45309); outline-offset: 2px; }"
     }
   ],
   "narrative": {
     "northStar": "The Precision Instrument",
-    "overview": "The calculator is a measuring instrument, not a toy. A dark readout panel holds the number in both themes, the way an instrument's display stays the same whatever the room's lighting; everything around it is quiet, tonal and familiar. Colour carries intent only: blue marks an operation, a deeper blue marks the act of evaluating, amber marks where the keyboard is. Nothing decorative competes with the digits.\n\nDensity is moderate and touch-first: a 4 × 6 keypad of generous keys, a readout that never truncates a digit and steps its size down rather than cutting, and a history that is one tap away. The system uses the platform's own UI font and native controls, CSS Modules over custom-property tokens, and no UI library, icon system or runtime styling. The palette, the four key variants, the dark-override selectors and the favicon are fixed; token values change only when a measured contrast check fails, and every value below has been measured.",
+    "overview": "The calculator is a measuring instrument, not a toy. A dark readout panel holds the number in both themes, the way an instrument's display stays the same whatever the room's lighting; everything around it is quiet, tonal and familiar. Colour carries intent only: blue marks an operation, a deeper blue marks the act of evaluating, amber marks where the keyboard is. Nothing decorative competes with the digits.\n\nDensity is moderate and touch-first: a 4 × 6 keypad of generous keys, a readout that never truncates a digit and steps its size down rather than cutting, and a history that is one tap away. The system uses the platform's own UI font and native controls, CSS Modules over custom-property tokens, and no UI library, icon system or runtime styling. The palette, the four key variants, the dark-override selectors and the favicon are fixed; token values change only when a measured contrast check fails.",
     "keyCharacteristics": [
       "A dark readout in both themes, with tabular numerals and every digit visible.",
       "Four tonal key variants: digit (neutral), function (muted), operator (accent), equals (strong accent).",
@@ -703,6 +737,7 @@
       "**Do** use tabular numerals for every number and let long values wrap rather than shrink below display md.",
       "**Do** mark the checked theme segment with fill and weight, not hue alone.",
       "**Do** disable transitions and spinner rotation under `prefers-reduced-motion: reduce`.",
+      "**Do** declare hover tones inside `@media (hover: hover)` and keep the active tone unconditional.",
       "**Do** re-measure contrast with the design-baseline check whenever a colour token changes."
     ],
     "donts": [

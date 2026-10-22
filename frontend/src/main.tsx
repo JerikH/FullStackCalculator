@@ -1,6 +1,13 @@
+import './shared/styles/global.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import './shared/styles/global.css';
+import { App } from '@/app/App';
+import { CalculatorApiProvider, createCalculatorApi, resolveBaseUrl } from '@/shared/api';
+
+// One client for the page's lifetime, created outside rendering.
+const api = createCalculatorApi({
+  baseUrl: resolveBaseUrl(import.meta.env.VITE_API_BASE_URL, window.location.origin),
+});
 
 const root = document.getElementById('root');
 if (root === null) {
@@ -9,8 +16,8 @@ if (root === null) {
 
 createRoot(root).render(
   <StrictMode>
-    <main>
-      <h1>Calculator</h1>
-    </main>
+    <CalculatorApiProvider api={api}>
+      <App />
+    </CalculatorApiProvider>
   </StrictMode>,
 );
