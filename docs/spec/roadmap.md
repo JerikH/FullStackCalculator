@@ -75,6 +75,11 @@ Run grouping: RUN-M2-1 = OPS-STACK-01, OPS-E2E-01 (solo); RUN-M2-2 = OPS-CI-02 a
 | U4 | 2026-10-22 | M1 runs as three parallel waves of up to three runs; the backend and frontend tracks advance side by side; each run chains 1–3 related tasks executed by one agent. | M1 |
 | U5 | 2026-10-22 | Design baseline: the product record (web; the anonymous visitor as primary user and the technical reviewer as secondary audience) and the design north star «The Precision Instrument» are confirmed; the two measured contrast failures are fixed by token values — light focus ring `#b45309` (dark stays `#f59e0b`, declared in both dark blocks) and a dedicated display error colour `--color-display-danger` `#ff8a80`. | UI-BASE-01, UI-SCAF-01, UI-SCREEN-01 |
 | U6 | 2026-10-22 | shellcheck joins the local tiers and the CI contract job (pinned, checksum-verified, in `bin/`); `tools/versions.env` is created in M0 as the single home of standalone tool pins and OPS-STACK-01 extends it. | OPS-CI-01, OPS-STACK-01 |
+| U7 | 2026-10-22 | Wave W1 = RUN-M1-1, RUN-M1-2, RUN-M1-3 as three parallel sessions, launched manually by the owner. | RUN-M1-1, RUN-M1-2, RUN-M1-3 |
+| U8 | 2026-10-22 | In W1, `scripts/ci/lib.sh` is split: RUN-M1-2 owns the contract and frontend stages, `tools/versions.env` and `.github/workflows/ci.yml.disabled`; RUN-M1-1 may change only `ci_stage_backend`, and only to fix a defect its first real `t0.sh` run exposes. | CALC-CORE-01, UI-SCAF-01 |
+| U9 | 2026-10-22 | Parallel sessions take the `deps` lease for dependency installs and the `heavy` lease for fuzzing, benchmarks and coverage runs; targeted tests take no lease. | M1 waves |
+| U10 | 2026-10-22 | The frontend package pins `packageManager` to `pnpm@10.33.0` (the CI pin) and `engines.node` to `>=24`; every other dependency at its latest stable release with the lockfile committed, `@redocly/cli` at 2.69.0. | UI-SCAF-01 |
+| U11 | 2026-10-22 | The eight ADRs are committed with status «Accepted» and date 2026-10-22, on the existing template (no author field). | DOC-ADR-01 |
 
 ### Adopted for planning (recommended defaults; the owner can override at any task's step 1)
 | Topic | Default adopted | Why |
@@ -138,3 +143,4 @@ Version 1 is launched when: (1) every requirement of `srs.md` traces to an artif
 | 2026-10-22 | Specification review applied: `noembed.go` handoff, handler-chain order, risk owners | review |
 | 2026-10-22 | Owner decision U5 (design baseline and measured token changes) | U5 |
 | 2026-10-22 | Owner decision U6 (shellcheck in the tiers; tool pins from M0) | U6 |
+| 2026-10-22 | Wave W1 planned (RUN-M1-1, RUN-M1-2, RUN-M1-3); owner decisions U7–U11 | U7–U11 |

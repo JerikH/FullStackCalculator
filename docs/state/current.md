@@ -3,7 +3,7 @@
 ## Current milestone: M0 — Foundation
 ## Current run: (none)
 ## Cycle step: (none)
-## Active waves: (none)
+## Active waves: W1 (RUN-M1-1, RUN-M1-2, RUN-M1-3) — plan in `docs/state/waves/W1.md`
 
 ## Run groups (order of execution)
 
@@ -13,9 +13,9 @@ Each run chains related tasks executed by one agent, in the order listed.
 |---|---|---|---|---|---|
 | **RUN-M0-1** | M0 | OPS-REPO-01, API-CONTRACT-01, UI-BASE-01 | done (2026-10-22, f2b9693, 5d1969f, f2db811, e90d084, 235cc53) | solo | single review; nothing from the owner |
 | **RUN-M0-2** | M0 | OPS-ENV-01, OPS-CI-01 | done (2026-10-22, 8e0ed90, d9c7685, 02a52d4) | solo | single review; per-agent isolation and tiers that every wave needs |
-| **RUN-M1-1** | M1 | CALC-CORE-01, CALC-OPS-01, API-HTTPX-01 | pending | W1 with RUN-M1-2, RUN-M1-3 | backend track; double review on API-HTTPX-01 |
-| **RUN-M1-2** | M1 | UI-SCAF-01, UI-CLIENT-01 | pending | W1 with RUN-M1-1, RUN-M1-3 | frontend track; consumes the M0 contract |
-| **RUN-M1-3** | M1 | DOC-ADR-01 | pending | W1 with RUN-M1-1, RUN-M1-2 | `docs/adr/` only; Claude subagents (no Codex) |
+| **RUN-M1-1** | M1 | CALC-CORE-01, CALC-OPS-01, API-HTTPX-01 | in W1 | W1 with RUN-M1-2, RUN-M1-3 | backend track; double review on API-HTTPX-01 |
+| **RUN-M1-2** | M1 | UI-SCAF-01, UI-CLIENT-01 | in W1 | W1 with RUN-M1-1, RUN-M1-3 | frontend track; consumes the M0 contract |
+| **RUN-M1-3** | M1 | DOC-ADR-01 | in W1 | W1 with RUN-M1-1, RUN-M1-2 | `docs/adr/` only; Claude subagents (no Codex) |
 | **RUN-M1-4** | M1 | OBS-METRICS-01, API-ROUTES-01, OBS-RUNTIME-01 | pending | W2 with RUN-M1-5, RUN-M1-6 | backend track; double review on API-ROUTES-01, OBS-RUNTIME-01 |
 | **RUN-M1-5** | M1 | UI-MODEL-01 | pending | W2 with RUN-M1-4, RUN-M1-6 | frontend track; double review |
 | **RUN-M1-6** | M1 | OPS-EDGE-01 | pending | W2 with RUN-M1-4, RUN-M1-5 | edge files only; double review; Claude subagents (no Codex) |
