@@ -17,15 +17,26 @@ export function resolveBaseUrl(configured: string | undefined, origin: string): 
   return configured === undefined || configured === '' ? origin : configured;
 }
 
-function isCalculationResult(value: unknown, operation: OperationName): value is CalculationResult {
-  return (
-    isRecord(value) &&
-    value.operation === operation &&
-    Array.isArray(value.operands) &&
-    value.operands.every((operand) => typeof operand === 'string') &&
-    typeof value.result === 'string' &&
-    typeof value.inexact === 'boolean'
-  );
+// The contract's Decimal: plain or scientific notation, at most 128 characters.
+const DECIMAL = /^-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?$/;
+
+function isDecimal(value: unknown): value is string {
+  return typeof value === 'string' && value.length <= 128 && DECIMAL.test(value);
+}
+
+/** The result for the requested operation, rebuilt from the contract's fields only; null otherwise. */
+function toCalculationResult(value: unknown, operation: OperationName): CalculationResult | null {
+  if (!isRecord(value) || value.operation !== operation) return null;
+  const { operands, result, inexact } = value;
+  if (!Array.isArray(operands)) return null;
+  const decimals: unknown[] = operands;
+  if (!decimals.every(isDecimal) || !isDecimal(result) || typeof inexact !== 'boolean') return null;
+  return { operation, operands: [...decimals], result, inexact };
+}
+
+/** AbortSignal.any keeps the reason of the first source that aborted. */
+function abortError(signal: AbortSignal, timeout: AbortSignal): ApiError {
+  return { kind: signal.reason === timeout.reason ? 'timeout' : 'aborted' };
 }
 
 function toApiError(body: unknown, status: number): ApiError {
@@ -63,17 +74,17 @@ export function createCalculatorApi({
             return received;
           },
         });
+        // A response that settles after the signal fired is stale: the caller has moved on.
+        if (signal.aborted) return { ok: false, error: abortError(signal, timeout) };
         if (response.ok) {
-          return isCalculationResult(data, operation)
-            ? { ok: true, data }
+          const result = toCalculationResult(data, operation);
+          return result
+            ? { ok: true, data: result }
             : { ok: false, error: { kind: 'unexpected', status: response.status } };
         }
         return { ok: false, error: toApiError(error, response.status) };
       } catch (caught) {
-        // AbortSignal.any keeps the reason of the first source that aborted.
-        if (signal.aborted) {
-          return { ok: false, error: { kind: signal.reason === timeout.reason ? 'timeout' : 'aborted' } };
-        }
+        if (signal.aborted) return { ok: false, error: abortError(signal, timeout) };
         // Checked by name, not instanceof: the error may come from another realm.
         if (status !== undefined && isRecord(caught) && caught.name === 'SyntaxError') {
           return { ok: false, error: { kind: 'unexpected', status } };

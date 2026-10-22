@@ -143,6 +143,12 @@ describe('calculate: unexpected responses', () => {
   it.each([
     ['a wrong shape', () => HttpResponse.json({ result: 3 }), 200],
     ['another operation', () => HttpResponse.json({ ...addResult, operation: 'subtract' }), 200],
+    ['a result that is not a contract Decimal', () => HttpResponse.json({ ...addResult, result: 'NaN' }), 200],
+    ['a result over 128 characters', () => HttpResponse.json({ ...addResult, result: '1'.repeat(129) }), 200],
+    ['an operand that is not a Decimal', () => HttpResponse.json({ ...addResult, operands: ['0.1', '1,5'] }), 200],
+    ['operands that are not an array', () => HttpResponse.json({ ...addResult, operands: '0.1' }), 200],
+    ['a non-boolean inexact flag', () => HttpResponse.json({ ...addResult, inexact: 'false' }), 200],
+    ['an array body', () => HttpResponse.json([addResult]), 200],
     ['an empty body', () => new Response(null, { status: 200 }), 200],
     ['a 204', () => new Response(null, { status: 204 }), 204],
     [
@@ -156,6 +162,26 @@ describe('calculate: unexpected responses', () => {
       ok: false,
       error: { kind: 'unexpected', status },
     });
+  });
+
+  it('returns only the contract fields of a result', async () => {
+    respondWith(
+      () =>
+        new Response(`{"__proto__":{"polluted":true},"extra":1,${JSON.stringify(addResult).slice(1)}`, {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+    );
+    const result = await api.calculate('add', ['0.1', '0.2']);
+    expect(result).toEqual({ ok: true, data: addResult });
+    expect(result.ok && Object.keys(result.data)).toEqual(['operation', 'operands', 'result', 'inexact']);
+    expect(result.ok && Object.getPrototypeOf(result.data)).toBe(Object.prototype);
+  });
+
+  it('accepts scientific notation results', async () => {
+    const big = { operation: 'power', operands: ['10', '40'], result: '1E+40', inexact: false };
+    respondWith(() => HttpResponse.json(big));
+    expect(await api.calculate('power', ['10', '40'])).toEqual({ ok: true, data: big });
   });
 
   it('classifies a parse failure by error name, not by instanceof', async () => {
@@ -261,6 +287,30 @@ describe('calculate: caller abort', () => {
       controller.abort();
     }, 20);
     expect(await pending).toEqual({ ok: false, error: { kind: 'aborted' } });
+  });
+
+  it('reports a response whose body finishes after the caller aborted as aborted', async () => {
+    const controller = new AbortController();
+    const late = createCalculatorApi({
+      baseUrl: BASE,
+      timeoutMs: 5000,
+      fetch: () => {
+        const response = new Response(JSON.stringify(addResult), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+        // The caller moves on while the body is being read; the body still arrives intact.
+        response.text = () => {
+          controller.abort();
+          return Promise.resolve(JSON.stringify(addResult));
+        };
+        return Promise.resolve(response);
+      },
+    });
+    expect(await late.calculate('add', ['0.1', '0.2'], { signal: controller.signal })).toEqual({
+      ok: false,
+      error: { kind: 'aborted' },
+    });
   });
 
   it('reports a signal aborted before the call without reaching the server', async () => {
