@@ -1,0 +1,22 @@
+stale-guard-deleted: KILLED (3s, exit 1) src/features/calculator/hooks/useCalculator.ts :: × never dispatches a late completion after unmount 0 43ms
+completion-with-rebuilt-request: KILLED (3s, exit 1) src/features/calculator/hooks/useCalculator.ts :: × sends exact decimal strings, remains busy and persists exactly one successful row 44ms
+cleanup-abort-removed: KILLED (4s, exit 1) src/features/calculator/hooks/useCalculator.ts :: × replays in-flight effects under StrictMode and accepts only the active completion 61ms
+persist-on-mount: KILLED (3s, exit 1) src/features/calculator/hooks/useCalculator.ts :: × loads valid history with initial zero and no API call or mount write 33ms
+spinner-wiring-cut: KILLED (3s, exit 1) src/features/calculator/hooks/useCalculator.ts :: × wires spinner timing to busy state and each request identity through completion and AC 14ms
+spinner-delay-151: KILLED (3s, exit 1) src/features/calculator/hooks/useDelayedBusy.ts :: × is hidden at 149ms and visible at 150ms 69ms
+spinner-id-instead-of-identity: KILLED (2s, exit 1) src/features/calculator/hooks/useDelayedBusy.ts :: × does not inherit a spinner on the first render of a replacement with the same id 14ms
+enter-on-button-guard-removed: KILLED (3s, exit 1) src/features/calculator/hooks/useKeyboardShortcuts.ts :: × allows digits but preserves Enter on radio inputs 14ms
+composition-guard-removed: KILLED (3s, exit 1) src/features/calculator/hooks/useKeyboardShortcuts.ts :: × ignores modifier or composition {"isComposing":true} 9ms
+keycode-229-guard-removed: KILLED (2s, exit 1) src/features/calculator/hooks/useKeyboardShortcuts.ts :: × ignores modifier or composition {"keyCode":229} 8ms
+editable-guard-removed: KILLED (2s, exit 1) src/features/calculator/hooks/useKeyboardShortcuts.ts :: × ignores editable target <input> 18ms
+modifier-guard-removed: KILLED (3s, exit 1) src/features/calculator/hooks/useKeyboardShortcuts.ts :: × ignores modifier or composition {"ctrlKey":true} 8ms
+shortcut-listener-not-removed: KILLED (4s, exit 1) src/features/calculator/hooks/useKeyboardShortcuts.ts :: × handles clear-entry binding Delete 11ms
+theme-written-on-mount: KILLED (2s, exit 1) src/shared/theme/useTheme.ts :: × initializes from storage under StrictMode without writing 28ms
+theme-system-sets-attribute: KILLED (2s, exit 1) src/shared/theme/theme.ts :: × removes the attribute for system 9ms
+repeat-guard-removed: KILLED (2s, exit 1) src/features/calculator/hooks/useKeyboardShortcuts.ts :: × ignores, but still prevents, a repeated keydown of + (a held key must not queue requests) 7ms
+clear-refocus-on-mouse: KILLED (4s, exit 1) src/features/calculator/ui/HistoryPanel.tsx :: × leaves focus alone after a mouse click, so the next Enter is not swallowed by the summary 43ms
+history-override-not-reset: KILLED (4s, exit 1) src/features/calculator/ui/HistoryPanel.tsx :: × narrow → opened → wide → narrow returns to the collapsed default 86ms
+key-mousedown-not-prevented: KILLED (12s, exit 1) src/features/calculator/ui/KeyButton.tsx :: × prevents the default of mousedown so a click never moves focus 31ms
+history-recall-formatted-not-raw: KILLED (11s, exit 1) src/features/calculator/ui/HistoryPanel.tsx :: × formats the accessible name with grouping and the minus sign, and recalls the raw result 62ms
+display-error-shown-in-output: KILLED (3s, exit 1) src/features/calculator/ui/Display.tsx :: × announces an error once: the alert holds the message and the output is empty 15ms
+display-ref-without-id-check: KILLED (3s, exit 1) src/features/calculator/ui/Display.tsx :: × announces an error once: the alert holds the message and the output is empty 17ms
