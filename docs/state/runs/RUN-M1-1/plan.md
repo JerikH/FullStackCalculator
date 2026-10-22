@@ -42,15 +42,15 @@ Rules:
 - P1 length `utf8.RuneCountInString(s) > 128` → `ErrOperandTooLong` (checked first; characters, not bytes).
 - P2 regex mismatch → `ErrInvalidNumber` (keeps apd's `NaN`/`Infinity`/`+1`/whitespace out).
 - P3 zero: if every digit of the coefficient part (before `e`/`E`, ignoring `-` and `.`) is `0`, return a zero with exponent 0 and the input's sign — without calling apd on the exponent, so an int32-overflowing exponent of a zero is accepted.
-- P4 `apd.NewFromString` error on a syntactically valid non-zero → `ErrOutOfRange` (exponent parse overflow).
-- P5 reduce; `NumDigits() > 34` → `ErrTooManyDigits` (checked before the range).
+- P4 significant digits counted from the validated text (coefficient digits without leading and trailing zeros) > 34 → `ErrTooManyDigits` — before apd parses the exponent, so `<35 digits>e9999999999` gets the digits reason (RF-CALC-03 order), not the range reason.
+- P5 `apd.NewFromString` error on a syntactically valid non-zero with ≤ 34 digits → `ErrOutOfRange` (exponent parse overflow); after parsing, the reduced `NumDigits()` agrees with P4.
 - P6 adjusted exponent outside [−6143, 6144] → `ErrOutOfRange`.
 - P7 return the parsed (unreduced) value.
 - F1 `Format`: zero → `"0"`; reduce; coefficient digits via `Coeff.Text(10)`; adjusted exponent `adj`; `adj < -6 || adj > 20` → `d[.ddd]e±N`; `exp >= 0` → digits + zeros; `adj >= 0` → digits with the point inside; else `0.` + `-adj-1` zeros + digits; leading `-` for negative non-zero.
 
 Tests (T0 unless noted):
 - `TestParseAcceptsValidNumbers`: the plan table plus `0e9999999999`, `-0e9999999999`, `0.000e-99999999999`, `1e-6143` (lower bound), `9.999999999999999999999999999999999e6144`, a 128-character valid operand (e.g. `"0." + 125 zeros + "1"` → check it is in range: adjusted −126 ✓), each `Cmp`-equal to the apd parse of the same text where apd can parse it, else equal to zero.
-- `TestParseRejectsInvalidNumbers`: the plan table plus `"1e+"`, `"-"`, `"--1"`, `"1.5.5"`, `"١"` (non-ASCII digit), `"1e6145"`, `"1e-6144"`, `"-1e-6144"`, 129-character non-number → `ErrOperandTooLong` (P1 before P2), 35 significant digits with `e9999` → `ErrTooManyDigits` (P5 before P6), `"1" + 34 zeros` (35 digits but reduces to 1 → valid, in the valid table), `"1e9999999999"`, `"-1e-9999999999"` → `ErrOutOfRange`.
+- `TestParseRejectsInvalidNumbers`: the plan table plus `"1e+"`, `"-"`, `"--1"`, `"1.5.5"`, `"١"` (non-ASCII digit), `strings.Repeat("١", 100)` (200 bytes) → `ErrInvalidNumber`, `strings.Repeat("١", 129)` → `ErrOperandTooLong`, `"12345678901234567890123456789012345e9999999999"` → `ErrTooManyDigits`, `"1e6145"`, `"1e-6144"`, `"-1e-6144"`, 129-character non-number → `ErrOperandTooLong` (P1 before P2), 35 significant digits with `e9999` → `ErrTooManyDigits` (P5 before P6), `"1" + 34 zeros` (35 digits but reduces to 1 → valid, in the valid table), `"1e9999999999"`, `"-1e-9999999999"` → `ErrOutOfRange`.
 - `TestOperandErrorTexts`: each sentinel's `.Error()` equals the RF-CALC-03 string byte for byte (U+2026 in the range message).
 - `TestFormat`: the plan table plus `1e-6` → `0.000001`, `-1e21` → `-1e+21`, `1.23e-7` → `1.23e-7`, `99999999999999999999` (adj 19) and `1.5e20` (adj 20) plain, `1e-6143` → `1e-6143`, `-0.000` → `0`, `123e18` → `123000000000000000000` (adj 20).
 - `FuzzParse` (T1, 20 s, heavy lease): round trip and wire syntax; seeds of the plan plus `0e9999999999`.
@@ -91,7 +91,7 @@ Rules (C1…C12 are what the tests pin):
 - C14 exact fractional powers: non-integer exponent + Inexact → p/q reduced, q ≤ 64 and |p| ≤ 64 → exact check `r^q = base^p` (`r^q·base^|p| = 1` for p < 0) in a context of precision q·digits(r) + |p|·digits(base) + 2 and apd's widest exponent range; any error → not verified; verified → clear Inexact and Rounded.
 - C15 flush: a finite non-zero result whose adjusted exponent is < −6143 becomes `0` with `inexact: true` (after C13/C14, before formatting).
 
-Extra tests for C13–C14: the four quadrants with exponents ±1e30 and bases 2, 0.1, −2, −0.1; `power 10 -6144` → `0` inexact (C15); `divide 1e-6143 10` → `0` inexact; `percentage 1e-6143` → `0` inexact; `multiply 1.234567e-6143 1e-30` → `0` inexact; `power -0 0.5` → `0`; `power -0 -1` → DIVISION_BY_ZERO; `9^1.5` → `27` exact; `100^0.5` → `10` exact; a direct `isExactSquareRoot` test (true for 4/2, false for 2/1.414…); a fractional-power table pinning value and inexact: `4^0.5` → `2` exact, `16^0.25` → `2` exact, `1^0.5` → `1` exact, `0.25^0.5` → `0.5` exact, `9^-0.5` inexact, `8^0.3333333333333333333333333333333333` inexact, `1.5^2.5` inexact.
+Extra tests for C13–C14: the four quadrants with exponents ±1e30 and bases 2, 0.1, −2, −0.1; `power 10 -6144` → `0` inexact (C15); `divide 1e-6143 10` → `0` inexact; `percentage 1e-6143` → `0` inexact; `multiply 1.234567e-6143 1e-30` → `0` inexact; `power -0 0.5` → `0`; `power -0 -1` → DIVISION_BY_ZERO; `9^1.5` → `27` exact; `100^0.5` → `10` exact; `4^-0.5` → `0.5` exact; `16^-0.25` → `0.5` exact; `4^0.50` and `4^5e-1` → `2` exact (p/q reduction of equivalent spellings); a direct `isExactSquareRoot` test (true for 4/2, false for 2/1.414…); a fractional-power table pinning value and inexact: `4^0.5` → `2` exact, `16^0.25` → `2` exact, `1^0.5` → `1` exact, `0.25^0.5` → `0.5` exact, `9^-0.5` inexact, `8^0.3333333333333333333333333333333333` inexact, `1.5^2.5` inexact.
 
 Tests (T0 unless noted):
 - `TestOperationsCatalog`: exact catalog via `cmp.Diff`, defensive copy, `Has`.
@@ -126,7 +126,7 @@ Rules (H1…H14):
 - H13 `SecureHeaders`: the four headers before `next`.
 - H14 `Methods`: dispatch; else `Allow` sorted `", "`-joined and 405 detail `<METHOD> is not allowed; use <allow>`; `NotFound` fixed 404 detail.
 
-Tests (T0 unless noted): every bullet of the spec's API-HTTPX-01 verification, in `problem_test.go` (H1–H3), `respond_test.go` (H4–H5), `decode_test.go` (H6–H7; the target struct of the table has a `Name string` field, a `M map[string]int` field and an `Operands json.RawMessage` field so the repeated-key and map-key rows are real), `requestinfo_test.go` (H8–H9), `middleware_test.go` (H10–H13; the panic test uses a test `slog.Handler` that adds `request_id` from `RequestID(ctx)` and asserts the logged id equals the response header), `methods_test.go` (H14). Coverage ≥ 90 % (T1, heavy lease). Mutations (T1): drop the `^` anchor of the request-ID regex (the invalid-ID table includes `<x>abc` and `has space`, whose valid suffix then matches, so the test fails); remove the `{` check (the `null` row fails); remove `DisallowUnknownFields` (the unknown-field rows fail).
+Tests (T0 unless noted): every bullet of the spec's API-HTTPX-01 verification, in `problem_test.go` (H1–H3), `respond_test.go` (H4–H5), `decode_test.go` (H6–H7; the target struct of the table has a `Name string` field, a `M map[string]int` field, an `Operands json.RawMessage` field and a `Child struct{ Value int }` field so the repeated-key, map-key and nested-unknown-field rows are real; `{"child":{"unexpected":1}}` → `unknown field "unexpected"` proves the strict decoder below the top-level key check), `requestinfo_test.go` (H8–H9; plus `103 → 201 → Write`: 103 forwarded, recorded status 201, bytes counted), `middleware_test.go` (H10–H13; the panic test uses a test `slog.Handler` that adds `request_id` from `RequestID(ctx)` and asserts the logged id equals the response header), `methods_test.go` (H14). Coverage ≥ 90 % (T1, heavy lease). Mutations (T1): drop the `^` anchor of the request-ID regex (the invalid-ID table includes `<x>abc` and `has space`, whose valid suffix then matches, so the test fails); remove the `{` check (the `null` row fails); remove `DisallowUnknownFields` (the nested `child` row fails).
 
 ## Targeted checks the controller runs (T0/T1)
 
@@ -141,6 +141,8 @@ go test ./internal/calc -run '^$' -fuzz FuzzParse -fuzztime 20s
 go test ./internal/calc -run '^$' -fuzz FuzzCalculate -fuzztime 30s
 go test ./internal/calc -run '^$' -bench . -benchmem
 cd .. && scripts/ci/t0.sh --base main
+# heavy lease, controller only: worst-case fractional powers at the range edges (spec), timed with a throwaway benchmark in the scratch dir
+# against the built package → evidence/power-worst-case.txt and a finding
 ```
 
 ## What NOT to touch
@@ -148,4 +150,12 @@ cd .. && scripts/ci/t0.sh --base main
 `backend/api/**`, `redocly.yaml`, `frontend/**`, `tools/versions.env`, `.github/**`, every `docs/` file outside `docs/state/runs/RUN-M1-1/`, `scripts/ci/**` except the body of `ci_stage_backend` (U8, only on a defect found by `t0.sh`).
 
 ## Review log
-(filled at step 6)
+
+Step 6 — Codex (gpt-6.1-sol, medium), static read-only review; triage by the controller:
+- P1 P4/P5 order: a 35-digit operand with an int32-overflowing exponent got the range reason — **confirmed** (apd parses the exponent with `strconv.ParseInt(…, 32)` before any digit check) → significant digits counted from the text before apd; regression row added.
+- P2 the `DisallowUnknownFields` mutation could not fail once the exact top-level key check exists — **confirmed** → nested `child` struct row.
+- P2 the non-ASCII row did not separate characters from bytes — **confirmed** → 100 and 129 repetitions of `١`.
+- P2 C14's negative-exponent success branch untested — **confirmed** → `4^-0.5`, `16^-0.25`, equivalent spellings `0.50`, `5e-1`.
+- P2 the 1xx recorder rule had no test — **confirmed** → `103 → 201 → Write` row (a lone 1xx is not recorded, so a later panic still gets the 500 problem — same rule).
+- P3 the worst-case power measurement was not scheduled — **confirmed** → controller step under the `heavy` lease, evidence and finding.
+- No finding: H6 order, token walking, repeated keys, C13, C15 placement, consumer interfaces, metrics order, ownership split, commit order.
