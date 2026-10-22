@@ -1,7 +1,12 @@
 # Disabled: GitHub runs only .yml/.yaml workflow files. To enable it, rename it:
 #   git mv .github/workflows/ci.yml.disabled .github/workflows/ci.yml
-# Every check lives in scripts/ci/ (each job calls scripts/ci/t3.sh --job <name>);
-# keep this file in step with those scripts and lint it with actionlint.
+# Six jobs: contract, backend, frontend, e2e, images and publish. Every check lives in
+# scripts/ci/ (each step calls scripts/ci/t3.sh --job <name> --stage <stage>); keep this
+# file in step with those scripts. scripts/ci/check-workflow.py (run by the contract job)
+# enforces the structure below, and actionlint lints the file.
+# Publishing (GHCR) happens only in the publish job, only on a push to main or on a
+# validated vX.Y.Z tag reachable from main, and pushes the images the images job built,
+# smoke-tested, scanned and exported.
 name: CI
 
 on:
@@ -14,6 +19,8 @@ on:
 permissions:
   contents: read
 
+# Pull requests cancel their superseded runs; a push to main or a tag is never cancelled
+# half-way through publishing.
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -28,17 +35,288 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Check out with the full history (a release tag is validated against main)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+          fetch-depth: 0
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24.22.1
+          node-version-file: frontend/.node-version
       - name: Enable pnpm
-        run: corepack enable pnpm && corepack install --global pnpm@10.33.0+sha512.10568bb4a6afb58c9eb3630da90cc9516417abebd3fabbe6739f0ae795728da1491e9db5a544c76ad8eb7570f5c4bb3d6c637b2cb41bfdcdb47fa823c8649319
+        run: scripts/ci/setup-pnpm.sh
       - name: Install the frontend (Redocly and openapi-typescript are pinned by its lockfile)
         run: pnpm -C frontend install --frozen-lockfile
+      - name: Install the Python modules of the checkers
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends python3-yaml
       - name: Install pinned tools
         run: scripts/ci/install-tools.sh actionlint shellcheck
-      - name: Contract job
-        run: scripts/ci/t3.sh --job contract
+      - name: Lint the contract and check the generated types
+        run: scripts/ci/t3.sh --job contract --stage contract
+      - name: Build the API reference
+        run: scripts/ci/t3.sh --job contract --stage docs-api
+      - name: Lint and check the workflow files
+        run: scripts/ci/t3.sh --job contract --stage workflows
+      - name: Lint the shell scripts
+        run: scripts/ci/t3.sh --job contract --stage shell
+      - name: Test the publish tag gating
+        run: scripts/ci/t3.sh --job contract --stage publish-tags
+      - name: Validate the release tag early
+        if: ${{ github.event_name == 'push' && github.ref_type == 'tag' }}
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          SHA: ${{ github.sha }}
+        run: scripts/ci/t3.sh --job publish --stage tags
+      - name: Upload the API reference
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: api-reference
+          path: docs/api/index.html
+          retention-days: 14
+          if-no-files-found: warn
+
+  backend:
+    name: Backend
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GOTOOLCHAIN: local
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+      - name: Install pinned tools
+        run: scripts/ci/install-tools.sh golangci-lint govulncheck
+      - name: Verify the modules
+        run: scripts/ci/t3.sh --job backend --stage modules
+      - name: Format, vet and lint (both build modes)
+        run: scripts/ci/t3.sh --job backend --stage static
+      - name: Tests and coverage gate
+        run: scripts/ci/t3.sh --job backend --stage coverage-backend
+      - name: Fuzz parsing and calculation
+        run: scripts/ci/t3.sh --job backend --stage fuzz
+      - name: Benchmarks and their budgets
+        run: scripts/ci/t3.sh --job backend --stage bench
+      - name: Scan the modules for known vulnerabilities
+        run: scripts/ci/t3.sh --job backend --stage govulncheck
+      - name: Build
+        run: scripts/ci/t3.sh --job backend --stage build
+      - name: Upload the backend coverage report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage-backend
+          path: coverage/backend
+          retention-days: 14
+          if-no-files-found: warn
+      - name: Upload the benchmark output
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: benchmark
+          path: coverage/bench
+          retention-days: 14
+          if-no-files-found: warn
+      - name: Upload the fuzz crashers
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: fuzz-crashers
+          path: backend/internal/calc/testdata/fuzz
+          retention-days: 14
+          if-no-files-found: ignore
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: frontend/.node-version
+      - name: Enable pnpm
+        run: scripts/ci/setup-pnpm.sh
+      - name: Install the frontend
+        run: pnpm -C frontend install --frozen-lockfile
+      - name: Typecheck
+        run: scripts/ci/t3.sh --job frontend --stage typecheck
+      - name: Lint
+        run: scripts/ci/t3.sh --job frontend --stage lint
+      - name: Check the formatting
+        run: scripts/ci/t3.sh --job frontend --stage format
+      - name: Tests and coverage gate
+        run: scripts/ci/t3.sh --job frontend --stage coverage-frontend
+      - name: Build
+        run: scripts/ci/t3.sh --job frontend --stage build
+      - name: Audit the production dependencies
+        run: scripts/ci/t3.sh --job frontend --stage audit
+      - name: Upload the frontend coverage report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage-frontend
+          path: coverage/frontend
+          retention-days: 14
+          if-no-files-found: warn
+
+  e2e:
+    name: Browser tests on the composed stack
+    needs: [contract, backend, frontend]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: frontend/.node-version
+      - name: Enable pnpm
+        run: scripts/ci/setup-pnpm.sh
+      - name: Install the frontend
+        run: pnpm -C frontend install --frozen-lockfile
+      - name: Install the browser (version from the lockfile) and its system packages
+        run: pnpm -C frontend exec playwright install --with-deps chromium
+      - name: Start the stack, run both projects and the disruptive specs, stop the stack
+        run: scripts/ci/t3.sh --job e2e
+      - name: Upload the Playwright reports and the container logs
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: playwright
+          path: coverage/e2e
+          retention-days: 14
+          if-no-files-found: warn
+
+  images:
+    name: Images
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Install the Python modules of the edge checks
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends python3-yaml python3-jsonschema
+      - name: Install pinned tools
+        run: scripts/ci/install-tools.sh hadolint trivy
+      - name: Lint the Dockerfiles
+        run: scripts/ci/t3.sh --job images --stage dockerfiles
+      - name: Validate the compose file
+        run: scripts/ci/t3.sh --job images --stage compose-config
+      - name: Build the API image
+        run: scripts/ci/t3.sh --job images --stage build-api
+      - name: Build the web image
+        run: scripts/ci/t3.sh --job images --stage build-web
+      - name: Build the all-in-one image
+        run: scripts/ci/t3.sh --job images --stage build-aio
+      - name: Smoke-test the API image
+        run: scripts/ci/t3.sh --job images --stage smoke-api
+      - name: Smoke-test the web image in front of the API image
+        run: scripts/ci/t3.sh --job images --stage smoke-edge
+      - name: Smoke-test the web image against the service stub
+        run: scripts/ci/t3.sh --job images --stage smoke-edge-stub
+      - name: Smoke-test the all-in-one image
+        run: scripts/ci/t3.sh --job images --stage smoke-aio
+      - name: Export the images
+        run: scripts/ci/t3.sh --job images --stage export
+      - name: Scan the API image
+        run: scripts/ci/t3.sh --job images --stage scan-api
+      - name: Scan the web image
+        run: scripts/ci/t3.sh --job images --stage scan-web
+      - name: Scan the all-in-one image
+        run: scripts/ci/t3.sh --job images --stage scan-aio
+      - name: Upload the API image
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: images-calculator-api
+          path: coverage/images/calculator-api.tar.gz
+          retention-days: 7
+          compression-level: 0
+          if-no-files-found: error
+      - name: Upload the web image
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: images-calculator-web
+          path: coverage/images/calculator-web.tar.gz
+          retention-days: 7
+          compression-level: 0
+          if-no-files-found: error
+      - name: Upload the all-in-one image
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: images-calculator
+          path: coverage/images/calculator.tar.gz
+          retention-days: 7
+          compression-level: 0
+          if-no-files-found: error
+      - name: Upload the image manifest
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: images-manifest
+          path: coverage/images/image-ids.txt
+          retention-days: 7
+          if-no-files-found: error
+      - name: Upload the scan reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: image-reports
+          path: |
+            coverage/images/trivy-*.json
+            coverage/images/trivy-*-all.txt
+          retention-days: 14
+          if-no-files-found: warn
+
+  publish:
+    name: Publish to GHCR
+    needs: [contract, backend, frontend, e2e, images]
+    if: >-
+      github.event_name == 'push' &&
+      !github.event.repository.fork &&
+      (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Check out with the full history (a release tag must be reachable from main)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Download the tested images
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: images-*
+          merge-multiple: true
+          path: coverage/images
+      - name: Validate the ref and choose the tags
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          SHA: ${{ github.sha }}
+        run: scripts/ci/t3.sh --job publish --stage tags
+      - name: Push the tested images
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: scripts/ci/t3.sh --job publish --stage push
