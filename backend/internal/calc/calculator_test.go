@@ -151,7 +151,7 @@ func TestCalculateErrors(t *testing.T) {
 		wantErr    error
 		wantDetail string
 	}{
-		{"negative zero divisor", "divide", []string{"0", "-0"}, ErrDivisionByZero, "the divisor must not be zero"},
+		{"negative zero divisor", "divide", []string{"1", "-0"}, ErrDivisionByZero, "the divisor must not be zero"},
 		{"negative zero power", "power", []string{"-0", "-1"}, ErrDivisionByZero, "zero cannot be raised to a negative power"},
 		{"negative fractional", "power", []string{"-8", "1.5"}, ErrUndefined, "a negative number raised to a non-integer power is not a real number"},
 		{"negative small sqrt", "sqrt", []string{"-0.0001"}, ErrUndefined, "square root of a negative number is not a real number"},
@@ -162,7 +162,7 @@ func TestCalculateErrors(t *testing.T) {
 		{"add empty", "add", nil, ErrArity, "add takes exactly 2 operands, got 0"},
 		{"arity before validity", "add", []string{"abc"}, ErrArity, "add takes exactly 2 operands, got 1"},
 		{"divide by zero", "divide", []string{"1", "0"}, ErrDivisionByZero, "the divisor must not be zero"},
-		{"zero over zero", "divide", []string{"0", "0"}, ErrDivisionByZero, "the divisor must not be zero"},
+		{"zero over zero", "divide", []string{"0", "0"}, ErrUndefined, "zero divided by zero is undefined"},
 		{"zero to negative power", "power", []string{"0", "-1"}, ErrDivisionByZero, "zero cannot be raised to a negative power"},
 		{"sqrt of negative", "sqrt", []string{"-4"}, ErrUndefined, "square root of a negative number is not a real number"},
 		{"negative base fractional exponent", "power", []string{"-8", "0.5"}, ErrUndefined, "a negative number raised to a non-integer power is not a real number"},

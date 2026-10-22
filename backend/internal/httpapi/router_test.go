@@ -156,7 +156,7 @@ func TestProblems(t *testing.T) {
 		{"uppercase field", "POST", "/api/v1/operations/add", "application/json", "{\"OPERANDS\":[\"1\",\"2\"]}", 400, "MALFORMED_REQUEST", "unknown field \"OPERANDS\"", nil},
 		{"null body", "POST", "/api/v1/operations/add", "application/json", "null", 400, "MALFORMED_REQUEST", "request body must contain a single JSON object", nil},
 		{"sqrt arity", "POST", "/api/v1/operations/sqrt", "application/json", "{\"operands\":[\"1\",\"2\"]}", 400, "VALIDATION_FAILED", "sqrt takes exactly 1 operand, got 2", []any{map[string]any{"field": "operands", "reason": "sqrt takes exactly 1 operand, got 2"}}},
-		{"zero over zero", "POST", "/api/v1/operations/divide", "application/json", "{\"operands\": [\"0\", \"0\"]}", 422, "DIVISION_BY_ZERO", "the divisor must not be zero", nil},
+		{"zero over zero", "POST", "/api/v1/operations/divide", "application/json", "{\"operands\": [\"0\", \"0\"]}", 422, "UNDEFINED_RESULT", "zero divided by zero is undefined", nil},
 		{"zero negative power", "POST", "/api/v1/operations/power", "application/json", "{\"operands\": [\"0\", \"-1\"]}", 422, "DIVISION_BY_ZERO", "zero cannot be raised to a negative power", nil},
 		{"negative fractional power", "POST", "/api/v1/operations/power", "application/json", "{\"operands\": [\"-8\", \"0.5\"]}", 422, "UNDEFINED_RESULT", "a negative number raised to a non-integer power is not a real number", nil},
 		{"huge power", "POST", "/api/v1/operations/power", "application/json", "{\"operands\": [\"2\", \"1e30\"]}", 422, "OVERFLOW", "the result is outside the supported range (1e-6143 … 1e6144)", nil},

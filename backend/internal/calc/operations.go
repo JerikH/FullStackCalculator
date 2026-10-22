@@ -49,6 +49,9 @@ func binary(f func(*apd.Context, *apd.Decimal, *apd.Decimal, *apd.Decimal) (apd.
 
 func divide(c *apd.Context, d *apd.Decimal, args []*apd.Decimal) (apd.Condition, error) {
 	if args[1].IsZero() {
+		if args[0].IsZero() {
+			return 0, &detailedError{kind: ErrUndefined, detail: "zero divided by zero is undefined"}
+		}
 		return 0, ErrDivisionByZero
 	}
 	return c.Quo(d, args[0], args[1])
