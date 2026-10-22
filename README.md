@@ -557,7 +557,6 @@ The service reads **environment variables only**. Every invalid value is reporte
 | `CALC_SHUTDOWN_TIMEOUT` | service | `15s` | Time allowed to finish in-flight requests and close the listeners once the drain is over; must be positive |
 | `CALC_SHUTDOWN_DRAIN` | service | `0s` | Time readiness answers 503 before the listeners close (Compose sets `2s`); zero or more |
 | `CALC_PPROF` | service | `false` | Serve `/debug/pprof/` on the admin listener |
-| `VITE_API_BASE_URL` | frontend build | — | Origin of the API; empty or unset means the page's own origin |
 | `API_PROXY_TARGET` | Vite dev server | `http://localhost:8081` | Where the dev server proxies `/api` |
 | `VITE_PORT` | Vite dev server | `5173` | Dev server port |
 | `API_UPSTREAM` | web image | `api:8081` | `host:port` of the service behind the edge |

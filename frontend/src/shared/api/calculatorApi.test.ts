@@ -2,7 +2,7 @@
 import { delay, http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { afterAll, afterEach, beforeAll, describe, expect, expectTypeOf, it, vi } from 'vitest';
-import { createCalculatorApi, DEFAULT_TIMEOUT_MS, resolveBaseUrl } from './calculatorApi';
+import { createCalculatorApi, DEFAULT_TIMEOUT_MS } from './calculatorApi';
 import { PROBLEM_CODES } from './problem';
 import type { ApiError, OperationName } from './types';
 
@@ -591,12 +591,6 @@ describe('calculate: signal compatibility', () => {
 describe('configuration', () => {
   it('defaults the timeout to 8 seconds', () => {
     expect(DEFAULT_TIMEOUT_MS).toBe(8000);
-  });
-
-  it('resolves the base URL', () => {
-    expect(resolveBaseUrl('http://api.test', 'http://page.test')).toBe('http://api.test');
-    expect(resolveBaseUrl('', 'http://page.test')).toBe('http://page.test');
-    expect(resolveBaseUrl(undefined, 'http://page.test')).toBe('http://page.test');
   });
 });
 

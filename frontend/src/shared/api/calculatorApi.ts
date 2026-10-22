@@ -12,11 +12,6 @@ export interface CalculatorApiOptions {
   fetch?: (request: Request) => Promise<Response>;
 }
 
-/** The configured base URL when set, otherwise the page origin. */
-export function resolveBaseUrl(configured: string | undefined, origin: string): string {
-  return configured === undefined || configured === '' ? origin : configured;
-}
-
 // The contract's Decimal: plain or scientific notation, at most 128 characters.
 const DECIMAL = /^-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?$/;
 
