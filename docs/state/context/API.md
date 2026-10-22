@@ -6,8 +6,9 @@ Created 2026-10-22 by the bootstrap. Read at the start of any task of this epic.
 RF-API-01…RF-API-12; UC-API-01, UC-API-02. The contract, routing, decoding, problems, headers and contract tests. Arithmetic belongs to CALC; process lifecycle to OBS.
 
 ## Architecture as built
-- Contract (RUN-M0-1): `backend/api/openapi.yaml` (OpenAPI 3.1.0) embedded as `api.Spec` by `backend/api/spec.go`; `redocly.yaml` at the root. Lint: `pnpm --package=@redocly/cli@<version> dlx redocly lint backend/api/openapi.yaml` (Findings of API-CONTRACT-01 (c)).
-- Planned: `backend/internal/platform/httpx/`, `backend/internal/httpapi/`.
+- Contract (RUN-M0-1): `backend/api/openapi.yaml` (OpenAPI 3.1.0) embedded as `api.Spec` by `backend/api/spec.go`; `redocly.yaml` at the root. Lint: `pnpm -C frontend run lint:api` (Redocly pinned by the frontend lockfile; Findings of UI-SCAF-01 (b)); generated TypeScript types in `frontend/src/shared/api/schema.gen.ts`, drift checked by the contract stage. Before RUN-M1-2 the lint ran through `pnpm dlx` (Findings of API-CONTRACT-01 (c)).
+- backend/internal/platform/httpx (RUN-M1-1): problem.go, respond.go (WriteJSON(w, r, status, v), WriteProblem), decode.go (DecodeJSON), requestinfo.go (RequestContext, RequestInfo, Route, recorder), middleware.go (Chain, AccessLog, Recover, SecureHeaders), methods.go (Methods, NotFound).
+- Planned: `backend/internal/httpapi/`.
 
 ## Invariants every task inherits
 - The contract is provider-owned and fixed in M0; a change is announced to its consumers and regenerates `frontend/src/shared/api/schema.gen.ts` in the same change (RF-API-01, RF-API-10).
@@ -17,6 +18,8 @@ RF-API-01…RF-API-12; UC-API-01, UC-API-02. The contract, routing, decoding, pr
 - Declared status sets per operation: `listOperations` 200/405/429/500/503; `calculate` 200/400/404/405/413/415/422/429/500/503; `getOpenAPIDocument` 200/405/429/500/503; `getLiveness` 200/405/500; `getReadiness` 200/405/500/503 (Findings of API-CONTRACT-01 (d)).
 - Every problem carries `detail` and `requestId` (schema-required); `instance` may be omitted only by edge problems (Findings of API-CONTRACT-01 (b)).
 - A wrong-method 405 cannot be validated as a response of the document (no operation for that method): contract tests validate its body against the Problem schema and assert `Allow` (Findings of API-CONTRACT-01 (a)).
+- MALFORMED_REQUEST has exactly four details; a [] or null body is «request body must contain a single JSON object»; JSON keys are matched exactly (encoding/json alone is case-insensitive).
+- httpx.Codes() is the 11 service codes, a strict subset of the contract enum (RATE_LIMITED, SERVICE_UNAVAILABLE are edge-only); the client's PROBLEM_CODES equals the enum (Findings of W1 (a)).
 
 ## Decisions
 - Adopted: repeated JSON keys — last occurrence wins; quoted unknown field name allowed in the detail.

@@ -75,3 +75,4 @@
   **Review level:** double (CI permissions and publication are a trust boundary).
   **Needs from the owner:** nothing (enabling is gate G1).
   - Registered follow-up (from OPS-CI-01): take Node and pnpm versions from frontend/package.json instead of literals; every job calls scripts/ci/t3.sh --job <name>. 🔎 findings: «Findings of OPS-CI-01» (f)
+  - Registered follow-up (from UI-SCAF-01): when the Node version comes from the frontend package and reaches 24.15 or later, take jsdom 30.x; revisit typescript 6.x once openapi-typescript and typescript-eslint accept it, and drop the jsx-a11y peer override once the plugin declares ESLint 10. 🔎 findings: «Findings of UI-SCAF-01» (c)

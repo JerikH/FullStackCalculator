@@ -18,7 +18,8 @@ Playwright against the real API (M1: `go run ./cmd/calculator` + Vite on the age
 The calculator screen (UI-SCREEN-01): display, keypad, history panel, theme control — every state of UC-UI-01…04.
 
 ## Architecture as built
-- (nothing yet) — planned: `frontend/src/features/calculator/{model,hooks,ui}`, `frontend/src/shared/{api,storage,theme,styles,ui}`, `frontend/src/app/`.
+- `frontend/` package calculator-web (Findings of UI-SCAF-01 (a)); `src/shared/styles/{tokens,global}.css`, `src/shared/storage/safeStorage.ts`, `src/shared/ui/cx.ts`, `public/theme-init.js`, `src/shared/api/` (client, Findings of UI-CLIENT-01 (a)), `src/test/setup.ts` (matchMedia stub; vitest-axe typing in `src/test/vitest-axe.d.ts`); `src/main.tsx` is a placeholder until UI-SCREEN-01 (RUN-M1-2).
+- Planned: `frontend/src/features/calculator/{model,hooks,ui}`, `frontend/src/shared/theme`, `frontend/src/app/`.
 
 ## Invariants every task inherits
 - The frontend never computes a numeric result (RF-UI-05).
@@ -27,6 +28,9 @@ The calculator screen (UI-SCREEN-01): display, keypad, history panel, theme cont
 - Measured token changes (U5): light focus `#b45309` (dark `#f59e0b`, declared in both dark blocks); error copy inside the display uses `--color-display-danger` `#ff8a80`, never `--color-danger` (Findings of UI-BASE-01 (a), (b)).
 - Every interactive control is at least 48 × 48 px; the focus ring is a 3px `:focus-visible` outline with 2px offset, measured against the surfaces it sits on (Findings of UI-BASE-01 (b), (d)).
 - Hook and component tests inject a fake API through context; MSW only in Node-environment client tests.
+- The API client never rejects; only `CalculatorApiProvider` supplies it; hook and component tests inject a fake; only `src/shared/api` tests use MSW, in the Node environment with `onUnhandledFrame: 'error'` (Findings of UI-CLIENT-01 (a), UI-SCAF-01 (e)).
+- Package-wide frontend inputs re-check the whole package in the tiers (Findings of UI-SCAF-01 (b)).
+- `@playwright/test` 1.64.1 runs Chromium build 1248 (Findings of UI-SCAF-01 (e)).
 
 ## Where to look
 - Open debt: `findings/by-owner/UI.md`

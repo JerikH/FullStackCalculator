@@ -14,7 +14,9 @@ How to run things locally in this project. All traps: `findings/by-owner/_traps.
 | Node / pnpm | nvm | 24.14.1 / 10.33.0 |
 | Docker / Compose | system | 29.3.1 / v5.1.1 |
 | Playwright | `npx playwright` (Chromium installed) | 1.62.1 |
-| Redocly CLI | contract stage: `REDOCLY_TELEMETRY=off pnpm --package=@redocly/cli@$REDOCLY_CLI_VERSION dlx redocly lint backend/api/openapi.yaml` (version in `tools/versions.env` until UI-SCAF-01 pins it in the frontend lockfile); 0.55 s warm, about 2 s cold | 2.69.0 |
+| Redocly CLI | contract stage: `pnpm -C frontend run lint:api` (version from `frontend/pnpm-lock.yaml`, telemetry off) | 2.69.0 |
+| Frontend packages | `pnpm -C frontend install --frozen-lockfile` (`deps` lease) | see `frontend/package.json` |
+| Playwright (frontend) | `@playwright/test` 1.64.1, Chromium 1248 installed by `pnpm -C frontend exec playwright install chromium` | 1.64.1 |
 
 Pinned tools: `scripts/ci/install-tools.sh [tool…]` installs or confirms every pin of `tools/versions.env` (SHA-256 verified before extraction; idempotent; safe for two agents at once). Updating a pin: change the version and its four SHA-256 values in one commit, run the installer, then `scripts/ci/t0.sh`.
 
@@ -45,7 +47,7 @@ A worktree (it has `.wf-agent`) needs `WF_AGENT` equal to its agent and `WF_INDE
 | Service | Address | How to start / reset | Shared? (lease) |
 |---|---|---|---|
 | Go service (dev) | `CALC_HTTP_ADDR`, admin `CALC_ADMIN_ADDR` | `cd backend && go run ./cmd/calculator` (from OBS-RUNTIME-01; `make dev-backend` from OPS-STACK-01) | per agent |
-| Vite dev server | `VITE_PORT`, proxies `/api` to `API_PROXY_TARGET` | `pnpm -C frontend dev` (from UI-SCAF-01; `make dev-frontend` later) | per agent |
+| Vite dev server | `VITE_PORT`, proxies `/api` to `API_PROXY_TARGET` | `pnpm -C frontend dev` (strict port `VITE_PORT`, proxy to `API_PROXY_TARGET`; `make dev-frontend` later) | per agent |
 | Composed stack | `WEB_PORT` → web:8080 | `make up` / `make down` with the agent's `COMPOSE_PROJECT_NAME` (from OPS-STACK-01) | per agent; image builds serialized |
 
 No database, cache or external service.
@@ -53,10 +55,11 @@ No database, cache or external service.
 ## Tier commands
 | Tier | Command | Measured duration |
 |---|---|---|
-| 0 | `scripts/ci/t0.sh --base main` (uncommitted changes in the main checkout); solo runs re-check their commits with `--base <run start commit>` | 4.0 s over RUN-M0-2 (shellcheck ~3.9 s, actionlint 0.03 s, Redocly 0.55 s warm) |
+| 0 | `scripts/ci/t0.sh --base main` (uncommitted changes in the main checkout); solo runs re-check their commits with `--base <run start commit>`; the contract stage needs `pnpm -C frontend install --frozen-lockfile` first | 4.0 s over RUN-M0-2 (shellcheck ~3.9 s, actionlint 0.03 s, Redocly 0.55 s warm); 19.7 s over RUN-M1-2 (contract 2.1 s, frontend typecheck 3.0 s, lint 7.5 s, format 1.2 s, tests 4.6 s) |
+| Backend T0 | `scripts/ci/t0.sh --base main` (backend stage: golangci-lint fmt --diff, go vet, golangci-lint run, go test -race; ./... when go.mod/go.sum/.golangci.yml change) | 4.7 s full (RUN-M1-1), 5.0 s one package |
 | 1 | `scripts/ci/t1.sh backend/<pkg>[/...] \| frontend/<file>.test.ts \| frontend/e2e/<file>.spec.ts \| make:<target>` (all validated before anything runs) | — |
-| 2 | `scripts/ci/t2.sh --base <pre-merge main>` | integrator only; 4.7 s while only scripts exist |
-| 3 | `scripts/ci/t3.sh [--job contract\|backend\|frontend\|images]` | CI; `--job contract` 6.6 s |
+| 2 | `scripts/ci/t2.sh --base <pre-merge main>` | integrator only; 4.7 s while only scripts exist; 31.7 s over W1 (contract, workflows, shell, backend, frontend with build) |
+| 3 | `scripts/ci/t3.sh [--job contract\|backend\|frontend\|images]` | CI; `--job contract` 6.6 s (8.6 s after W1, with the types drift check), `--job frontend` 18.9 s |
 | Options | `--keep-going` collects every failure; `-h` usage | — |
 | Browser checks | M1: `go run ./cmd/calculator` + `pnpm -C frontend dev` on the agent's ports, Playwright ad hoc; M2: `make up` + `make e2e` | — |
 | Mutation check | break the named rule in the source, run the single test file/package, watch it fail, restore with `git checkout -- <file>` before anyone else runs tests | — |
@@ -68,8 +71,14 @@ No database, cache or external service.
 ## Known traps (summary)
 - Node's fetch rejects jsdom's `AbortSignal`: MSW tests run in the Node environment only.
 - `openapi-fetch` captures `globalThis.fetch` at creation: pass `fetch: (request) => globalThis.fetch(request)` so MSW's patch applies.
-- `backend/api/spec.go` compiles only once `backend/go.mod` exists (CALC-CORE-01).
-- `pnpm dlx @redocly/cli@<version> lint` fails with `ERR_PNPM_DLX_MULTIPLE_BINS`; name the binary: `pnpm --package=@redocly/cli@<version> dlx redocly lint` (Findings of API-CONTRACT-01 (c)).
+- `backend/api/spec.go` compiles only with `backend/go.mod`, which exists since CALC-CORE-01: `go build ./api/` is part of `go vet ./...`.
+- `pnpm dlx @redocly/cli@<version> lint` fails with `ERR_PNPM_DLX_MULTIPLE_BINS`; name the binary: `pnpm --package=@redocly/cli@<version> dlx redocly lint` (Findings of API-CONTRACT-01 (c)); history — the contract stage now runs Redocly from the frontend lockfile.
 - `git check-ignore -q` accepts a single path; check several paths one at a time (or use `-v` without `-q`).
 - `wf env --export` gives index 0 and the main port block to an agent it has no record for; `env.sh` refuses that in a worktree. `go` is on `PATH` only in interactive shells: source `env.sh` or use the tiers (Findings of OPS-ENV-01 (c)).
 - In the main checkout `t0.sh --base main` sees only uncommitted changes (the tier says «base is HEAD»). actionlint lints `*.yml.disabled` only when named, takes shellcheck from `PATH` unless `-shellcheck` is given, and has no `-x`. `make -n` / `make -pRrq <goal>` run `+` recipes. hadolint exits 1 on warnings (Findings of OPS-CI-01 (g)).
+- go mod tidy in backend/ downloads github.com/lib/pq (a test dependency of apd) into the module cache; it is not a module requirement (Findings of CALC-CORE-01 (c)).
+- Fuzzing, benchmarks and coverage runs take the heavy lease: go test ./internal/calc -run '^$' -fuzz FuzzParse -fuzztime 20s; … -fuzz FuzzCalculate -fuzztime 30s; … -bench . -benchmem. Benchmarks run alone: an overlapping install or test run inflates them (Findings of W1 (c)).
+- encoding/json matches keys case-insensitively, decodes null into a struct without error and puts input map keys in UnmarshalTypeError.Field; a streaming decoder over MaxBytesReader reports syntax errors before the size limit (Findings of API-HTTPX-01 (b)).
+- Vitest 5 `related` forces passWithNoTests unless `--no-passWithNoTests`, and then reports «No affected test files found» (exit 1); `vitest list` has no `--related`; jsdom 29 `matchMedia` is not a function; vitest-axe typing needs `src/test/vitest-axe.d.ts` (Findings of UI-SCAF-01 (d)).
+- msw 3 renamed `onUnhandledRequest` to `onUnhandledFrame`; an MSW body stream left open crashes Node 24.14.1's undici on abort (inject an abort-aware fetch instead); `@playwright/test` 1.64.1 needs Chromium 1248, `npx playwright` 1.62.1 uses 1243 (Findings of UI-SCAF-01 (e)).
+- Python evidence scripts: run with python3 -B or stage evidence by name — __pycache__ is not ignored (Findings of DOC-ADR-01 (e)).
