@@ -1,0 +1,59 @@
+# setup: clone of HEAD, scripts under test, linked node_modules and tools
+# 1 clean tree
+ok   clean tree (exit 0)
+ok   nothing to check
+# 2 contract input only (pnpm lockfile pins Redocly): contract stage, never the backend stage
+ok   lockfile change (exit 0)
+ok   redocly through the frontend script
+ok   redocly passed
+ok   types drift check ran
+ok   types drift check passed
+ok   no backend stage for a frontend contract input
+ok   lockfile is a package-wide frontend input
+# 3 contract input: the generated file edited by hand → drift fails
+ok   drift detected (exit 1)
+ok   types check failed
+ok   diff shows the hand edit
+# 4 contract file edited without regenerating the types → drift fails
+ok   contract stage ran
+ok   generated types now drift from the edited contract
+ok   edited contract without regenerated types fails (exit 1)
+# 5 missing frontend install → the contract stage fails with the install command
+ok   no node_modules (exit 1)
+ok   install message
+ok   Redocly not attempted
+# 6 source with a related test → the related test runs
+ok   related run (exit 0)
+ok   vitest related command
+ok   the related test file ran
+ok   vitest passed
+ok   no package-wide run
+# 7 source without a related test → noted, stage passes
+ok   no related test (exit 0)
+ok   noted
+ok   not a failure
+# 8 a failing related test fails the stage
+ok   failing related test (exit 1)
+ok   vitest failed
+ok   not noted as no tests
+# 9 package-wide input (vite.config.ts) → whole package checked
+ok   package-wide (exit 0)
+ok   noted
+ok   full lint
+ok   full format check
+ok   full test run
+# 10 HTML only → typecheck, Prettier, no vitest
+ok   prettier ran on the file
+ok   no applicable test files
+# 11 CI-equivalent jobs
+ok   t3 contract (exit 0)
+ok   t3 contract types
+ok   t3 frontend (exit 0)
+ok   t3 frontend build
+# 12 no remaining reader of REDOCLY_CLI_VERSION
+ok   grep finds nothing (exit 1)
+# 13 generator prints the right output but exits non-zero → contract:types fails (pipefail)
+ok   failing generator detected (exit 1)
+ok   types check failed
+
+0 failure(s)
