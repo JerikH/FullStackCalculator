@@ -1,0 +1,324 @@
+#!/usr/bin/env bash
+# Shared command reporting and checks for the local test tiers.
+if (( BASH_VERSINFO[0] < 5 )); then
+  printf 'Bash 5 or newer is required\n' >&2
+  exit 2
+fi
+CI_ROOT=$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)
+cd "$CI_ROOT" || exit 2
+set -a
+# shellcheck source=tools/versions.env
+source "$CI_ROOT/tools/versions.env"
+set +a
+PATH="$CI_ROOT/bin:$PATH"
+if [[ -n ${HOME-} && -d "$HOME/.local/go/bin" ]]; then PATH="$CI_ROOT/bin:$HOME/.local/go/bin:${PATH#*:}"; fi
+export PATH
+CI_KEEP_GOING=0
+CI_START=${EPOCHREALTIME//[!0-9]/}
+declare -a CI_LABELS=() CI_COMMANDS=() CI_RESULTS=() CI_TIMES=() CI_CHANGED=()
+
+ci_seconds() { printf '%d.%02d' "$(($1 / 1000000))" "$(($1 % 1000000 / 10000))"; }
+ci_tool() {
+  local key=${1^^}
+  key=${key//-/_}_VERSION
+  printf '%s/bin/.tools/%s-%s/%s\n' "$CI_ROOT" "$1" "${!key}" "$1"
+}
+ci_record() {
+  CI_LABELS+=("$1"); CI_COMMANDS+=("$2"); CI_RESULTS+=("$3"); CI_TIMES+=("$4")
+}
+ci_note() { printf '• [%s] %s\n' "$1" "$2"; ci_record "$1" "$2" note 0; }
+ci_finish() {
+  local i failed=0 now=${EPOCHREALTIME//[!0-9]/}
+  printf '\nstage · command · result · seconds\n'
+  for i in "${!CI_LABELS[@]}"; do
+    printf '%s · %s · %s · %ss\n' "${CI_LABELS[i]}" "${CI_COMMANDS[i]}" "${CI_RESULTS[i]}" "$(ci_seconds "${CI_TIMES[i]}")"
+    if [[ ${CI_RESULTS[i]} == fail ]]; then failed=1; fi
+  done
+  printf 'total %ss\n' "$(ci_seconds "$((now - CI_START))")"
+  return "$failed"
+}
+ci_failure() {
+  if (( CI_KEEP_GOING )); then return 1; fi
+  if ci_finish; then exit 1; else exit 1; fi
+}
+ci_problem() {
+  printf '✘ [%s] %s\n' "$1" "$2" >&2
+  ci_record "$1" "$2" fail 0
+  ci_failure
+}
+ci_execute() {
+  local label=$1 capture=$2 directory='' rendered='' word start end status=0 output=''
+  shift 2
+  if [[ ${1:-} == -C ]]; then directory=$2; shift 2; fi
+  [[ ${1:-} == -- ]] || { printf 'missing command separator\n' >&2; exit 2; }
+  shift
+  for word in "$@"; do printf -v word '%q' "$word"; rendered+="${rendered:+ }$word"; done
+  if [[ -n $directory ]]; then printf -v word '%q' "$directory"; rendered="(cd $word) $rendered"; fi
+  printf '▶ [%s] %s\n' "$label" "$rendered"
+  start=${EPOCHREALTIME//[!0-9]/}
+  if [[ -n $capture ]]; then
+    if [[ -n $directory ]]; then
+      if output=$(cd "$directory" && "$@"); then status=0; else status=$?; fi
+    else
+      if output=$("$@"); then status=0; else status=$?; fi
+    fi
+    printf -v "$capture" '%s' "$output"
+  elif [[ -n $directory ]]; then
+    if (cd "$directory" && "$@"); then status=0; else status=$?; fi
+  else
+    if "$@"; then status=0; else status=$?; fi
+  fi
+  end=${EPOCHREALTIME//[!0-9]/}
+  if (( status == 0 )); then
+    printf '✔ [%s] %ss\n' "$label" "$(ci_seconds "$((end - start))")"
+    ci_record "$label" "$rendered" pass "$((end - start))"
+  else
+    printf '✘ [%s] exit %d after %ss\n' "$label" "$status" "$(ci_seconds "$((end - start))")"
+    ci_record "$label" "$rendered" fail "$((end - start))"
+    ci_failure
+  fi
+}
+ci_run() { ci_execute "$1" '' "${@:2}"; }
+ci_run_capture() { ci_execute "$1" "$2" "${@:3}"; }
+ci_need() {
+  local stage=$1 tool=$2 message
+  case $tool in
+    go) command -v go >/dev/null && return 0
+      message="Go not found: install Go 1.27 into \$HOME/.local/go or put go on PATH" ;;
+    pnpm) command -v pnpm >/dev/null && return 0
+      message='install Node 24 and pnpm 10' ;;
+    *) [[ -x $(ci_tool "$tool") ]] && return 0
+      message="missing tool $tool: run scripts/ci/install-tools.sh $tool" ;;
+  esac
+  ci_problem "$stage" "$message"
+}
+ci_agent_env_load() {
+  local exports
+  if [[ ! ${WF_INDEX+x} && -x "$CI_ROOT/.workflow/bin/wf" ]]; then
+    exports=$("$CI_ROOT/.workflow/bin/wf" env --export) || return 1
+    eval "$exports" || return 1
+  fi
+  # shellcheck disable=SC2317 # The sourced environment can return failure after validating identity or Go.
+  # shellcheck source=scripts/ci/env.sh
+  source "$CI_ROOT/scripts/ci/env.sh" || return 1
+}
+ci_agent_env() {
+  local start end status
+  printf '▶ [env:agent] agent environment\n'
+  start=${EPOCHREALTIME//[!0-9]/}
+  if ci_agent_env_load; then status=0; else status=$?; fi
+  end=${EPOCHREALTIME//[!0-9]/}
+  if (( status == 0 )); then
+    printf '✔ [env:agent] %ss\n' "$(ci_seconds "$((end - start))")"
+    ci_record env:agent 'agent environment' pass "$((end - start))"
+  else
+    printf '✘ [env:agent] exit %d after %ss\n' "$status" "$(ci_seconds "$((end - start))")"
+    ci_record env:agent 'agent environment' fail "$((end - start))"
+    if ci_finish; then exit 1; else exit 1; fi
+  fi
+}
+ci_changed_files() {
+  local base=$1 mb temporary
+  if ! git rev-parse --verify --quiet "$base^{commit}" >/dev/null; then printf 'unknown base %s\n' "$base" >&2; exit 2; fi
+  if ! mb=$(git merge-base "$base" HEAD); then exit 2; fi
+  temporary=$(mktemp)
+  if ! git diff -z --name-only --no-renames "$mb" -- >"$temporary"; then rm -f "$temporary"; exit 2; fi
+  if ! git ls-files -z --others --exclude-standard >>"$temporary"; then rm -f "$temporary"; exit 2; fi
+  if ! LC_ALL=C sort -zu "$temporary" -o "$temporary"; then rm -f "$temporary"; exit 2; fi
+  mapfile -d '' -t CI_CHANGED <"$temporary"
+  rm -f "$temporary"
+  printf 'base %s → merge base %s — %d changed file(s)\n' "$base" "$(git rev-parse --short "$mb")" "${#CI_CHANGED[@]}" >&2
+  if [[ $mb == "$(git rev-parse HEAD)" ]]; then printf 'base is HEAD: checking uncommitted changes only\n' >&2; fi
+}
+ci_is_contract() { [[ $1 =~ ^(backend/api/openapi\.yaml|redocly\.yaml)$ ]]; }
+ci_is_workflow() { [[ $1 =~ ^\.github/workflows/[^/]+\.ya?ml(\.disabled)?$ ]]; }
+ci_is_shell() { [[ $1 =~ \.sh$ ]]; }
+ci_is_dockerfile() { [[ ${1##*/} =~ ^(Dockerfile|.*\.Dockerfile|Dockerfile\..*)$ ]]; }
+ci_is_backend() { [[ $1 =~ ^backend/ ]]; }
+ci_is_frontend() { [[ $1 =~ ^frontend/ ]]; }
+
+# File collection uses temporary files so Git failures stay in the parent shell.
+ci_files() {
+  local classifier=$1 mode=${2:-} path temporary
+  shift
+  CI_FILES=()
+  if [[ $mode == --full ]]; then
+    temporary=$(mktemp)
+    if ! git ls-files -z >"$temporary"; then rm -f "$temporary"; exit 2; fi
+    if ! git ls-files -z --others --exclude-standard >>"$temporary"; then rm -f "$temporary"; exit 2; fi
+    mapfile -d '' -t CI_FILES <"$temporary"
+    rm -f "$temporary"
+  else CI_FILES=("$@"); fi
+  local -a selected_files=()
+  for path in "${CI_FILES[@]}"; do
+    if [[ -f $path ]] && "$classifier" "$path"; then selected_files+=("$path"); fi
+  done
+  CI_FILES=("${selected_files[@]}")
+  ci_option_safe CI_FILES
+}
+# ci_option_safe <array name>: prefixes ./ to entries starting with -, so no path is read as an option.
+ci_option_safe() {
+  local -n entries=$1
+  local i
+  for i in "${!entries[@]}"; do
+    if [[ ${entries[i]} == -* ]]; then entries[i]=./${entries[i]}; fi
+  done
+}
+ci_stage_contract() {
+  if [[ ${1:-} == --full ]]; then
+    ci_files ci_is_contract "$@"
+    if (( ${#CI_FILES[@]} == 0 )); then ci_note contract 'not present'; return 0; fi
+  fi
+  ci_need contract pnpm || return 0
+  # Redocly CLI sends usage telemetry after every command unless it is turned off.
+  ci_run contract:redocly -- env REDOCLY_TELEMETRY=off REDOCLY_SUPPRESS_UPDATE_NOTICE=true \
+    pnpm "--package=@redocly/cli@$REDOCLY_CLI_VERSION" dlx redocly lint backend/api/openapi.yaml || return 0
+}
+ci_stage_workflows() {
+  ci_files ci_is_workflow "$@"
+  if (( ${#CI_FILES[@]} == 0 )); then ci_note workflows 'not present'; return 0; fi
+  ci_need workflows actionlint || return 0
+  ci_need workflows shellcheck || return 0
+  ci_run workflows:actionlint -- "$(ci_tool actionlint)" -shellcheck "$(ci_tool shellcheck)" "${CI_FILES[@]}" || return 0
+}
+ci_stage_shell() {
+  ci_files ci_is_shell "$@"
+  if (( ${#CI_FILES[@]} == 0 )); then ci_note shell 'not present'; return 0; fi
+  ci_need shell shellcheck || return 0
+  ci_run shell:shellcheck -- "$(ci_tool shellcheck)" -x "${CI_FILES[@]}" || return 0
+}
+ci_stage_dockerfiles() {
+  ci_files ci_is_dockerfile "$@"
+  if (( ${#CI_FILES[@]} == 0 )); then ci_note dockerfiles 'not present'; return 0; fi
+  ci_need dockerfiles hadolint || return 0
+  ci_run dockerfiles:hadolint -- "$(ci_tool hadolint)" "${CI_FILES[@]}" || return 0
+}
+ci_stage_backend() {
+  if [[ ! -f backend/go.mod ]]; then ci_note backend 'not present (backend/go.mod missing)'; return 0; fi
+  ci_need backend go || return 0
+  ci_need backend golangci-lint || return 0
+  local path directory rel full=0 module='' line package deps key changed variant
+  local -a lint=() tests=()
+  local -A touched=() dependencies=() selected=()
+  if [[ ${1:-} == --full ]]; then full=1; fi
+  for path in "$@"; do
+    if [[ $path =~ ^backend/(go\.(mod|sum)|\.golangci\.yml)$ || ( $path == *.go && ! -f $path ) ]]; then full=1; fi
+  done
+  if (( full )); then lint=(./...); tests=(./...)
+  else
+    # Package directories as Go sees them (testdata, _ and . directories are not packages).
+    ci_run_capture backend:packages CI_GO_PACKAGE_DIRS -C backend -- go list -e -f '{{.Dir}}' ./... || return 0
+    local backend_dir
+    local -A package_dirs=()
+    backend_dir=$(cd backend && pwd -P)
+    while IFS= read -r line; do
+      [[ -n $line ]] || continue
+      rel=${line#"$backend_dir"}; rel=${rel#/}
+      package_dirs[${rel:-.}]=1
+    done <<<"$CI_GO_PACKAGE_DIRS"
+    for path in "$@"; do
+      directory=$path
+      if [[ ! -d $directory ]]; then directory=${directory%/*}; fi
+      while [[ $directory == backend || $directory == backend/* ]]; do
+        rel=${directory#backend}; rel=${rel#/}; rel=${rel:-.}
+        if [[ ${package_dirs[$rel]+yes} ]]; then
+          if [[ ! ${touched[$rel]+yes} ]]; then touched[$rel]=1; if [[ $rel == . ]]; then lint+=(.); else lint+=("./$rel"); fi; fi
+          break
+        fi
+        [[ $directory != backend ]] || break
+        directory=${directory%/*}
+      done
+    done
+    if (( ${#lint[@]} == 0 )); then ci_note backend 'no Go package touched'; return 0; fi
+    ci_run_capture backend:golist CI_GO_LIST_OUTPUT -C backend -- go list -e -test -f '{{.ImportPath}} {{join .Deps " "}}' ./... || return 0
+    while IFS= read -r line; do
+      if [[ $line =~ ^module[[:space:]]+([^[:space:]]+) ]]; then module=${BASH_REMATCH[1]//\"/}; break; fi
+    done <backend/go.mod
+    for rel in "${!touched[@]}"; do
+      if [[ $rel == . ]]; then selected[$module]=1; else selected[$module/$rel]=1; fi
+    done
+    while IFS= read -r line; do
+      if [[ $line =~ ^([^[:space:]]+)([[:space:]]+\[[^]]+\])?[[:space:]]*(.*)$ ]]; then
+        package=${BASH_REMATCH[1]}; variant=${BASH_REMATCH[2]}; deps=${BASH_REMATCH[3]}
+        if [[ -n $variant ]]; then
+          package=${variant#*'['}; package=${package%'.test]'}
+        elif [[ $package == *.test ]]; then
+          package=${package%.test}
+        fi
+        dependencies[$package]+=" $deps"
+      fi
+    done <<<"$CI_GO_LIST_OUTPUT"
+    changed=1
+    while (( changed )); do
+      changed=0
+      for package in "${!dependencies[@]}"; do
+        [[ ! ${selected[$package]+yes} ]] || continue
+        for key in "${!selected[@]}"; do
+          if [[ " ${dependencies[$package]} " == *" $key "* ]]; then selected[$package]=1; changed=1; break; fi
+        done
+      done
+    done
+    for package in "${!selected[@]}"; do tests+=("$package"); done
+  fi
+  ci_run backend:fmt -C backend -- "$(ci_tool golangci-lint)" fmt --diff "${lint[@]}" || return 0
+  ci_run backend:vet -C backend -- go vet "${lint[@]}" || return 0
+  ci_run backend:lint -C backend -- "$(ci_tool golangci-lint)" run "${lint[@]}" || return 0
+  ci_run backend:test -C backend -- go test -race "${tests[@]}" || return 0
+}
+ci_stage_frontend() {
+  if [[ ! -f frontend/package.json ]]; then ci_note frontend 'not present (frontend/package.json missing)'; return 0; fi
+  ci_need frontend pnpm || return 0
+  if [[ ! -d frontend/node_modules ]]; then ci_problem frontend 'run pnpm -C frontend install --frozen-lockfile' || return 0; fi
+  local path
+  local -a files=() eslint=() related=()
+  if [[ ${1:-} == --full ]]; then
+    ci_run frontend:typecheck -- pnpm -C frontend run typecheck || return 0
+    ci_run frontend:lint -- pnpm -C frontend run lint || return 0
+    ci_run frontend:format -- pnpm -C frontend run format:check || return 0
+    ci_run frontend:test -- pnpm -C frontend run test || return 0
+    return 0
+  fi
+  for path in "$@"; do
+    [[ -f $path ]] || continue
+    files+=("${path#frontend/}")
+    if [[ ${files[-1]} == -* ]]; then files[-1]=./${files[-1]}; fi
+    if [[ $path =~ \.(ts|tsx|js|jsx|mjs|cjs)$ ]]; then eslint+=("${path#frontend/}"); fi
+    if [[ $path =~ \.(ts|tsx|js|jsx)$ ]]; then related+=("${path#frontend/}"); fi
+  done
+  ci_option_safe eslint
+  ci_option_safe related
+  # Deleted files still change what compiles: typecheck runs for any touched path.
+  ci_run frontend:typecheck -- pnpm -C frontend run typecheck || return 0
+  if (( ${#files[@]} == 0 )); then ci_note frontend 'no remaining files to lint'; return 0; fi
+  if (( ${#eslint[@]} )); then
+    ci_run frontend:eslint -- pnpm -C frontend exec eslint --max-warnings=0 --no-warn-ignored "${eslint[@]}" || return 0
+  else ci_note frontend:eslint 'no applicable files'; fi
+  ci_run frontend:prettier -- pnpm -C frontend exec prettier --check --ignore-unknown "${files[@]}" || return 0
+  if (( ${#related[@]} )); then
+    ci_run frontend:vitest -- pnpm -C frontend exec vitest related --run "${related[@]}" || return 0
+  else ci_note frontend:vitest 'no applicable files'; fi
+}
+ci_partition() {
+  local path
+  CI_CONTRACT=(); CI_WORKFLOWS=(); CI_SHELL=(); CI_DOCKERFILES=(); CI_BACKEND=(); CI_FRONTEND=()
+  for path in "${CI_CHANGED[@]}"; do
+    if ci_is_contract "$path"; then CI_CONTRACT+=("$path"); fi
+    if ci_is_workflow "$path"; then CI_WORKFLOWS+=("$path"); fi
+    if ci_is_shell "$path"; then CI_SHELL+=("$path"); fi
+    if ci_is_dockerfile "$path"; then CI_DOCKERFILES+=("$path"); fi
+    if ci_is_backend "$path" || ci_is_contract "$path"; then CI_BACKEND+=("$path"); fi
+    if ci_is_frontend "$path"; then CI_FRONTEND+=("$path"); fi
+  done
+}
+ci_selected_stages() {
+  local stage name mode=${1:-} count=0
+  for stage in contract workflows shell dockerfiles backend frontend; do
+    name=CI_${stage^^}
+    local -n paths=$name
+    if (( ${#paths[@]} )); then
+      count=$((count + 1))
+      if [[ $mode == --full ]]; then "ci_stage_$stage" --full; else "ci_stage_$stage" "${paths[@]}"; fi
+    fi
+  done
+  if (( count == 0 )); then ci_note selection "no checks apply to the ${#CI_CHANGED[@]} changed file(s)"; fi
+}

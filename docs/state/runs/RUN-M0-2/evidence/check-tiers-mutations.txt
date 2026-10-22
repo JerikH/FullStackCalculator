@@ -1,0 +1,63 @@
+# Mutation checks of the tier library (2026-10-22T19:49:59Z); each mutant is a scratch copy passed as SCRIPTS_SRC
+## m1: ci_run treats every exit status as success
+   72c72
+   <   if (( status == 0 )); then
+   ---
+   >   if true; then
+   111c111
+   <   if (( status == 0 )); then
+   ---
+   >   if true; then
+FAIL broken YAML fails (exit 0, want non-zero)
+FAIL redocly failed (missing: ✘ [contract:redocly])
+FAIL broken workflow fails (exit 0, want non-zero)
+FAIL actionlint failed (missing: ✘ [workflows:actionlint])
+FAIL SC2086 defect fails (exit 0, want non-zero)
+FAIL shellcheck failed (missing: ✘ [shell:shellcheck])
+FAIL untagged base image fails (DL3006 warning exits 1) (exit 0, want non-zero)
+FAIL 8b misformatted file fails (exit 0, want non-zero)
+FAIL 8b fmt failed (missing: ✘ [backend:fmt])
+FAIL 8c vet defect fails (exit 0, want non-zero)
+FAIL 8c vet failed (missing: ✘ [backend:vet])
+FAIL 8d failing test fails (exit 0, want non-zero)
+FAIL 8d test failed (missing: ✘ [backend:test])
+FAIL keep-going exits non-zero (exit 0, want non-zero)
+FAIL contract failure recorded (missing: ✘ [contract:redocly])
+FAIL shell failure recorded (missing: ✘ [shell:shellcheck])
+FAIL without keep-going it stops at the first failure (unexpected: ▶ [shell:shellcheck])
+FAIL untracked file with a space is checked (exit 0, want non-zero)
+FAIL identity mismatch stops t1 (exit 0, want non-zero)
+FAIL no test ran (unexpected: ▶ [t1:)
+FAIL t2 fails on untracked defects (exit 0, want non-zero)
+FAIL t2 shellcheck failed (missing: ✘ [shell:shellcheck])
+FAIL t2 hadolint failed (missing: ✘ [dockerfiles:hadolint])
+FAIL shell issue inside run: is caught without shellcheck on PATH (exit 0, want non-zero)
+FAIL actionlint failed (missing: ✘ [workflows:actionlint])
+check-tiers: 25 assertion(s) failed
+## m2: the backend stage ignores whether backend/go.mod exists
+   197c197
+   <   if [[ ! -f backend/go.mod ]]; then ci_note backend 'not present (backend/go.mod missing)'; return 0; fi
+   ---
+   >   if false; then ci_note backend 'not present (backend/go.mod missing)'; return 0; fi
+FAIL backend not present (E3) (missing: not present (backend/go.mod missing))
+FAIL no backend command (unexpected: ▶ [backend)
+FAIL backend not present (missing: not present (backend/go.mod missing))
+check-tiers: 3 assertion(s) failed
+## m3: the reverse-dependency closure is dropped (tests only the touched packages)
+   251c251
+   <     changed=1
+   ---
+   >     changed=0
+FAIL 8a test names dependents: example.com/m/b not in: ▶ [backend:test] (cd backend) go test -race example.com/m/a
+FAIL 8a test names dependents: example.com/m/e not in: ▶ [backend:test] (cd backend) go test -race example.com/m/a
+FAIL 8a test names dependents: example.com/m/d not in: ▶ [backend:test] (cd backend) go test -race example.com/m/a
+check-tiers: 3 assertion(s) failed
+## m4: full mode (t2/t3) leaves out untracked files
+   148d147
+   <     if ! git ls-files -z --others --exclude-standard >>"$temporary"; then rm -f "$temporary"; exit 2; fi
+FAIL t2 fails on untracked defects (exit 0, want non-zero)
+FAIL t2 shellcheck failed (missing: ✘ [shell:shellcheck])
+FAIL t2 hadolint failed (missing: ✘ [dockerfiles:hadolint])
+check-tiers: 3 assertion(s) failed
+## unmutated
+check-tiers: all assertions passed
