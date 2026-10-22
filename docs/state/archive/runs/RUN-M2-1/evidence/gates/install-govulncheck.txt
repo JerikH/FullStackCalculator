@@ -1,0 +1,77 @@
+$ scripts/ci/install-tools.sh govulncheck
+building govulncheck 1.9.0 with go install
+govulncheck 1.9.0 installed: /home/jerik/dev/personal/FullStackCalculator/bin/.tools/govulncheck-1.9.0/govulncheck
+[exit 0]
+
+$ scripts/ci/install-tools.sh govulncheck
+govulncheck 1.9.0 already installed
+[exit 0]
+
+$ readlink bin/govulncheck
+.tools/govulncheck-1.9.0/govulncheck
+
+$ bin/govulncheck -version
+Go: go1.27.3
+Scanner: govulncheck@v1.9.0
+DB: https://vuln.go.dev
+DB updated: 2026-10-21 00:27:29 +0000 UTC
+
+[exit 0]
+
+$ ls -l bin/.tools/govulncheck-1.9.0/
+total 15624
+-rwxr-xr-x 1 jerik jerik 15995097 Oct 22 17:24 govulncheck
+
+$ ls -A bin  (no leftover temp dirs)
+.tools
+actionlint
+golangci-lint
+govulncheck
+hadolint
+shellcheck
+
+# pin override is ignored because the script sources tools/versions.env, so the failure path is tested on a copy of the tree with a bad pin
+$ readlink tree/bin/govulncheck (before)
+.tools/govulncheck-1.9.0/govulncheck
+$ /tmp/fullstackcalculator/main/s1/tree/scripts/ci/install-tools.sh govulncheck
+building govulncheck 9.9.9 with go install
+go: golang.org/x/vuln/cmd/govulncheck@v9.9.9: golang.org/x/vuln/cmd/govulncheck@v9.9.9: invalid version: unknown revision cmd/govulncheck/v9.9.9
+install-tools: go install failed for govulncheck 9.9.9
+[exit 1]
+
+$ readlink tree/bin/govulncheck (after)
+.tools/govulncheck-1.9.0/govulncheck
+
+$ ls -A tree/bin (no leftover temp)
+.tools
+actionlint
+golangci-lint
+govulncheck
+hadolint
+shellcheck
+
+$ scripts/ci/install-tools.sh golangci-lint actionlint hadolint shellcheck
+golangci-lint 2.15.0 already installed
+actionlint 1.7.12 already installed
+hadolint 2.15.1 already installed
+shellcheck 0.11.0 already installed
+[exit 0]
+
+$ scripts/ci/install-tools.sh nope
+install-tools: unknown tool "nope"; valid names: golangci-lint actionlint hadolint shellcheck govulncheck
+[exit 2]
+
+$ no go on PATH (system PATH only, HOME unset-go) -> clear message
+$ env PATH=/usr/bin:/bin HOME=/tmp/fullstackcalculator/main/s1/tree /tmp/fullstackcalculator/main/s1/tree/scripts/ci/install-tools.sh govulncheck
+install-tools: Go is required to build govulncheck 9.9.9: put go on PATH or install it in $HOME/.local/go
+[exit 1]
+
+$ bin/shellcheck -x scripts/ci/install-tools.sh
+[exit 0]
+# offline probe: -version fails without the vulnerability database; the module version in the binary still answers
+$ bin/govulncheck -db file:///nonexistent -version
+creating client: stat /nonexistent: no such file or directory
+[exit 1]
+$ go version -m bin/govulncheck | grep x/vuln
+	path	golang.org/x/vuln/cmd/govulncheck
+	mod	golang.org/x/vuln	v1.9.0	h1:12VaqnI9kJfqwRoPptxoqsUhQtdfrSbdksT7X/KY/sc=

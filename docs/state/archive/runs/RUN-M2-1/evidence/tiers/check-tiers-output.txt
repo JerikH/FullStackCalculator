@@ -1,0 +1,129 @@
+# setup: throwaway repository with the scripts under test, a fake Makefile and a docker shim
+# 1 --stage lint --stage up: lint, up, then down automatically; nothing else
+PASS lint+up (exit 0)
+PASS order (make log: lint up down)
+PASS lint is bounded by timeout 600
+PASS up is bounded by timeout 600
+PASS down is bounded by timeout 600
+PASS no affected-stage selection
+PASS no Makefile check
+PASS lint+up (docker never called)
+PASS summary is printed after the cleanup down
+PASS down has its summary row
+# 2 a failing lint before up
+PASS lint fails (exit 1)
+PASS up and down never run without --keep-going (make log: lint)
+PASS lint is a failed row
+PASS lint fails with --keep-going (exit 1)
+PASS with --keep-going up runs and down follows (make log: lint up down)
+PASS e2e fails before a named down (exit 1)
+PASS a named down that was never reached still runs, once (make log: up e2e down)
+# 3 down handling
+PASS --keep-stack (exit 0)
+PASS --keep-stack does not run down (make log: up)
+PASS up and down named (exit 0)
+PASS down runs once (make log: up down)
+PASS up fails (exit 1)
+PASS a failed up is still followed by down (make log: up down)
+PASS failed up row
+PASS down alone (exit 0)
+PASS down alone runs once (make log: down)
+# 4 unknown and malformed stages
+PASS unknown stage (exit 2)
+PASS message
+PASS valid list names lint
+PASS valid list names test
+PASS valid list names coverage-backend
+PASS valid list names coverage-frontend
+PASS valid list names fuzz
+PASS valid list names bench
+PASS valid list names image-api
+PASS valid list names image-web
+PASS valid list names image-aio
+PASS valid list names up
+PASS valid list names e2e
+PASS valid list names e2e-disruptive
+PASS valid list names down
+PASS valid list names smoke-aio
+PASS valid list names docs-api
+PASS nothing ran (make log: empty)
+PASS known stage before an unknown one (exit 2)
+PASS validation happens before anything runs (make log: empty)
+PASS --stage without a name (exit 2)
+PASS --stage=name form is not accepted (exit 2)
+PASS nothing ran for the rejected forms (make log: empty)
+# 5 make-mapped stages run one target each
+PASS all make-mapped stages (exit 0)
+PASS one target per stage, down once (make log: lint test coverage-backend coverage-frontend fuzz bench image-aio up e2e e2e-env E2E_STACK= ARGS= down smoke-aio docs-api)
+PASS e2e forwards E2E_ARGS from the environment
+PASS -h (exit 0)
+PASS usage forbids starting the stack by default
+PASS usage documents E2E_ARGS
+PASS usage signature
+# 6 image stages: docker compose build with the Makefile's variables
+PASS image-web (exit 0)
+PASS docker compose build web, bounded
+PASS shim saw: compose build web
+PASS no make call (make log: empty)
+PASS shim saw: compose build api
+PASS COMPOSE_PROJECT_NAME unset -> IMAGE_TAG=local, defaults applied
+PASS VERSION and COMMIT non-empty
+PASS COMPOSE_PROJECT_NAME=fullstackcalculator -> IMAGE_TAG=local
+PASS COMPOSE_PROJECT_NAME=fullstackcalculator-w2 -> IMAGE_TAG=fullstackcalculator-w2
+PASS image-web as worker w2 (exit 0)
+PASS worker run: tag, project and port reach docker
+# 7 the default T2
+PASS default T2 with 21 targets (exit 0)
+PASS Makefile check passes
+PASS pass row in the summary
+PASS no make target ran (make log: empty)
+PASS default T2 (docker never called)
+PASS one target missing (exit 1)
+PASS names the missing target
+PASS does not claim all present
+PASS still no make target ran (make log: empty)
+PASS two targets missing with --keep-going (exit 1)
+PASS first missing target
+PASS second missing target
+PASS target known only as a prerequisite (exit 1)
+PASS prerequisite-only name is missing
+PASS no Makefile (exit 0)
+PASS no Makefile note
+# 8 a stage beyond its time limit
+PASS timeout without --keep-going (exit 1)
+PASS timeout is a failed row
+PASS the next stage does not run (make log: lint)
+PASS timeout with --keep-going (exit 1)
+PASS timeout row again
+PASS the next stage runs (make log: lint test)
+PASS limit shown in the command
+# 9 e2e-disruptive
+PASS e2e-disruptive (exit 0)
+PASS E2E_STACK=1 and the disruptive file
+PASS bounded by timeout
+# 10 t1.sh
+PASS make targets (exit 0)
+PASS the targets ran (make log: up e2e e2e-env E2E_STACK= ARGS= down)
+PASS unknown make target (exit 1)
+PASS message
+PASS nothing ran (make log: empty)
+PASS missing test file (exit 1)
+PASS missing test file message
+PASS unknown token (exit 1)
+PASS unknown token message
+PASS prerequisite-only name (exit 1)
+PASS prerequisite-only name is unknown
+PASS no Makefile (exit 1)
+PASS no Makefile message
+PASS usage mentions make:<target>
+# 11 mutation checks
+PASS mutation detected: stage-name validation removed
+PASS mutation detected: default T2 runs make up
+PASS mutation detected: timeout dropped from ci_stage_make
+PASS mutation detected: down without the up-attempted guard
+PASS mutation detected: image stage drops the compose environment
+PASS mutation detected: IMAGE_TAG always local
+PASS mutation detected: missing target not reported
+PASS mutation detected: down skipped for a failed up
+
+all checks passed

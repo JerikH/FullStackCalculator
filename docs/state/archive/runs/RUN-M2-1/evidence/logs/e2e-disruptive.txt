@@ -1,0 +1,17 @@
+curl -fsS --max-time 5 http://127.0.0.1:8080/nginx-health >/dev/null || { echo 'the composed stack is not running at http://127.0.0.1:8080: run make up first' >&2; exit 1; }
+E2E_BASE_URL=http://127.0.0.1:8080 pnpm -C frontend exec playwright test --project=chromium e2e/stack-disruptive.spec.ts
+
+Running 6 tests using 1 worker
+
+  ✓  1 [chromium] › e2e/stack-disruptive.spec.ts:136:3 › composed stack disruption and recovery › API: running containers enforce hardening, private listeners, tmpfs bounds and dependency restart (1.7s)
+  ✓  2 [chromium] › e2e/stack-disruptive.spec.ts:174:3 › composed stack disruption and recovery › API: twenty held connections stay pending and only the twenty-first API request is refused (5.4s)
+  ✓  3 [chromium] › e2e/stack-disruptive.spec.ts:250:3 › composed stack disruption and recovery › API: a rate burst returns valid 429 problems while static files and probes stay available (4.7s)
+  ✓  4 [chromium] › e2e/stack-disruptive.spec.ts:269:3 › composed stack disruption and recovery › API: draining readiness passes through, stopped service gives edge problems, and a plain start restores service (34.5s)
+  ✓  5 [chromium] › e2e/stack-disruptive.spec.ts:352:3 › composed stack disruption and recovery › API: replacing api at a new address restarts web and restores proxying without manual restart (18.4s)
+  ✓  6 [chromium] › e2e/stack-disruptive.spec.ts:367:3 › composed stack disruption and recovery › the UI still calculates correctly after stack recovery (1.3s)
+
+  6 passed (1.1m)
+
+real	1m9.996s
+user	0m9.128s
+sys	0m5.141s

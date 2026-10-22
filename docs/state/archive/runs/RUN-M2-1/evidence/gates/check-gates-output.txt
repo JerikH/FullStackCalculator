@@ -1,0 +1,76 @@
+== direct checks against /home/jerik/dev/personal/FullStackCalculator/scripts/coverage.sh
+PASS: gate: exactly 90.00 % passes and prints percent 90.00
+PASS: gate: 89.99 % fails
+PASS: gate: 89.996 % fails and prints 89.99 (truncated, never 90.00)
+PASS: gate: 90.004 % passes and prints 90.00
+PASS: gate: 100 % passes and prints 100.00
+PASS: gate: block in two copies with counts 0 and 5 counts once and as covered
+PASS: gate: copy order does not matter (counts 5 then 0)
+PASS: gate: block uncovered in every copy stays uncovered and counts once
+PASS: gate: copies with different statement counts are malformed
+PASS: gate: unequal package sizes are weighted by statements (85.14 %, not an average)
+PASS: gate: mode set fails
+PASS: gate: mode count fails
+PASS: gate: empty file fails
+PASS: gate: missing file fails
+PASS: gate: non-numeric count fails
+PASS: gate: line with a missing field fails
+PASS: gate: negative statement count fails
+PASS: gate: blank line inside the profile fails
+PASS: gate: profile with no blocks (0 statements) fails
+PASS: gate: blocks with 0 statements in total fail
+PASS: gate: works from another current directory
+PASS: usage: no argument exits 2
+PASS: usage: unknown subcommand exits 2
+PASS: usage: gate without a profile exits 2
+PASS: usage: bench without a file exits 2
+PASS: bench: 13 cases under budget pass and the table lists names with ^ … ( ) -
+PASS: bench: BenchmarkCalculate/add at 1000000 ns/op fails
+PASS: bench: BenchmarkCalculate/add at 999999 ns/op passes
+PASS: bench: fractional 999999.9 ns/op passes
+PASS: bench: fractional 1000000.5 ns/op fails
+PASS: bench: worst-case sample at 50000000 ns/op fails
+PASS: bench: worst-case sample at 49999999 ns/op passes
+PASS: bench: -count=3 with one bad sample among three good ones passes with a warning
+PASS: bench: two bad samples among five (median still good) pass with a warning
+PASS: bench: two bad samples of three (median bad) fail
+PASS: bench: with two samples the higher one is the median (good + bad fails)
+PASS: bench: the median ignores sample order (bad sample first, two good after)
+PASS: bench: -count=3 with every sample good passes, 3 samples, no warning
+PASS: bench: a missing required case fails
+PASS: bench: a missing worst-case case fails
+PASS: bench: a line without a numeric ns/op fails
+PASS: bench: exponent form 1.5e+06 is compared numerically (fails)
+PASS: bench: exponent form 9.9e+05 passes
+PASS: bench: worst-case 5e+07 (50000000) fails
+PASS: bench: worst-case 5e+06 passes (not read as text)
+PASS: bench: a two-digit GOMAXPROCS suffix is removed too
+PASS: bench: names without any GOMAXPROCS suffix (GOMAXPROCS=1) parse
+PASS: bench: a name that only starts like a required case is not that case (add_more is not add)
+PASS: bench: a name outside the required cases is never stripped (extra-2 stays extra-2)
+PASS: bench: an unrelated benchmark is ignored but an extra BenchmarkCalculate case is budgeted
+PASS: bench: an unrelated benchmark alone does not fail the gate
+PASS: bench: missing file fails
+PASS: bench: empty file fails
+PASS: bench: output with no benchmark lines fails (all cases missing)
+== 54 cases, 0 failed
+
+== mutation checks
+PASS: mutation "threshold 90 lowered to 89" is caught (2 of 54 cases fail)
+PASS: mutation "gate comparison >= made strict (>)" is caught (2 of 54 cases fail)
+PASS: mutation "gate comparison direction reversed" is caught (10 of 54 cases fail)
+PASS: mutation "percentage rounded instead of truncated" is caught (5 of 54 cases fail)
+PASS: mutation "duplicate blocks not merged" is caught (4 of 54 cases fail)
+PASS: mutation "different statement counts accepted" is caught (1 of 54 cases fail)
+PASS: mutation "mode check dropped" is caught (2 of 54 cases fail)
+PASS: mutation "bench budget 1000000 raised to 10000000" is caught (8 of 54 cases fail)
+PASS: mutation "worst-case budget raised to 500000000" is caught (2 of 54 cases fail)
+PASS: mutation "bench budget comparison >= made strict" is caught (3 of 54 cases fail)
+PASS: mutation "missing cases not reported" is caught (4 of 54 cases fail)
+PASS: mutation "ns/op ordered as text, not as numbers" is caught (4 of 54 cases fail)
+PASS: mutation "max sample used instead of the median" is caught (4 of 54 cases fail)
+PASS: mutation "lower middle used for an even count" is caught (1 of 54 cases fail)
+PASS: mutation "GOMAXPROCS suffix stripped generically" is caught (1 of 54 cases fail)
+== 15 mutations, 0 not caught
+
+ALL CHECKS PASSED

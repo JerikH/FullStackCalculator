@@ -1,0 +1,13 @@
+$ bin/shellcheck -x scripts/bootstrap.sh
+[exit 0]
+$ bash -n scripts/bootstrap.sh
+[exit 0]
+$ env PATH=<dir with only node>:/usr/bin:/bin bash scripts/bootstrap.sh   (go found through $HOME/.local/go/bin, pnpm absent)
+bootstrap: pnpm not found: enable it with 'corepack enable pnpm' (Node 24 ships corepack)
+[exit 1]
+$ env PATH=/usr/bin:/bin HOME=/nonexistent bash scripts/bootstrap.sh   (no go)
+bootstrap: go not found: install Go (see backend/go.mod for the version) or add it to PATH
+[exit 1]
+$ node 22 simulated: fake node printing 22
+bootstrap: Node 24 or newer is required, found 22
+[exit 1]

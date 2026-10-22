@@ -1,0 +1,36 @@
+cd backend && go test ./internal/calc -run '^$' -fuzz '^FuzzParse$' -fuzztime 30s
+fuzz: elapsed: 0s, gathering baseline coverage: 0/165 completed
+fuzz: elapsed: 0s, gathering baseline coverage: 165/165 completed, now fuzzing with 4 workers
+fuzz: elapsed: 3s, execs: 102147 (34008/sec), new interesting: 0 (total: 165)
+fuzz: elapsed: 6s, execs: 196831 (31591/sec), new interesting: 1 (total: 166)
+fuzz: elapsed: 9s, execs: 284340 (29169/sec), new interesting: 1 (total: 166)
+fuzz: elapsed: 12s, execs: 352180 (22617/sec), new interesting: 1 (total: 166)
+fuzz: elapsed: 15s, execs: 466466 (38087/sec), new interesting: 2 (total: 167)
+fuzz: elapsed: 18s, execs: 598319 (43962/sec), new interesting: 2 (total: 167)
+fuzz: elapsed: 21s, execs: 712341 (38000/sec), new interesting: 2 (total: 167)
+fuzz: elapsed: 24s, execs: 815718 (34464/sec), new interesting: 2 (total: 167)
+fuzz: elapsed: 27s, execs: 905571 (29947/sec), new interesting: 2 (total: 167)
+fuzz: elapsed: 30s, execs: 1007471 (33970/sec), new interesting: 2 (total: 167)
+fuzz: elapsed: 30s, execs: 1007471 (0/sec), new interesting: 2 (total: 167)
+PASS
+ok  	github.com/JerikH/FullStackCalculator/backend/internal/calc	30.221s
+cd backend && go test ./internal/calc -run '^$' -fuzz '^FuzzCalculate$' -fuzztime 30s
+fuzz: elapsed: 0s, gathering baseline coverage: 0/513 completed
+fuzz: elapsed: 1s, gathering baseline coverage: 513/513 completed, now fuzzing with 4 workers
+fuzz: elapsed: 3s, execs: 74286 (24748/sec), new interesting: 2 (total: 515)
+fuzz: elapsed: 6s, execs: 177946 (34565/sec), new interesting: 3 (total: 516)
+fuzz: elapsed: 9s, execs: 283707 (35251/sec), new interesting: 5 (total: 518)
+fuzz: elapsed: 12s, execs: 383046 (33118/sec), new interesting: 8 (total: 521)
+fuzz: elapsed: 15s, execs: 489154 (35364/sec), new interesting: 13 (total: 526)
+fuzz: elapsed: 18s, execs: 610569 (40474/sec), new interesting: 15 (total: 528)
+fuzz: elapsed: 21s, execs: 702480 (30636/sec), new interesting: 16 (total: 529)
+fuzz: elapsed: 24s, execs: 775805 (24407/sec), new interesting: 17 (total: 530)
+fuzz: elapsed: 27s, execs: 848935 (24409/sec), new interesting: 18 (total: 531)
+fuzz: elapsed: 30s, execs: 927645 (26238/sec), new interesting: 27 (total: 540)
+fuzz: elapsed: 31s, execs: 927645 (0/sec), new interesting: 27 (total: 540)
+PASS
+ok  	github.com/JerikH/FullStackCalculator/backend/internal/calc	31.216s
+
+real	1m5.077s
+user	2m24.617s
+sys	0m12.371s

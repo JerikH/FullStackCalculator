@@ -1,0 +1,39 @@
+pnpm -C frontend run test:coverage
+
+> calculator-web@0.0.0 test:coverage /home/jerik/dev/personal/FullStackCalculator/frontend
+> vitest run --coverage
+
+
+ RUN  v5.0.5 /home/jerik/dev/personal/FullStackCalculator/frontend
+      Coverage enabled with v8
+
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+
+ Test Files  34 passed (34)
+      Tests  1342 passed (1342)
+   Start at  17:25:13
+   Duration  49.89s (environment 42%, tests 36%, setup 13%, import 6%, worker 3%, transform 2%)
+
+Environment  jsdom was created 34 times · 54.26s total, 42% of tracked time
+             create it once per worker with pool: 'vmThreads' (keeps per-file isolation) or isolate: false (shares it across files)
+             learn more: https://vitest.dev/guide/improving-performance#test-environments
+
+[34m % [39m[2mCoverage report from [22m[33mv8[39m
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |   99.77 |      100 |   99.15 |     100 |                   
+ ...lculator/hooks |   98.87 |      100 |   96.29 |     100 |                   
+  useMediaQuery.ts |   91.66 |      100 |   83.33 |     100 |                   
+-------------------|---------|----------|---------|---------|-------------------
+
+=============================== Coverage summary ===============================
+Statements   : 99.77% ( 442/443 )
+Branches     : 100% ( 374/374 )
+Functions    : 99.15% ( 118/119 )
+Lines        : 100% ( 387/387 )
+================================================================================
+
+real	0m53.249s
+user	1m34.550s
+sys	0m12.368s
