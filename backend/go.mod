@@ -5,6 +5,10 @@ go 1.27.3
 require (
 	github.com/cockroachdb/apd/v3 v3.2.3
 	github.com/google/go-cmp v0.7.0
+	github.com/pb33f/libopenapi v0.41.6
+	github.com/pb33f/libopenapi-validator v0.16.1
+	github.com/prometheus/client_golang v1.25.0
+	go.yaml.in/yaml/v3 v3.0.5
 )
 
 require (
@@ -19,14 +23,10 @@ require (
 	github.com/pb33f/go-yaml v0.1.1 // indirect
 	github.com/pb33f/jsonpath v0.8.4 // indirect
 	github.com/pb33f/jsonschema/v6 v6.0.3 // indirect
-	github.com/pb33f/libopenapi v0.41.6 // indirect
-	github.com/pb33f/libopenapi-validator v0.16.1 // indirect
 	github.com/pb33f/ordered-map/v2 v2.3.2 // indirect
-	github.com/prometheus/client_golang v1.25.0 // indirect
 	github.com/prometheus/client_model v0.6.3 // indirect
 	github.com/prometheus/common v0.72.0 // indirect
 	github.com/prometheus/procfs v0.22.0 // indirect
-	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/net v0.59.0 // indirect
 	golang.org/x/sync v0.23.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
