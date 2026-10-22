@@ -131,6 +131,13 @@ ci_changed_files() {
   if [[ $mb == "$(git rev-parse HEAD)" ]]; then printf 'base is HEAD: checking uncommitted changes only\n' >&2; fi
 }
 ci_is_contract() { [[ $1 =~ ^(backend/api/openapi\.yaml|redocly\.yaml)$ ]]; }
+# Frontend files that pin the contract tools or shape the generated types: contract stage only.
+ci_is_contract_input() { [[ $1 =~ ^frontend/(package\.json|pnpm-lock\.yaml|\.prettierrc\.json|src/shared/api/schema\.gen\.ts)$ ]]; }
+ci_is_contract_any() { ci_is_contract "$1" || ci_is_contract_input "$1"; }
+# Frontend files that change how every frontend file is checked: the whole package is re-checked.
+ci_is_frontend_global() {
+  [[ $1 =~ ^frontend/(package\.json|pnpm-lock\.yaml|vite\.config\.ts|tsconfig[^/]*\.json|eslint\.config\.js|\.prettierrc\.json|\.prettierignore|src/test/.+)$ ]]
+}
 ci_is_workflow() { [[ $1 =~ ^\.github/workflows/[^/]+\.ya?ml(\.disabled)?$ ]]; }
 ci_is_shell() { [[ $1 =~ \.sh$ ]]; }
 ci_is_dockerfile() { [[ ${1##*/} =~ ^(Dockerfile|.*\.Dockerfile|Dockerfile\..*)$ ]]; }
@@ -166,13 +173,19 @@ ci_option_safe() {
 }
 ci_stage_contract() {
   if [[ ${1:-} == --full ]]; then
-    ci_files ci_is_contract "$@"
+    ci_files ci_is_contract_any "$@"
     if (( ${#CI_FILES[@]} == 0 )); then ci_note contract 'not present'; return 0; fi
   fi
   ci_need contract pnpm || return 0
-  # Redocly CLI sends usage telemetry after every command unless it is turned off.
-  ci_run contract:redocly -- env REDOCLY_TELEMETRY=off REDOCLY_SUPPRESS_UPDATE_NOTICE=true \
-    pnpm "--package=@redocly/cli@$REDOCLY_CLI_VERSION" dlx redocly lint backend/api/openapi.yaml || return 0
+  # Redocly and openapi-typescript are pinned by the frontend lockfile.
+  if [[ ! -d frontend/node_modules ]]; then ci_problem contract 'run pnpm -C frontend install --frozen-lockfile' || return 0; fi
+  # lint:api turns Redocly's usage telemetry and update notice off.
+  ci_run contract:redocly -- pnpm -C frontend run lint:api || return 0
+  # Regenerated types must equal the committed file; nothing is written.
+  ci_run contract:types -C frontend -- bash -c 'set -o pipefail
+    pnpm exec openapi-typescript ../backend/api/openapi.yaml \
+      | pnpm exec prettier --stdin-filepath src/shared/api/schema.gen.ts \
+      | diff -u src/shared/api/schema.gen.ts -' || return 0
 }
 ci_stage_workflows() {
   ci_files ci_is_workflow "$@"
@@ -269,10 +282,23 @@ ci_stage_frontend() {
   if [[ ! -f frontend/package.json ]]; then ci_note frontend 'not present (frontend/package.json missing)'; return 0; fi
   ci_need frontend pnpm || return 0
   if [[ ! -d frontend/node_modules ]]; then ci_problem frontend 'run pnpm -C frontend install --frozen-lockfile' || return 0; fi
-  local path
+  local path global=0
   local -a files=() eslint=() related=()
   if [[ ${1:-} == --full ]]; then
     ci_run frontend:typecheck -- pnpm -C frontend run typecheck || return 0
+    ci_run frontend:lint -- pnpm -C frontend run lint || return 0
+    ci_run frontend:format -- pnpm -C frontend run format:check || return 0
+    ci_run frontend:test -- pnpm -C frontend run test || return 0
+    ci_run frontend:build -- pnpm -C frontend run build || return 0
+    return 0
+  fi
+  for path in "$@"; do
+    if ci_is_frontend_global "$path"; then global=1; fi
+  done
+  # Deleted files still change what compiles: typecheck runs for any touched path.
+  ci_run frontend:typecheck -- pnpm -C frontend run typecheck || return 0
+  if (( global )); then
+    ci_note frontend 'package-wide input touched: checking the whole package'
     ci_run frontend:lint -- pnpm -C frontend run lint || return 0
     ci_run frontend:format -- pnpm -C frontend run format:check || return 0
     ci_run frontend:test -- pnpm -C frontend run test || return 0
@@ -287,22 +313,44 @@ ci_stage_frontend() {
   done
   ci_option_safe eslint
   ci_option_safe related
-  # Deleted files still change what compiles: typecheck runs for any touched path.
-  ci_run frontend:typecheck -- pnpm -C frontend run typecheck || return 0
   if (( ${#files[@]} == 0 )); then ci_note frontend 'no remaining files to lint'; return 0; fi
   if (( ${#eslint[@]} )); then
     ci_run frontend:eslint -- pnpm -C frontend exec eslint --max-warnings=0 --no-warn-ignored "${eslint[@]}" || return 0
   else ci_note frontend:eslint 'no applicable files'; fi
   ci_run frontend:prettier -- pnpm -C frontend exec prettier --check --ignore-unknown "${files[@]}" || return 0
   if (( ${#related[@]} )); then
-    ci_run frontend:vitest -- pnpm -C frontend exec vitest related --run "${related[@]}" || return 0
+    ci_frontend_related "${related[@]}" || return 0
   else ci_note frontend:vitest 'no applicable files'; fi
+}
+# ci_frontend_related <files…>: related tests of the touched files. Vitest's `related` passes with no
+# test unless told otherwise; with --no-passWithNoTests «tests exist but none is affected» is its own
+# exit-1 message, noted here. An empty suite («No test files found») still fails.
+ci_frontend_related() {
+  local rendered='' word start end status=0 output=''
+  local -a command=(pnpm -C frontend exec vitest related --run --no-passWithNoTests "$@")
+  for word in "${command[@]}"; do printf -v word '%q' "$word"; rendered+="${rendered:+ }$word"; done
+  printf '▶ [frontend:vitest] %s\n' "$rendered"
+  start=${EPOCHREALTIME//[!0-9]/}
+  if output=$("${command[@]}" 2>&1); then status=0; else status=$?; fi
+  end=${EPOCHREALTIME//[!0-9]/}
+  printf '%s\n' "$output"
+  if (( status == 0 )); then
+    printf '✔ [frontend:vitest] %ss\n' "$(ci_seconds "$((end - start))")"
+    ci_record frontend:vitest "$rendered" pass "$((end - start))"
+  elif (( status == 1 )) && [[ $output == *'No affected test files found, exiting with code 1'* && $output != *FAIL* ]]; then
+    printf '• [frontend:vitest] no related tests\n'
+    ci_record frontend:vitest 'no related tests' note "$((end - start))"
+  else
+    printf '✘ [frontend:vitest] exit %d after %ss\n' "$status" "$(ci_seconds "$((end - start))")"
+    ci_record frontend:vitest "$rendered" fail "$((end - start))"
+    ci_failure
+  fi
 }
 ci_partition() {
   local path
   CI_CONTRACT=(); CI_WORKFLOWS=(); CI_SHELL=(); CI_DOCKERFILES=(); CI_BACKEND=(); CI_FRONTEND=()
   for path in "${CI_CHANGED[@]}"; do
-    if ci_is_contract "$path"; then CI_CONTRACT+=("$path"); fi
+    if ci_is_contract_any "$path"; then CI_CONTRACT+=("$path"); fi
     if ci_is_workflow "$path"; then CI_WORKFLOWS+=("$path"); fi
     if ci_is_shell "$path"; then CI_SHELL+=("$path"); fi
     if ci_is_dockerfile "$path"; then CI_DOCKERFILES+=("$path"); fi
