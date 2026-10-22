@@ -128,6 +128,8 @@ mismatch "main with a worker identity" "$main_tree" "identity mismatch: the main
 mismatch "worker WF_INDEX=x" "$w1" WF_INDEX WF_AGENT=RUN-M1-1 WF_INDEX=x WF_PORT_BASE=4110
 mismatch "worker WF_PORT_END too small" "$w1" WF_PORT_END WF_AGENT=RUN-M1-1 WF_INDEX=1 WF_PORT_BASE=4110 WF_PORT_END=4111
 mismatch "worker WF_PORT_BASE missing" "$w1" WF_PORT_BASE WF_AGENT=RUN-M1-1 WF_INDEX=1
+mismatch "worker WF_PORT_BASE below 1024" "$w1" "WF_PORT_BASE must be at least 1024" WF_AGENT=RUN-M1-1 WF_INDEX=1 WF_PORT_BASE=80
+mismatch "worker block overlapping main's Vite port" "$w1" "overlaps the main checkout's port 5173" WF_AGENT=RUN-M1-1 WF_INDEX=1 WF_PORT_BASE=5170
 
 echo "# missing Go (E2)"
 empty_home=$work/home

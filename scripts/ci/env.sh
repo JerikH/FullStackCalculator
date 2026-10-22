@@ -18,7 +18,7 @@ fi
 _calc_env_load() {
   local src="${1-}" dir root agent=""
   local wf_agent="${WF_AGENT-}" wf_index="${WF_INDEX-}" wf_base="${WF_PORT_BASE-}" wf_end="${WF_PORT_END-}"
-  local base web http admin vite proxy e2e compose label
+  local base port web http admin vite proxy e2e compose label
   local new_path="${PATH-}" go_dir
 
   if [[ "$src" == */* ]]; then dir="${src%/*}"; else dir="."; fi
@@ -55,6 +55,16 @@ _calc_env_load() {
       echo "env.sh: WF_PORT_BASE is too high (got '$wf_base')" >&2
       return 1
     fi
+    if ((base < 1024)); then
+      echo "env.sh: WF_PORT_BASE must be at least 1024 (got '$wf_base')" >&2
+      return 1
+    fi
+    for port in 8080 8081 9091 5173; do
+      if ((port >= base && port <= base + 3)); then
+        echo "env.sh: WF_PORT_BASE $wf_base overlaps the main checkout's port $port" >&2
+        return 1
+      fi
+    done
     if [[ -n "$wf_end" ]]; then
       if ! [[ "$wf_end" =~ ^[0-9]{1,9}$ ]] || ((10#$wf_end < base + 3)); then
         echo "env.sh: WF_PORT_END must be an integer >= WF_PORT_BASE + 3 (got '$wf_end', base '$wf_base')" >&2

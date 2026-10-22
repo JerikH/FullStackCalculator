@@ -1,4 +1,4 @@
-# check-env.sh against scripts/ci/env.sh (2026-10-22T19:44:58Z)
+# check-env.sh against scripts/ci/env.sh (2026-10-22T19:50:34Z)
 # main checkout (WF_AGENT=main WF_INDEX=0)
 ok   main rc
 ok   main WEB_PORT
@@ -61,6 +61,14 @@ ok   worker WF_PORT_BASE missing rc
 ok   worker WF_PORT_BASE missing WEB_PORT not exported
 ok   worker WF_PORT_BASE missing PATH unchanged
 ok   worker WF_PORT_BASE missing message
+ok   worker WF_PORT_BASE below 1024 rc
+ok   worker WF_PORT_BASE below 1024 WEB_PORT not exported
+ok   worker WF_PORT_BASE below 1024 PATH unchanged
+ok   worker WF_PORT_BASE below 1024 message
+ok   worker block overlapping main's Vite port rc
+ok   worker block overlapping main's Vite port WEB_PORT not exported
+ok   worker block overlapping main's Vite port PATH unchanged
+ok   worker block overlapping main's Vite port message
 # missing Go (E2)
 ok   E2 rc
 ok   E2 WEB_PORT not exported
@@ -90,24 +98,45 @@ check-env: all assertions passed
 exit 0
 
 # Mutation checks (scratch copies; the committed env.sh is never edited)
-## worker accepts WF_INDEX=0 (wf fallback)
+## worker accepts WF_INDEX=0 (the wf fallback)
+   45c45
+   <     if ! [[ "$wf_index" =~ ^[1-9][0-9]*$ ]]; then
+   ---
+   >     if ! [[ "$wf_index" =~ ^[0-9]+$ ]]; then
 FAIL worker with wf fallback index 0 rc (got '0', want '1')
 FAIL worker with wf fallback index 0 WEB_PORT not exported (got '4100', want '')
-FAIL worker with wf fallback index 0 PATH unchanged (got '/tmp/check-env.LDiHXB/w1/bin:/home/jerik/.local/go/bin:/usr/bin:/bin', want '/usr/bin:/bin')
+FAIL worker with wf fallback index 0 PATH unchanged (got '/tmp/check-env.eCwi1v/w1/bin:/home/jerik/.local/go/bin:/usr/bin:/bin', want '/usr/bin:/bin')
 FAIL worker with wf fallback index 0 message (missing 'WF_INDEX' in: env.sh: RUN-M1-1 — web 4100 · api :4101 · admin :4102 · vite 4103 · compose fullstackcalculator-run-m1-1)
 check-env: 4 assertion(s) failed
 ## worker ignores a WF_AGENT that differs from .wf-agent
+   41c41
+   <     if [[ "$wf_agent" != "$agent" ]]; then
+   ---
+   >     if false; then
 FAIL worker with another agent rc (got '0', want '1')
 FAIL worker with another agent WEB_PORT not exported (got '4120', want '')
-FAIL worker with another agent PATH unchanged (got '/tmp/check-env.GeqtLZ/w1/bin:/home/jerik/.local/go/bin:/usr/bin:/bin', want '/usr/bin:/bin')
+FAIL worker with another agent PATH unchanged (got '/tmp/check-env.QCjkl0/w1/bin:/home/jerik/.local/go/bin:/usr/bin:/bin', want '/usr/bin:/bin')
 FAIL worker with another agent message (missing 'this worktree belongs to RUN-M1-1 but WF_AGENT is 'RUN-M1-2'' in: env.sh: RUN-M1-1 — web 4120 · api :4121 · admin :4122 · vite 4123 · compose fullstackcalculator-run-m1-1)
 FAIL worker without identity message (missing 'this worktree belongs to RUN-M1-1' in: env.sh: WF_INDEX must be a positive integer for a worker (got ''); run eval "$(.workflow/bin/wf env --export)" first)
 FAIL strict caller sees a refusal as status 1 (got 'loaded', want 'refused 1')
 check-env: 6 assertion(s) failed
-## worker compose project loses the agent name
-FAIL w1 COMPOSE_PROJECT_NAME (got 'fullstackcalculator//[^abcdefghijklmnopqrstuvwxyz0123456789_-]/-}', want 'fullstackcalculator-run-m1-1')
-FAIL E6: three distinct project names (got '2', want '3')
-FAIL odd name project (got 'fullstackcalculator//[^abcdefghijklmnopqrstuvwxyz0123456789_-]/-}', want 'fullstackcalculator-run-m1-1')
-check-env: 3 assertion(s) failed
+## worker compose project loses the separator
+   81c81
+   <     compose="fullstackcalculator-${compose//[^abcdefghijklmnopqrstuvwxyz0123456789_-]/-}"
+   ---
+   >     compose="fullstackcalculator${compose:0:0}${compose//[^abcdefghijklmnopqrstuvwxyz0123456789_-]/-}"
+FAIL w1 COMPOSE_PROJECT_NAME (got 'fullstackcalculatorrun-m1-1', want 'fullstackcalculator-run-m1-1')
+FAIL odd name project (got 'fullstackcalculatorrun-m1-1', want 'fullstackcalculator-run-m1-1')
+check-env: 2 assertion(s) failed
+## worker port block may overlap the main checkout
+   63c63
+   <       if ((port >= base && port <= base + 3)); then
+   ---
+   >       if false; then
+FAIL worker block overlapping main's Vite port rc (got '0', want '1')
+FAIL worker block overlapping main's Vite port WEB_PORT not exported (got '5170', want '')
+FAIL worker block overlapping main's Vite port PATH unchanged (got '/tmp/check-env.Faxid6/w1/bin:/home/jerik/.local/go/bin:/usr/bin:/bin', want '/usr/bin:/bin')
+FAIL worker block overlapping main's Vite port message (missing 'overlaps the main checkout's port 5173' in: env.sh: RUN-M1-1 — web 5170 · api :5171 · admin :5172 · vite 5173 · compose fullstackcalculator-run-m1-1)
+check-env: 4 assertion(s) failed
 ## unmutated rerun
 check-env: all assertions passed
