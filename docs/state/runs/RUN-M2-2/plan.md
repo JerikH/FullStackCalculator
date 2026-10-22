@@ -123,3 +123,8 @@ Step 6 — independent read-only Claude reviewer (Sonnet 5.5, high); 18 findings
 | 16 | `timeout` without `-k`; e2e worst case over 30 min | `timeout -k 30` everywhere; `e2e` job limit 45 minutes (workflow fixed). |
 | 17 | t3 details (guarded stage calls, `--list`, `ci_stage_backend` split) | Accepted; the five static rows are written again in the t3 stage instead of splitting `ci_stage_backend`. |
 | 18 | committed-text wording; `__pycache__`; `setup-pnpm.sh` untestable | Wording fixed in `edge-stub-smoke.sh`; `__pycache__` removed and `PYTHONDONTWRITEBYTECODE=1` for checker runs; `setup-pnpm.sh` gets `SETUP_PNPM_BIN_DIR`/`COREPACK_HOME` overrides; mutation copies use `--root`/`--dependabot`. |
+
+## Execution notes (written at closing)
+- Codex was not available (the CLI is not installed on the machine); slices B (stage runner, publish scripts), C (promoted scripts) and D (structural checker) went to Claude subagents (Sonnet 5.5, high effort); the controller read every diff and ran every check.
+- Check 9 of §9 named `t1.sh make:up make:e2e make:down` as a proof that the targets exist; `t1.sh` validates a `make:<target>` and then runs it. It was run once by mistake and killed (Findings of OPS-CI-02 (f)); the targets are proven by the default `t2.sh` («all 21 targets present») and by `playwright test --list`.
+- Added after the reviews: a shim test for the push stage (`evidence/publish-push-shim-test.sh`), a mutation script for the checker (`evidence/checker-mutations.sh`), mutations of `lib.sh` against both shim tests, the Makefile pieces of «Findings of OPS-STACK-01» (f) that need no stack.
