@@ -10,4 +10,4 @@ frontend/test-results
 frontend/playwright-report
 frontend/blob-report
 **/*.tsbuildinfo
-.env*
+**/.env*
