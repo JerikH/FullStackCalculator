@@ -1,0 +1,21 @@
+../docs/assets/calculator-desktop.png
+  38631 bytes, 1280x800 px
+  ok: output contains ≈
+  ok: output matches 0.3333333333333333333333333333333333
+  ok: rounded-to-34-digits marker present
+  ok: history <details> open
+  ok: history item "1 ÷ 3 ≈ 0.3333333333333333333333333333333333" visible
+  ok: no console errors, page errors or failed requests
+../docs/assets/calculator-mobile.png
+  108484 bytes, 1082x2279 px
+  ok: output contains ≈
+  ok: output matches 0.3333333333333333333333333333333333
+  ok: rounded-to-34-digits marker present
+  ok: history <details> open
+  ok: history item "1 ÷ 3 ≈ 0.3333333333333333333333333333333333" visible
+  ok: no console errors, page errors or failed requests
+all assertions passed
+
+real	0m1.379s
+user	0m0.953s
+sys	0m0.248s

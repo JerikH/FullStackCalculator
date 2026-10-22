@@ -40,7 +40,7 @@ We keep both services, the deployment assets and the documentation in one Git re
 
 ### Negative
 
-- The repository and its tooling cover two ecosystems: Go and Node toolchains, two lockfiles (`go.sum` and `pnpm-lock.yaml`) and two sets of pinned versions (RNF-OPS-01).
+- The repository and its tooling cover two ecosystems: Go and Node toolchains, two lockfiles (`backend/go.sum` and `frontend/pnpm-lock.yaml`) and two sets of pinned versions (RNF-OPS-01).
 - The CI definition is coupled: every change would run every job unless the definition filters by path, so a documentation-only change can still pay for a full run.
 - Independent deployment depends on discipline: the web image and the API image may be released at different times, so the contract must stay backward compatible within `/api/v1`.
 - A contributor needs both toolchains and the pinned standalone tools installed before every command works, which raises the cost of a first contribution (RNF-OPS-01, RF-OPS-08).
