@@ -6,10 +6,12 @@ Created 2026-10-22 by the bootstrap. Read at the start of any task of this epic.
 RF-OPS-01…RF-OPS-14; UC-OPS-01…UC-OPS-03. Hygiene files, per-agent environment, local tiers, images, compose, Makefile, E2E, CI and Dependabot. The application code belongs to CALC/API/OBS/UI.
 
 ## Architecture as built
-- (nothing yet) — planned: `scripts/ci/` (env and tiers), `.github/workflows/ci.yml.disabled`, `.github/dependabot.yml`, `deploy/nginx/`, `frontend/Dockerfile`, `backend/Dockerfile`, root `Dockerfile`, `compose.yaml`, `Makefile`, `tools/versions.env`, `scripts/bootstrap.sh`, `scripts/coverage.sh`, `scripts/smoke-aio.sh`.
+- Hygiene files at the root (RUN-M0-1): `.gitignore` (every RF-OPS-01 pattern), `.gitattributes`, `.editorconfig`, `.dockerignore`, `LICENSE` (MIT); ADR index and template in `docs/adr/`.
+- Planned: `scripts/ci/` (env and tiers), `.github/workflows/ci.yml.disabled`, `.github/dependabot.yml`, `deploy/nginx/`, `frontend/Dockerfile`, `backend/Dockerfile`, root `Dockerfile`, `compose.yaml`, `Makefile`, `tools/versions.env`, `scripts/bootstrap.sh`, `scripts/coverage.sh`, `scripts/smoke-aio.sh`.
 
 ## Invariants every task inherits
-- Every Docker build uses the repository root as context (RF-OPS-01).
+- Every Docker build uses the repository root as context (RF-OPS-01); `.dockerignore` excludes `docs`, `bin`, coverage, the Playwright report folders, every `dist` except `backend/internal/web/dist/.gitkeep`, and `.env*`, so builds copy only the sources they need and produce `dist` inside their stages.
+- The agent tooling of a working copy is excluded through `.git/info/exclude`; committed ignore files never name it (Findings of OPS-REPO-01 (a)).
 - GitHub workflows stay `*.yml.disabled`; every change to `scripts/ci/` or a service updates the disabled workflow in the same commit and passes actionlint (RF-OPS-11, U3).
 - Containers: non-root, read-only root, `cap_drop: ALL`, `no-new-privileges`; the admin port is never published (RNF-SEC-04).
 - The tier scripts are the single source of truth for local and CI commands; no logic duplicated in YAML (RF-OPS-03).

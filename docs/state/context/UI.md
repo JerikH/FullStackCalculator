@@ -6,7 +6,9 @@ Created 2026-10-22 by the bootstrap. Read at the start of any task of this epic.
 RF-UI-01…RF-UI-14; UC-UI-01…UC-UI-04. The web app only: the API contract belongs to API, the edge to OPS.
 
 ## Design records (Impeccable)
-- `PRODUCT.md`, `DESIGN.md` — written by UI-BASE-01; `.impeccable/` surface briefs — written at step 3 of each UI run (shape).
+- `PRODUCT.md`, `DESIGN.md`, `.impeccable/design.json` — written by UI-BASE-01 (RUN-M0-1). DESIGN.md frontmatter is normative: colour key `<name>` = light `--color-<name>`, `<name>-dark` = the value in both dark blocks of `tokens.css`. `.impeccable/` surface briefs — written at step 3 of each UI run (shape).
+- Contrast proof: `python3 docs/state/archive/runs/RUN-M0-1/evidence/contrast.py DESIGN.md [--css frontend/src/shared/styles/tokens.css]` (text ≥ 4.5:1, indicators ≥ 3:1, light/dark/system-dark; `--css` also requires every colour token in each of the three blocks and identical dark blocks).
+- Design imagery (owner, 2026-10-22): high-fidelity desktop and mobile mockups, design images and raster assets may be generated as comps for the shape and build steps; the shipped UI is code from the DESIGN.md tokens and is verified in the real browser.
 - Direction is fixed by RF-UI-14: token values change only when a measured contrast check fails.
 
 ## UI verification standard
@@ -22,6 +24,8 @@ The calculator screen (UI-SCREEN-01): display, keypad, history panel, theme cont
 - The frontend never computes a numeric result (RF-UI-05).
 - One `KEYPAD` table drives keypad and keyboard (RF-UI-01).
 - No inline scripts or styles, no inline style attributes for grid placement, no UI library, icon system or runtime styling (RNF-SEC-03, RF-UI-14).
+- Measured token changes (U5): light focus `#b45309` (dark `#f59e0b`, declared in both dark blocks); error copy inside the display uses `--color-display-danger` `#ff8a80`, never `--color-danger` (Findings of UI-BASE-01 (a), (b)).
+- Every interactive control is at least 48 × 48 px; the focus ring is a 3px `:focus-visible` outline with 2px offset, measured against the surfaces it sits on (Findings of UI-BASE-01 (b), (d)).
 - Hook and component tests inject a fake API through context; MSW only in Node-environment client tests.
 
 ## Where to look

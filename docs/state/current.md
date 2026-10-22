@@ -1,8 +1,8 @@
 # Current state
 
 ## Current milestone: M0 — Foundation
-## Current run: RUN-M0-1
-## Cycle step: 7 (implement)
+## Current run: (none)
+## Cycle step: (none)
 ## Active waves: (none)
 
 ## Run groups (order of execution)
@@ -11,7 +11,7 @@ Each run chains related tasks executed by one agent, in the order listed.
 
 | Run | Milestone | Members | Status | Parallel | Notes |
 |---|---|---|---|---|---|
-| **RUN-M0-1** | M0 | OPS-REPO-01, API-CONTRACT-01, UI-BASE-01 | pending | solo | single review; nothing from the owner |
+| **RUN-M0-1** | M0 | OPS-REPO-01, API-CONTRACT-01, UI-BASE-01 | done (2026-10-22, f2b9693, 5d1969f, f2db811, e90d084, 235cc53) | solo | single review; nothing from the owner |
 | **RUN-M0-2** | M0 | OPS-ENV-01, OPS-CI-01 | pending | solo | single review; per-agent isolation and tiers that every wave needs |
 | **RUN-M1-1** | M1 | CALC-CORE-01, CALC-OPS-01, API-HTTPX-01 | pending | W1 with RUN-M1-2, RUN-M1-3 | backend track; double review on API-HTTPX-01 |
 | **RUN-M1-2** | M1 | UI-SCAF-01, UI-CLIENT-01 | pending | W1 with RUN-M1-1, RUN-M1-3 | frontend track; consumes the M0 contract |
@@ -25,9 +25,9 @@ Each run chains related tasks executed by one agent, in the order listed.
 ## Milestone checklist
 
 ### M0 — Foundation
-- [ ] **OPS-REPO-01** — Hygiene files, MIT licence, ADR index and template [BE]
-- [ ] **API-CONTRACT-01** — OpenAPI 3.1 contract and Redocly configuration [BE]
-- [ ] **UI-BASE-01** — Design baseline: PRODUCT.md, DESIGN.md, measured contrast [FE]
+- [x] **OPS-REPO-01** — Hygiene files, MIT licence, ADR index and template [BE] 🔎 findings: «Findings of OPS-REPO-01» (a)
+- [x] **API-CONTRACT-01** — OpenAPI 3.1 contract and Redocly configuration [BE] 🔎 findings: «Findings of API-CONTRACT-01» (a)–(d)
+- [x] **UI-BASE-01** — Design baseline: PRODUCT.md, DESIGN.md, measured contrast [FE] 🔎 findings: «Findings of UI-BASE-01» (a)–(e)
 - [ ] **OPS-ENV-01** — Per-agent isolated environment (`scripts/ci/env.sh`) [BE]
 - [ ] **OPS-CI-01** — Local test tiers and the disabled GitHub workflow [BE]
 

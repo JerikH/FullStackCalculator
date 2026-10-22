@@ -6,9 +6,9 @@ Epics are the module prefixes of `srs.md` and `use-cases.md`. Status: ⬜ not st
 
 | Epic | Status | Milestone | Note |
 |---|---|---|---|
-| OPS | ⬜ | M0–M2 | Repository hygiene, per-agent environments, test tiers, images, compose, Makefile, E2E, CI, Dependabot |
-| API | ⬜ | M0–M1 | Contract in M0; transport, routes and contract tests in M1 |
+| OPS | 🟡 | M0–M2 | Done: hygiene files and licence (RUN-M0-1). Pending: per-agent environments, test tiers, images, compose, Makefile, E2E, CI, Dependabot. |
+| API | 🟡 | M0–M1 | Done: contract (RUN-M0-1). Pending: transport, routes and contract tests in M1 |
 | CALC | ⬜ | M1 | Decimal core and operations |
 | OBS | ⬜ | M1 | Logs, metrics, configuration, lifecycle, probes |
-| UI | ⬜ | M0–M1 | Design baseline in M0; client, model, hooks and screens in M1 |
-| DOC | ⬜ | M1–M2 | ADRs in M1; README, API reference, verification in M2 |
+| UI | 🟡 | M0–M1 | Done: design baseline (RUN-M0-1). Pending: client, model, hooks and screens in M1 |
+| DOC | 🟡 | M1–M2 | Done: ADR index and template (RUN-M0-1). Pending: ADRs in M1; README, API reference, verification in M2 |

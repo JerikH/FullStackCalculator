@@ -3,6 +3,7 @@
 Usage: check_design_records.py (from the repository root). Exits 1 on any failure."""
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -42,7 +43,8 @@ check("token table equals the frontmatter colours", table == expected,
       str({k: (table.get(k), expected.get(k)) for k in set(table) | set(expected) if table.get(k) != expected.get(k)}))
 check("42 colour values: 21 tokens × 2 themes", len(colors) == 42)
 
-proc = subprocess.run([sys.executable, "docs/state/runs/RUN-M0-1/evidence/contrast.py", "DESIGN.md"], capture_output=True, text=True)
+proc = subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "contrast.py"), "DESIGN.md"],
+                      capture_output=True, text=True)
 out = proc.stdout
 check("contrast check passes (every text pair >= 4.5:1, every indicator >= 3:1)", proc.returncode == 0, out.strip().splitlines()[-1] if out.strip() else proc.stderr)
 measured = [(r[0].strip(), r[1].strip(), float(r[4].split(":")[0])) for r in

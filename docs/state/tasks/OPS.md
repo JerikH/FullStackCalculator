@@ -2,7 +2,7 @@
 
 ### OPS-REPO-01 — Repository hygiene files and licence [BE] — M0 [topic: deployment-infra, ci-supply-chain]
 
-- [ ] Open.
+- [x] **DONE 2026-10-22 (run RUN-M0-1, commit f2b9693; 🔎 findings: «Findings of OPS-REPO-01» (a)).** Built `.gitignore` (every RF-OPS-01 pattern), `.gitattributes`, `.editorconfig`, `.dockerignore` (repository root as the build context), the MIT `LICENSE` (2026, Jerik), `docs/adr/README.md` (MADR-lite index, empty table) and `docs/adr/0000-template.md`; `README.md` keeps its title. Verified: `git check-ignore -v` on 15 paths (bin, coverage, node_modules, docs/api/index.html, .env, .env.local, embedded dist, frontend dist, three Playwright report folders, tsbuildinfo, *.test, *.out, .DS_Store) and not-ignored `.env.example`, `backend/internal/web/dist/.gitkeep`; `git status` shows no workflow-package file; LICENSE body identical to the standard MIT text. Evidence in docs/state/archive/runs/RUN-M0-1/evidence/ops-repo-checks.txt.
   **Scope:** RF-OPS-01; the ADR scaffolding of RF-DOC-02 (`docs/adr/README.md` index with the MADR-lite format note and an empty table, `docs/adr/0000-template.md`). Creates `.gitignore`, `.gitattributes`, `.editorconfig`, `.dockerignore` and an MIT `LICENSE` (2026, Jerik). `README.md` keeps its title `# FullStackCalculator` (DOC-README-01 writes it).
   **UI:** none.
   **Verification:** `git check-ignore` proves each ignore rule (`bin/x`, `coverage/x`, `frontend/node_modules/x`, `docs/api/index.html`, `.env`, not `.env.example`, not `backend/internal/web/dist/.gitkeep`); `git status` shows no workflow package file; the licence text is the standard MIT text.
@@ -26,6 +26,7 @@
   **Verification:** `t0.sh --base HEAD~1` on the contract commit runs Redocly only and prints durations; a deliberately broken YAML makes it exit non-zero; `actionlint .github/workflows/ci.yml.disabled` clean; `bin/golangci-lint version` reports v2; measured durations recorded in `context/test-environment.md`.
   **Review level:** single.
   **Needs from the owner:** nothing.
+  - Registered follow-up (from API-CONTRACT-01): run Redocly as pnpm --package=@redocly/cli@<version> dlx redocly lint (pnpm dlx with the package name fails on its two binaries). 🔎 findings: «Findings of API-CONTRACT-01» (c)
 
 ### OPS-IMAGE-01 — Embedded web handler and the API image [BE] — M1 [topic: deployment-infra, security-privacy]
 
@@ -44,6 +45,7 @@
   **Verification:** hadolint clean; image build (under the `heavy` lease) from the scaffolded app; container run read-only with tmpfs mounts and a stub upstream: `nginx -t` passes after rendering, `/nginx-health` 200, `/` and an asset return the specified cache and security headers (single values), `/api/x` with the upstream down returns the `SERVICE_UNAVAILABLE` problem with matching `X-Request-ID`, an invalid inbound ID is replaced, a body over 1 MiB returns the `PAYLOAD_TOO_LARGE` problem.
   **Review level:** double (new trust boundary: public edge, browser policy, rate limiting).
   **Needs from the owner:** nothing.
+  - Registered follow-up (from API-CONTRACT-01): edge problems (429, 503, 413) carry detail and the validated requestId and validate against the Problem schema. 🔎 findings: «Findings of API-CONTRACT-01» (b)
 
 ### OPS-STACK-01 — Compose stack, all-in-one image and developer commands [BE] — M2 [topic: deployment-infra, testing-environment]
 

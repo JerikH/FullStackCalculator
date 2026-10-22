@@ -2,7 +2,7 @@
 
 ### UI-BASE-01 — Design baseline [FE] — M0 [topic: design-system, ui-accessibility]
 
-- [ ] Open.
+- [x] **DONE 2026-10-22 (run RUN-M0-1, commits e90d084, 235cc53; 🔎 findings: «Findings of UI-BASE-01» (a)–(e)).** Built `PRODUCT.md` (platform, users, purpose, positioning, operating context, capabilities and the exact copy of RF-UI-06/08/10/11/13, principles, accessibility), `DESIGN.md` (north star «The Precision Instrument»; normative frontmatter tokens mapping 1:1 to the `--color-*` custom properties of tokens.css for light and both dark blocks; type scale, spacing, radius, key variants with hover/active mixes, keypad grid, display hierarchy and states, layout and 320 px budgets, focus ring, theme control, history panel, favicon) and `.impeccable/design.json`. Measured every relied-on pair with the WCAG 2.x formula in light, dark and system-dark (text ≥ 4.5:1, indicators ≥ 3:1, 0 failing); two values changed on a measured failure (U5): light focus `#b45309`, display error colour `#ff8a80`. Verified: `contrast.py` (DESIGN.md mode and `--css` mode, eight stylesheet mutations failing as expected), a record consistency check (26 checks, four mutations failing), `impeccable detect` clean (no UI source yet). Evidence in docs/state/archive/runs/RUN-M0-1/evidence/ (contrast.txt, contrast-css.txt, design-records.txt, impeccable-detect.txt).
   **Scope:** RF-UI-14; the visual rules of RF-UI-01, RF-UI-06, RF-UI-12, RF-UI-13 as design records. Impeccable `init`/`document` produce `PRODUCT.md` (purpose, the single anonymous visitor role, tone, English copy, the exact copy of RF-UI-08/RF-UI-10/RF-UI-11) and `DESIGN.md` (the full token palette for both themes, spacing/radius/type scale, the four key variants, keypad grid, display hierarchy, layout breakpoints, focus ring, reduced motion, favicon, no UI library/icon system/runtime styling). Measures text/background contrast for every token pair in light, dark and system-dark, and non-text contrast of the focus ring on every key variant; adjusts token values only where a measurement fails and records the measured ratios. Writes `docs/state/context/UI.md`. The reference screen is the calculator built by UI-SCREEN-01.
   **UI:** none built (records only).
   **Verification:** contrast table with every pair ≥ 4.5:1 (text) and ≥ 3:1 (focus/non-text), computed with a WCAG formula script whose output is in the run evidence; `impeccable detect` has nothing to scan yet; DESIGN.md token names match those UI-SCAF-01 will put in `tokens.css`.
@@ -17,6 +17,7 @@
   **Verification:** `pnpm test && pnpm typecheck && pnpm lint && pnpm format:check && pnpm build`; `dist/index.html` has no inline script and loads `/theme-init.js`; `pnpm gen:api` twice gives no diff; `OperationName` union matches the contract.
   **Review level:** single.
   **Needs from the owner:** nothing.
+  - Registered follow-up (from UI-BASE-01): write tokens.css from DESIGN.md (light focus #b45309, --color-focus #f59e0b declared in both dark blocks, --color-display-danger in all three blocks) and prove it with contrast.py --css. 🔎 findings: «Findings of UI-BASE-01» (a)
 
 ### UI-CLIENT-01 — Typed, never-throwing API client [FE] — M1 [topic: api-contract, reliability-errors]
 
@@ -26,6 +27,7 @@
   **Verification:** `pnpm vitest run src/shared/api` in the Node environment with MSW: success, every problem code, malformed problem body → `unexpected`, non-JSON error body, network failure, timeout, caller abort; `pnpm typecheck && pnpm lint`; mutation check: make the guard accept unknown codes and watch the malformed-problem test fail.
   **Review level:** single.
   **Needs from the owner:** nothing.
+  - Registered follow-up (from API-CONTRACT-01): the generated Problem type requires detail and requestId; isProblem checks both are strings and the problem result copies them without undefined checks. 🔎 findings: «Findings of API-CONTRACT-01» (b)
 
 ### UI-MODEL-01 — Pure calculator model [FE] — M1 [topic: state-machine, numeric-precision]
 
@@ -53,3 +55,5 @@
   **Verification:** `pnpm exec vitest run src/features/calculator src/shared/theme src/app` with vitest-axe zero violations; `pnpm typecheck && pnpm lint && pnpm format:check && pnpm build`; coverage thresholds met (`pnpm test:coverage`); Impeccable critique/audit/polish and `impeccable detect` clean; real-browser check (Playwright ad hoc, Chromium and Pixel 7) against `go run ./cmd/calculator` + Vite on the agent's ports: all seven operations, chaining, an error with Ref matching `X-Request-ID`, history recall across reload, themes, widths 320/393/768/1280, keys ≥ 48 px, no horizontal scroll, axe, no console errors; screenshots in the run evidence.
   **Review level:** single (UI; the diff is opened where it touches the API client contract).
   **Needs from the owner:** nothing.
+  - Registered follow-up (from UI-BASE-01): apply DESIGN.md's display error colour, focus geometry, key state mixes, checked segment, 48 px targets, busy dimming of the digits only and the keypad budget rule; refresh DESIGN.md with Impeccable document in scan mode once the screen exists. 🔎 findings: «Findings of UI-BASE-01» (b)
+  - Registered follow-up (from UI-BASE-01): verify the display size budget in the real browser at 320 px and in the 22.5rem column. 🔎 findings: «Findings of UI-BASE-01» (c)

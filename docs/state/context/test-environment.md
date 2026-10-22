@@ -13,7 +13,7 @@ How to run things locally in this project. All traps: `findings/by-owner/_traps.
 | Node / pnpm | nvm | 24.14.1 / 10.33.0 |
 | Docker / Compose | system | 29.3.1 / v5.1.1 |
 | Playwright | `npx playwright` (Chromium installed) | 1.62.1 |
-| Redocly CLI | `pnpm dlx @redocly/cli@latest` (pinned in `frontend/` from UI-SCAF-01) | — |
+| Redocly CLI | `pnpm --package=@redocly/cli@<version> dlx redocly lint …` (pinned in `frontend/` from UI-SCAF-01); about 2 s per lint | 2.69.0 measured 2026-10-22 |
 
 Machine: 4 CPUs, 14 GB RAM. Image builds and coverage runs are serialized between agents.
 
@@ -57,3 +57,5 @@ No database, cache or external service.
 - Node's fetch rejects jsdom's `AbortSignal`: MSW tests run in the Node environment only.
 - `openapi-fetch` captures `globalThis.fetch` at creation: pass `fetch: (request) => globalThis.fetch(request)` so MSW's patch applies.
 - `backend/api/spec.go` compiles only once `backend/go.mod` exists (CALC-CORE-01).
+- `pnpm dlx @redocly/cli@<version> lint` fails with `ERR_PNPM_DLX_MULTIPLE_BINS`; name the binary: `pnpm --package=@redocly/cli@<version> dlx redocly lint` (Findings of API-CONTRACT-01 (c)).
+- `git check-ignore -q` accepts a single path; check several paths one at a time (or use `-v` without `-q`).
