@@ -30,7 +30,7 @@ export function selectDisplay(state: CalculatorState): DisplayModel;
 export function historyExpression(entry: HistoryEntry): string;
 // messages.ts
 export const PROBLEM_MESSAGES: Readonly<Record<ProblemCode, string>>;
-export const MESSAGES: { unreachable; timedOut; generic } // the three non-problem strings
+export const MESSAGES: { readonly unreachable: string; readonly timedOut: string; readonly generic: string }; // the three non-problem strings, frozen
 export function toCalculatorError(error: Exclude<ApiError, { kind: 'aborted' }>): CalculatorError;
 // history.ts
 export const MAX_HISTORY_RAW_LENGTH = 65536;
@@ -39,7 +39,7 @@ export function encodeHistory(entries: readonly HistoryEntry[]): string;
 // testing.ts (imported by tests only)
 export function deepFreeze<T>(value: T): T;
 export function run(state: CalculatorState, ...actions: CalculatorAction[]): CalculatorState;
-export function press(state: CalculatorState, keys: string): CalculatorState; // e.g. '9+12C3=' via commandForKey/actionForCommand
+export function press(state: CalculatorState, keys: readonly string[]): CalculatorState; // KeyboardEvent.key values, e.g. ['9', '+', '1', '2', 'Delete', '3', '='], through commandForKey/actionForCommand; throws on an unbound value
 export function succeed(state: CalculatorState, result: string, options?: { inexact?: boolean; historyId?: string }): CalculatorState; // resolves state.request (throws in the test if none) with a literal fixture; default historyId unique per call (counter)
 export function fail(state: CalculatorState, error?: CalculatorError): CalculatorState;
 ```
@@ -57,7 +57,7 @@ Tests: exact table (row, column, label, ariaLabel, command, variant, rowSpan, bi
 
 ### R3 — initial state and immutability (D11, D12) — `reducer.ts` / `reducer.test.ts`
 Rules: `createInitialState(history = [])` → `entry "0"`, typing, null accumulator/operator/error/request, `inexact false`, idle, `nextRequestId 1`, `history` = frozen copy of the first 20. Every state, request, operands array and history array the reducer creates is frozen.
-Tests: exact initial fields; 25 supplied entries → first 20 kept in order, the input array not mutated and not the same reference; result and its history frozen.
+Tests: exact initial fields; 25 supplied entries → first 20 kept in order, the input array not mutated and not the same reference; result and its history frozen; `Object.isFrozen` on the state, `state.request` and `state.request.operands` right after each issuing transition (chain, complete, unary), and on the state and `state.history` after a success, a clear history and an AC.
 
 ### R4 — guards (RF-UI-04, D3) — `reducer.test.ts`
 Rules: D3 order (0) invalid recall value, (1) completion whose `request` is not `state.request` (identity), (2) busy, (3) error (C and AC = full reset like the others), (4) table.
@@ -87,7 +87,7 @@ Tests: each of the 13 codes → its exact copy (a literal expected table in the 
 Tests: round trip of all seven operations with inexact, negative and scientific values; `decodeHistory(encodeHistory(x))` equals the expected capped list; encode deterministic and exact for one fixture (literal JSON string); 25 entries → 20; encode skips invalid and duplicate-ID entries; malformed → `[]`: `null`, `""`, `"   "`, `"{"`, `"null"`, `"1"`, `"\"x\""`, `"[]"`, `{}`, version `2`/`"1"`/`1.5`/missing, `entries` missing/object/string, entry `null`/array/number, each field missing or of the wrong type, empty id, 129-character id, unknown operation, `"__proto__"` operation, wrong arity both ways, operands not an array, operand/result invalid (`"1,000"`, `" 1"`, `"1."`, `".5"`, `"01"`, `"+1"`, `"NaN"`, `"Infinity"`, `"−1"`, `"<b>1</b>"`, number `1`, 129 characters), duplicate ids, one bad entry among good ones, raw input of 65,537 characters (but valid JSON), a `__proto__` own key providing a field; extra properties on entries and envelope ignored (decoded entries have exactly five keys); a syntactically valid tiny exponent result (`"1e-9999"`) accepted; decode never throws (generated garbage strings) and does not mutate; decoded list and entries frozen.
 
 ### R12 — boundaries (RF-UI-05, D13) — `boundaries.test.ts`, `operations.test.ts`
-Tests: for every production file of the directory (raw source via `import.meta.glob('./*.ts', { query: '?raw', import: 'default', eager: true })`, excluding `*.test.ts` and `testing.ts`): every `import` is `import type … from '@/shared/api/types'` or a relative `./` import; none of the forbidden identifiers of D13 appears (word-boundary regexes on the source with comments stripped); the glob found exactly the expected eight production files (so the test cannot pass vacuously). `operations.test.ts`: `OPERATIONS` keys equal the contract `OperationName` list (`'add'…'percentage'`), symbols and arities exact, frozen; `isOperationName`, `isBinaryOperation`, `isUnaryOperation`; `isDecimal` accepts/rejects the contract cases and 128/129 characters.
+Tests: for every production file of the directory (raw source via `import.meta.glob<string>(['./*.ts', '!./*.test.ts', '!./testing.ts'], { query: '?raw', import: 'default', eager: true })`): comments stripped; every `import … from`, `export … from` and dynamic `import(` source is either `@/shared/api/types` through `import type` or a relative `./<model file>` other than `./testing`; none of the forbidden identifiers of D13 appears as a whole word; the glob found exactly the expected eight production files (so the test cannot pass vacuously). The checker is a function in the test file, itself tested on synthetic sources: a value import from `@/shared/api/types`, `import x from 'react'`, `export { x } from 'lodash'`, `export * from '../hooks'`, `import('./reducer')`, `import { deepFreeze } from './testing'`, `Number(x)`, `Math.max`, `window.x`, `new Date()` each fail; `evaluate`, `documented`, a forbidden word inside a comment, and `import type { A } from '@/shared/api/types'` pass. `operations.test.ts`: `OPERATIONS` keys equal the contract `OperationName` list (`'add'…'percentage'`), symbols and arities exact, frozen; `isOperationName`, `isBinaryOperation`, `isUnaryOperation`; `isDecimal` accepts/rejects the contract cases and 128/129 characters.
 
 ## Tasks (ordered; owned files disjoint)
 
@@ -99,7 +99,27 @@ Neither implementer runs git or edits `types.ts`/`operations.ts`; a needed chang
 
 ## Targeted checks
 
-From `frontend/`: `pnpm exec vitest run src/features/calculator/model`; `pnpm typecheck`; `pnpm exec eslint src/features/calculator/model --max-warnings=0`; `pnpm exec prettier --check src/features/calculator/model`; `pnpm exec vitest run --coverage --coverage.include='src/features/calculator/model/**' src/features/calculator/model` (under `heavy`); from the root `scripts/ci/t0.sh --base main`.
+From `frontend/`: `pnpm exec vitest run src/features/calculator/model`; `pnpm typecheck`; `pnpm exec eslint src/features/calculator/model --max-warnings=0`; `pnpm exec prettier --check src/features/calculator/model`; `pnpm exec vitest run --coverage --coverage.include='src/features/calculator/model/**' --coverage.thresholds.100 src/features/calculator/model` (under `heavy`); from the root `scripts/ci/t0.sh --base main`.
+
+## Mutation checks (T1, controller; each recorded in `evidence/mutations.txt` with the failing test name, then restored and the suite re-run green)
+
+| # | Mutation | Must fail |
+|---|---|---|
+| M1 | busy guard lets `digitPressed` through | R4 busy + digit → same object |
+| M2 | stale guard compares `request.id` instead of identity | R6 AC then reused id 1 → ignored |
+| M3 | stale guard removed | R4 completion with a different request object |
+| M4 | binary after a fresh (unary/recall) entry replaces instead of chaining | R7 `9 + 16 √ × 2 =` |
+| M5 | error recovery keeps the old state's accumulator (no reset) | R4 error + digit |
+| M6 | `=` without a pending operator issues a request | R7 `=` alone → same object |
+| M7 | success always applies `complete` | R6 chain success / R7 `2 + 3 × 4 =` |
+| M8 | history cap 21 | R6 21 successes → 20 |
+| M9 | D2 bail-out removed | R5 a same-object test (e.g. ± on `"0"`) |
+| M10 | codec accepts a duplicate id | R11 duplicate ids → `[]` |
+| M11 | codec accepts `version: "1"` | R11 version `"1"` → `[]` |
+| M12 | an empty `requestId` is carried | R10 `""` → no `requestId` |
+| M13 | grouping applied to scientific values | R9 `1234E+5` unchanged |
+| M14 | `toggleSign` without the 128-character limit | R1 128-character Decimal unchanged |
+| M15 | invalid `historyId` added to history | R6 invalid id → history the same array |
 
 ## Not touched
 
@@ -107,4 +127,5 @@ From `frontend/`: `pnpm exec vitest run src/features/calculator/model`; `pnpm ty
 
 ## Review log
 
-(Plan revised before its review for the step-4 spec fixes: identity guard, `operand` mode, D5, D7 table.)
+Step 6 — independent read-only review of the plan (Codex): 0 P0, 0 P1, 5 P2, 1 P3; all confirmed and applied: R12 now carries D13's export-from/dynamic-import checks, forbids production imports of `./testing` and tests the checker on synthetic sources; the coverage command carries `--coverage.thresholds.100`; the mutation checks are an explicit table with the test each must fail; `press` takes `KeyboardEvent.key` values (C is `Delete`, uppercase letters are unbound) and throws on an unbound one; R3 asserts freezing of issued requests, operands and produced histories; `MESSAGES` members are typed `readonly … : string` (an implicit-any member fails TS7008 under this configuration). Literal values, ownership, ordering and the state machine under the owner's chaining answer: nothing found.
+(The plan had been revised before this review for the step-4 spec fixes: identity guard, `operand` mode, D5, D7 table.)
