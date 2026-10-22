@@ -8,6 +8,7 @@
   **Verification:** `go test -race ./internal/calc/` (valid/invalid/format tables); `go test ./internal/calc -run '^$' -fuzz FuzzParse -fuzztime 20s` finds nothing (crashers kept as regression corpus); `bin/golangci-lint run ./...` 0 issues; `go vet ./...`.
   **Review level:** single.
   **Needs from the owner:** nothing.
+  - Registered follow-up (from OPS-CI-01): backend/.golangci.yml enables the gofumpt and goimports formatters; run scripts/ci/t0.sh on the change (first real backend stage, ./... because go.mod is new). 🔎 findings: «Findings of OPS-CI-01» (d)
 
 ### CALC-OPS-01 — Operation catalog and calculator [BE] — M1 [topic: numeric-precision, performance-scale]
 

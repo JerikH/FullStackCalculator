@@ -7,13 +7,16 @@ How to run things locally in this project. All traps: `findings/by-owner/_traps.
 | Tool | Location | Version |
 |---|---|---|
 | Go | `$HOME/.local/go/bin` (on `PATH` via `~/.bashrc`) | 1.27.3 |
-| actionlint | `$HOME/.local/bin` | 1.7.12 |
-| hadolint | `$HOME/.local/bin` | 2.15.1 |
-| golangci-lint v2 | repository `bin/` (ignored; installed by OPS-CI-01) | latest v2 at install |
+| actionlint | `$HOME/.local/bin`; the tiers use `bin/.tools/actionlint-1.7.12/` | 1.7.12 |
+| hadolint | `$HOME/.local/bin`; the tiers use `bin/.tools/hadolint-2.15.1/` | 2.15.1 |
+| golangci-lint | repository `bin/.tools/golangci-lint-2.15.0/` (link `bin/golangci-lint`), `scripts/ci/install-tools.sh` | 2.15.0 |
+| shellcheck | repository `bin/.tools/shellcheck-0.11.0/` (link `bin/shellcheck`), `scripts/ci/install-tools.sh` | 0.11.0 |
 | Node / pnpm | nvm | 24.14.1 / 10.33.0 |
 | Docker / Compose | system | 29.3.1 / v5.1.1 |
 | Playwright | `npx playwright` (Chromium installed) | 1.62.1 |
-| Redocly CLI | `pnpm --package=@redocly/cli@<version> dlx redocly lint …` (pinned in `frontend/` from UI-SCAF-01); about 2 s per lint | 2.69.0 measured 2026-10-22 |
+| Redocly CLI | contract stage: `REDOCLY_TELEMETRY=off pnpm --package=@redocly/cli@$REDOCLY_CLI_VERSION dlx redocly lint backend/api/openapi.yaml` (version in `tools/versions.env` until UI-SCAF-01 pins it in the frontend lockfile); 0.55 s warm, about 2 s cold | 2.69.0 |
+
+Pinned tools: `scripts/ci/install-tools.sh [tool…]` installs or confirms every pin of `tools/versions.env` (SHA-256 verified before extraction; idempotent; safe for two agents at once). Updating a pin: change the version and its four SHA-256 values in one commit, run the installer, then `scripts/ci/t0.sh`.
 
 Machine: 4 CPUs, 14 GB RAM. Image builds and coverage runs are serialized between agents.
 
@@ -28,7 +31,15 @@ Machine: 4 CPUs, 14 GB RAM. Image builds and coverage runs are serialized betwee
 | `WF_SCRATCH` | Private scratch directory | Temporary files, logs, screenshots before they move to evidence |
 
 ## Environment loading
-`eval "$(.workflow/bin/wf env --export)"` then `source scripts/ci/env.sh` — written by OPS-ENV-01, which records here the exact variables it exports (`WEB_PORT`, `CALC_HTTP_ADDR`, `CALC_ADMIN_ADDR`, `VITE_PORT`, `API_PROXY_TARGET`, `E2E_BASE_URL`, `COMPOSE_PROJECT_NAME`, `PATH`).
+`eval "$(.workflow/bin/wf env --export)"` then `source scripts/ci/env.sh` (bash). It exports `WEB_PORT`, `CALC_HTTP_ADDR`, `CALC_ADMIN_ADDR`, `VITE_PORT`, `API_PROXY_TARGET`, `E2E_BASE_URL`, `COMPOSE_PROJECT_NAME` and prepends the repository `bin/` and `$HOME/.local/go/bin` to `PATH`:
+
+| | Main checkout | Worker (port base *b*) |
+|---|---|---|
+| Web / API / admin / Vite | 8080 / `:8081` / `:9091` / 5173 | *b* / `:b+1` / `:b+2` / *b+3* |
+| Proxy target, E2E URL | `http://localhost:8081`, `http://127.0.0.1:8080` | `http://localhost:b+1`, `http://127.0.0.1:b` |
+| Compose project | `fullstackcalculator` | `fullstackcalculator-<agent, lowercased>` |
+
+A worktree (it has `.wf-agent`) needs `WF_AGENT` equal to its agent and `WF_INDEX ≥ 1`; the main checkout accepts no other identity. Errors return 1 and export nothing; without any identity (CI) the main defaults apply with a note. `t1.sh` and `t2.sh` load this environment themselves.
 
 ## Services
 | Service | Address | How to start / reset | Shared? (lease) |
@@ -42,10 +53,11 @@ No database, cache or external service.
 ## Tier commands
 | Tier | Command | Measured duration |
 |---|---|---|
-| 0 | `scripts/ci/t0.sh --base main` | written by OPS-CI-01 |
-| 1 | `scripts/ci/t1.sh <packages, test files or targets>` | written by OPS-CI-01 |
-| 2 | `scripts/ci/t2.sh --base main` | integrator only |
-| 3 | `scripts/ci/t3.sh` | never in a session |
+| 0 | `scripts/ci/t0.sh --base main` (uncommitted changes in the main checkout); solo runs re-check their commits with `--base <run start commit>` | 4.0 s over RUN-M0-2 (shellcheck ~3.9 s, actionlint 0.03 s, Redocly 0.55 s warm) |
+| 1 | `scripts/ci/t1.sh backend/<pkg>[/...] \| frontend/<file>.test.ts \| frontend/e2e/<file>.spec.ts \| make:<target>` (all validated before anything runs) | — |
+| 2 | `scripts/ci/t2.sh --base <pre-merge main>` | integrator only; 4.7 s while only scripts exist |
+| 3 | `scripts/ci/t3.sh [--job contract\|backend\|frontend\|images]` | CI; `--job contract` 6.6 s |
+| Options | `--keep-going` collects every failure; `-h` usage | — |
 | Browser checks | M1: `go run ./cmd/calculator` + `pnpm -C frontend dev` on the agent's ports, Playwright ad hoc; M2: `make up` + `make e2e` | — |
 | Mutation check | break the named rule in the source, run the single test file/package, watch it fail, restore with `git checkout -- <file>` before anyone else runs tests | — |
 
@@ -59,3 +71,5 @@ No database, cache or external service.
 - `backend/api/spec.go` compiles only once `backend/go.mod` exists (CALC-CORE-01).
 - `pnpm dlx @redocly/cli@<version> lint` fails with `ERR_PNPM_DLX_MULTIPLE_BINS`; name the binary: `pnpm --package=@redocly/cli@<version> dlx redocly lint` (Findings of API-CONTRACT-01 (c)).
 - `git check-ignore -q` accepts a single path; check several paths one at a time (or use `-v` without `-q`).
+- `wf env --export` gives index 0 and the main port block to an agent it has no record for; `env.sh` refuses that in a worktree. `go` is on `PATH` only in interactive shells: source `env.sh` or use the tiers (Findings of OPS-ENV-01 (c)).
+- In the main checkout `t0.sh --base main` sees only uncommitted changes (the tier says «base is HEAD»). actionlint lints `*.yml.disabled` only when named, takes shellcheck from `PATH` unless `-shellcheck` is given, and has no `-x`. `make -n` / `make -pRrq <goal>` run `+` recipes. hadolint exits 1 on warnings (Findings of OPS-CI-01 (g)).

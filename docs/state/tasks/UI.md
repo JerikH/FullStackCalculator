@@ -18,6 +18,9 @@
   **Review level:** single.
   **Needs from the owner:** nothing.
   - Registered follow-up (from UI-BASE-01): write tokens.css from DESIGN.md (light focus #b45309, --color-focus #f59e0b declared in both dark blocks, --color-display-danger in all three blocks) and prove it with contrast.py --css. 🔎 findings: «Findings of UI-BASE-01» (a)
+  - Registered follow-up (from OPS-CI-01): pin @redocly/cli 2.69.0 in the frontend lockfile, switch the contract stage of scripts/ci/lib.sh to pnpm -C frontend lint:api (CI contract job installs the frontend first) and drop REDOCLY_CLI_VERSION from tools/versions.env. 🔎 findings: «Findings of OPS-CI-01» (b)
+  - Registered follow-up (from OPS-CI-01): run scripts/ci/t0.sh on the scaffold and fix the frontend stage if needed (typecheck/lint/format:check/test scripts, ESLint --no-warn-ignored, vitest related with no related test, without --passWithNoTests). 🔎 findings: «Findings of OPS-CI-01» (c)
+  - Registered follow-up (from OPS-CI-01): the lint:api and docs:api scripts run Redocly with REDOCLY_TELEMETRY=off and REDOCLY_SUPPRESS_UPDATE_NOTICE=true. 🔎 findings: «Findings of OPS-CI-01» (i)
 
 ### UI-CLIENT-01 — Typed, never-throwing API client [FE] — M1 [topic: api-contract, reliability-errors]
 
@@ -57,3 +60,4 @@
   **Needs from the owner:** nothing.
   - Registered follow-up (from UI-BASE-01): apply DESIGN.md's display error colour, focus geometry, key state mixes, checked segment, 48 px targets, busy dimming of the digits only and the keypad budget rule; refresh DESIGN.md with Impeccable document in scan mode once the screen exists. 🔎 findings: «Findings of UI-BASE-01» (b)
   - Registered follow-up (from UI-BASE-01): verify the display size budget in the real browser at 320 px and in the 22.5rem column. 🔎 findings: «Findings of UI-BASE-01» (c)
+  - Registered follow-up (from OPS-ENV-01): start the Go service and Vite for this agent and for a second identity's ports at the same time and record both answering (UC-OPS-01 acceptance). 🔎 findings: «Findings of OPS-ENV-01» (b)

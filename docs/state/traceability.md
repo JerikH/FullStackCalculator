@@ -8,20 +8,22 @@ Per requirement and use case: is it covered, by which commits, and with what evi
 
 | | ✅ | 🟡 | ⬜ | 🔴 | Total |
 |---|---|---|---|---|---|
-| **UC** | 0 | 0 | 11 | 0 | 11 |
-| **RF** | 1 | 3 | 59 | 0 | 63 |
+| **UC** | 0 | 1 | 10 | 0 | 11 |
+| **RF** | 1 | 6 | 56 | 0 | 63 |
 
 ## OPS — Repository, environments and delivery
 
 | ID | Status | Commit(s) | Verified | Notes |
 |---|---|---|---|---|
-| UC-OPS-01 / RF-OPS-02, RF-OPS-03 | ⬜ | — | — | OPS-ENV-01, OPS-CI-01 |
+| UC-OPS-01 | 🟡 | 8e0ed90, d9c7685, 02a52d4 | Targeted tests: check-env.sh (85), check-tiers.sh (133), 8 mutations, real-repository tier runs (2026-10-22) | Steps 1–6 and E1–E6 proven; acceptance «a Vite dev server and a Go service of each identity side by side» waits for both servers (UI-SCREEN-01, Findings of OPS-ENV-01 (b)) |
+| RF-OPS-02 | 🟡 | 8e0ed90, d9c7685 | Targeted tests: check-env.sh, listeners on all four ports of two identities (2026-10-22) | Ports, project names and PATH done; real dev servers side by side in UI-SCREEN-01 |
+| RF-OPS-03 | 🟡 | 02a52d4 | Targeted tests: check-tiers.sh (133), 4 mutations, real-repository t0/t1/t2/t3 (2026-10-22) | Tiers built on package commands; Makefile targets wired by OPS-STACK-01; frontend stage first exercised by UI-SCAF-01 |
 | UC-OPS-02 / RF-OPS-04, RF-OPS-05, RF-OPS-06, RF-OPS-08 | ⬜ | — | — | OPS-EDGE-01, OPS-IMAGE-01, OPS-STACK-01 |
 | UC-OPS-03 / RF-OPS-07 | ⬜ | — | — | OPS-IMAGE-01 (handler), OPS-STACK-01 |
 | RF-OPS-01 | ✅ | f2b9693 | Targeted tests: git check-ignore (15 ignored, 2 kept), licence text diff (2026-10-22) | — |
 | RF-OPS-09 | ⬜ | — | — | OPS-STACK-01 |
 | RF-OPS-10 | ⬜ | — | — | OPS-E2E-01 |
-| RF-OPS-11 | ⬜ | — | — | OPS-CI-01 (contract job), OPS-CI-02 |
+| RF-OPS-11 | 🟡 | 02a52d4 | Targeted tests: actionlint, YAML parse, action SHAs, the contract job's commands run locally (2026-10-22) | contract job only (Redocly lint, actionlint, shellcheck); type drift, docs-api and the other five jobs are OPS-CI-02 |
 | RF-OPS-12 | ⬜ | — | — | OPS-CI-02 |
 | RF-OPS-13 | ⬜ | — | — | OPS-CI-02 |
 | RF-OPS-14 | ⬜ | — | — | CALC-CORE-01, CALC-OPS-01 (tests), OPS-STACK-01 (targets) |
@@ -80,4 +82,5 @@ Per requirement and use case: is it covered, by which commits, and with what evi
 | RNF-QUAL-02 | ⬜ | — | — | CALC-CORE-01, UI-SCAF-01 |
 | RNF-A11Y-01 | ⬜ | — | — | UI-SCREEN-01, OPS-E2E-01 |
 | RNF-REL-01 | ⬜ | — | — | CALC-OPS-01, UI-HOOKS-01, OBS-RUNTIME-01, API-ROUTES-01 |
-| RNF-OPS-01, RNF-OPS-02 | ⬜ | — | — | OPS-CI-01, OPS-STACK-01 |
+| RNF-OPS-01 | ⬜ | — | — | OPS-STACK-01 |
+| RNF-OPS-02 | 🟡 | 02a52d4 | Measured: t0 4.0 s over the run, t3 --job contract 6.6 s (2026-10-22) | Tiers 0–1 for sessions in place; durations of the Go and frontend stages measured when they exist |
