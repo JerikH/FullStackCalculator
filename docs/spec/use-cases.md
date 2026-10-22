@@ -16,7 +16,7 @@ Primary actor; secondary actors; relation; references (RFs); precondition; postc
 - A case with no declared relation is autonomous.
 
 ### 0.4 Detail level by milestone
-M0 and M1 cases are complete. Cases marked `Status: outline` are completed at the M2 transition.
+Every case is complete: M0, M1 and M2 cases carry their full flow, extensions and acceptance. A case marked `Status: outline` would be completed at the transition to its milestone.
 
 ---
 
@@ -50,12 +50,69 @@ M0 and M1 cases are complete. Cases marked `Status: outline` are completed at th
 **Acceptance:** two identities (main and one worker index) produce disjoint port sets and different `COMPOSE_PROJECT_NAME`s; a Vite dev server and a Go service started by each run side by side; `t0.sh` on a change limited to one package runs only that package's checks and prints durations; a deliberately failing check makes the tier exit non-zero; the GitHub workflow file is committed disabled and passes actionlint.
 
 ### UC-OPS-02 — Run the split stack
-**Status:** outline (completed at the M2 transition)
-**Primary actor:** Reviewer · **References:** RF-OPS-04, RF-OPS-05, RF-OPS-06, RF-OPS-08, RNF-SEC-03, RNF-SEC-04
+**Primary actor:** Reviewer
+**Secondary actors:** Visitor (uses the app in a browser), Operator (reads the probes and the container state), System (Docker Compose, the edge, the service)
+**Relation:** none
+**References:** RF-OPS-04, RF-OPS-05, RF-OPS-06, RF-OPS-08, RF-OBS-03, RF-OBS-04, RF-OBS-05, RNF-SEC-01, RNF-SEC-03, RNF-SEC-04
+**Precondition:** Docker and Docker Compose are installed, the repository is checked out, the host port `WEB_PORT` (default 8080) is free, and the base images can be pulled on the first build.
+**Postcondition (success):** the calculator is served at `http://localhost:8080` by the edge in front of the service, both containers are healthy, only the web port is published, and after `make down` no container or network of the project remains.
+
+| # | Actor | System |
+|---|---|---|
+| 1 | Runs `docker compose up --build --wait` (or `make up`). | |
+| 2 | | Builds `calculator-api:local` and `calculator-web:local`, starts `api`, waits until it is healthy, then starts `web` (`depends_on: api: service_healthy`); returns 0 when both report healthy. |
+| 3 | Opens `http://localhost:8080` in a browser. | |
+| 4 | | The edge serves `index.html` and `/theme-init.js` with `no-cache`, hashed `/assets/*` as `public, max-age=31536000, immutable`, and every response carries the browser policy of RNF-SEC-03 once per header and one `X-Request-ID`. |
+| 5 | Calculates `0.1 + 0.2 =` in the app. | |
+| 6 | | The browser posts `/api/v1/operations/add` to the same origin; the edge proxies it to `api:8081` unchanged; the display shows `0.3`. |
+| 7 | Requests `GET /healthz` and `GET /readyz` through the edge and runs `docker compose ps`. | |
+| 8 | | `/healthz` answers 200 `ok` with version and commit, `/readyz` 200 `ready`; `ps` shows `api` and `web` healthy with only `web` publishing `8080`; the admin port `9091` is published nowhere. |
+| 9 | Stops the `api` container alone (`docker stop` of its ID; `web` stays up). | |
+| 10 | | `api` flips readiness to 503 `draining` for `CALC_SHUTDOWN_DRAIN` (2 s), then shuts down inside the stop grace period (at least 20 s: drain plus the 15 s shutdown timeout plus margin) and exits 0. |
+| 11 | Starts `api` again and runs `make down` (or `docker compose down`). | |
+| 12 | | `api` is healthy again, `web` serves through it, and `down` removes the containers and the network. |
+
+**Extensions:**
+- E1 (step 1): the host port is busy → Compose fails to bind it; `WEB_PORT=<free port>` (documented in `.env.example`) serves the app on that port with no other change.
+- E2 (step 2): `api` never becomes healthy → `--wait` exits non-zero naming the service and `web` is not started.
+- E3 (after step 10): the `api` container is stopped or unreachable → `/api/*`, `/healthz` and `/readyz` answer the edge's 503 `SERVICE_UNAVAILABLE` problem (valid against the contract's `Problem`, `X-Request-ID` equal in header and body) while `/` and `/nginx-health` still answer 200.
+- E4 (step 6): the `api` container is recreated and gets a new address → `web` restarts through `depends_on: api: restart: true` and `/api/v1/operations` through the edge answers 200 again without manual action.
+- E5 (step 6): one client address exceeds 20 requests per second (burst 40) or holds more than 20 concurrent connections on `/api/` → the edge answers the 429 `RATE_LIMITED` problem; static files and the probes keep answering.
+- E6 (step 6): a body above 1 MiB → the edge's 413 `PAYLOAD_TOO_LARGE` problem; a body between 4 KiB and 1 MiB reaches the service, whose own 413 passes through unchanged; a probe request with a body above 16 KiB is refused with the 413 problem.
+- E7 (step 6): a request carries a valid `X-Request-ID` (up to 128 characters of `A-Za-z0-9._-`) → the same ID is in the response header, any problem body and the service's access-log line; an invalid ID (space, `<script>`, 129 characters) is replaced by a generated one before it reaches the service.
+- E8 (step 10): `/readyz` is requested through the edge during the 2 s drain → the service's draining Health JSON 503 passes through unchanged (not an edge problem) and its access-log line is at `info`; afterwards the edge answers the 503 `SERVICE_UNAVAILABLE` problem (E3) and the exit code of the `api` container is 0.
+
+**Acceptance:** `docker compose up --build --wait` returns 0 with both services healthy; `docker compose config` shows only `web` publishing a port, and for both services `read_only: true`, `cap_drop: [ALL]`, `no-new-privileges`, for `web` a size-capped tmpfs `/tmp` and a tmpfs `/etc/nginx/conf.d`, and for `api` `CALC_SHUTDOWN_DRAIN=2s` with a stop grace period of at least 20 s; steps 3–12 and E3–E8 are asserted against the running stack in a real browser and with HTTP calls (OPS-E2E-01), E4 by recreating `api` in the running stack; E1 by starting a second project on another `WEB_PORT`; E2 by the `depends_on` condition in `docker compose config` (the failing bring-up is left to CI); the API image's layer sum is under 20 MB (the reading the owner fixes) and it passes the hardened image smoke (OPS-IMAGE-01, CI `images` job).
 
 ### UC-OPS-03 — Run the all-in-one container
-**Status:** outline (completed at the M2 transition)
-**Primary actor:** Reviewer · **References:** RF-OPS-07, RNF-SEC-04
+**Primary actor:** Reviewer
+**Secondary actors:** Visitor (uses the app in a browser), System (Docker, the Go binary with the embedded app)
+**Relation:** none
+**References:** RF-OPS-07, RF-OPS-08, RF-OBS-04, RF-API-08, RNF-SEC-03, RNF-SEC-04
+**Precondition:** Docker is installed, the repository is checked out and host port 8080 is free (the split stack of UC-OPS-02 is not running on it).
+**Postcondition (success):** one container serves the same app, API, browser policy and cache headers on `http://localhost:8080`; after it is stopped the hardened run (`make run-aio`) leaves no container behind.
+
+| # | Actor | System |
+|---|---|---|
+| 1 | Runs `make image-aio` (or `docker build -t calculator:local .`). | |
+| 2 | | Builds the frontend in a build stage, copies its `dist/` into `backend/internal/web/dist/`, fails the build if `index.html` or `theme-init.js` is missing there, compiles the service with `-tags embedui` and the `VERSION`/`COMMIT` build arguments, and produces a distroless nonroot image with `CALC_HTTP_ADDR=:8080`. |
+| 3 | Runs `docker run -p 8080:8080 calculator:local`, or `make run-aio` for the hardened run (`--read-only`, `--cap-drop ALL`, `--security-opt no-new-privileges`). | |
+| 4 | | The service starts, logs its startup line, and the container becomes healthy through `["/calculator","healthcheck"]`. |
+| 5 | Opens `http://localhost:8080` and calculates `0.1 + 0.2 =`. | |
+| 6 | | `/` is `index.html` with the browser policy of RNF-SEC-03 once per header and `no-cache`; hashed `/assets/*` is immutable; the POST to `/api/v1/operations/add` answers 200 `0.3` and the display shows it. |
+| 7 | Stops the container (`docker stop`). | |
+| 8 | | The service drains and exits 0; a container started with `--rm` (as `make run-aio` does) is removed. |
+
+**Extensions:**
+- E1 (step 3): host port 8080 is busy → `docker run` fails to bind; `-p <free port>:8080` serves the app on that port.
+- E2 (step 6): a missing app file, a directory (`/assets/`) or a dotfile → the 404 `NOT_FOUND` problem; never a listing, a redirect or an HTML fallback; any other method on an unknown path → 405 with `Allow: GET, HEAD`.
+- E3 (step 6): `HEAD`, `Range` or `If-None-Match` on an app file → 200 without body, 206 or 304 with the strong `ETag` and the same cache policy.
+- E4 (step 6): API responses and probes carry the API header set of RF-API-08 (`no-store`, `nosniff`, `default-src 'none'`) and not the browser policy; problem bodies are identical to the API-only image's.
+- E5 (step 6): the all-in-one container does not compress the bundle (compression is the edge's job); this is a documented trade-off, not a defect.
+- E6 (step 3): the hardened run → the container starts and is healthy with nothing writable.
+- E7 (step 2): the build stage's `dist/` lacks `index.html` or `theme-init.js` → `docker build` fails instead of producing an image that answers NOT_FOUND on every app path.
+
+**Acceptance:** `make image-aio` produces `calculator:local`; `make smoke-aio` (curl, `scripts/smoke-aio.sh`) starts the hardened container and asserts: healthy, HTML with each of the five RNF-SEC-03 headers once and equal to the edge's, `no-cache` on the root files, immutable hashed assets with the right MIME type, a valid POST (`0.1 + 0.2` → `0.3`) and a problem response, E2, E3 and E4; the image size is recorded as layers, compressed content and `docker images` listing; E7 is checked once with a deliberately empty `dist/`.
 
 ---
 
@@ -268,5 +325,34 @@ M0 and M1 cases are complete. Cases marked `Status: outline` are completed at th
 ## 5. Module DOC — Documentation
 
 ### UC-DOC-01 — Evaluate the project from the README
-**Status:** outline (completed at the M2 transition)
-**Primary actor:** Reviewer · **References:** RF-DOC-01, RF-DOC-02, RF-DOC-03, RF-DOC-04
+**Primary actor:** Reviewer
+**Secondary actors:** Developer (follows the quick start), API client (copies the curl examples)
+**Relation:** none
+**References:** RF-DOC-01, RF-DOC-02, RF-DOC-03, RF-DOC-04
+**Precondition:** the repository is available (a clone or a hosted page of its files); Docker or the Go and Node toolchains are available for the routes the reviewer tries.
+**Postcondition (success):** the reviewer knows what the project is, has run it by at least one route, has called the API with the documented curl commands, and has found the design reasons, the measured quality numbers and the trade-offs — using only files of the repository.
+
+| # | Actor | System |
+|---|---|---|
+| 1 | Opens `README.md`. | |
+| 2 | | Shows the overview with a desktop and a mobile screenshot of the real app, then the features, in the order fixed by RF-DOC-01. |
+| 3 | Follows the Quick start: the split stack, the all-in-one container or local development. | |
+| 4 | | Each route works as UC-OPS-02, UC-OPS-03 or `make dev-backend` plus `make dev-frontend` describe; every command named exists. |
+| 5 | Copies the curl examples of API usage (all seven operations and the main errors). | |
+| 6 | | The responses equal the documented bodies; the problem catalog lists every code with its status and title. |
+| 7 | Reads Architecture (both topology diagrams), the Design decisions table (the eight ADRs), Observability and CI/CD. | |
+| 8 | Opens `docs/verification.md`. | |
+| 9 | | Shows dated evidence: source revision, toolchain, commands, coverage totals, benchmark numbers and the local composed-stack run, matching the figures in the README. |
+| 10 | Runs `make docs-api` as `docs/api/README.md` explains and opens the generated `docs/api/index.html`. | |
+| 11 | | Redocly renders the contract; the file is git-ignored. |
+| 12 | Reads Trade-offs & future work. | |
+
+**Extensions:**
+- E1 (step 3): a prerequisite is missing (Docker, Go, Node, pnpm) → the Quick start lists the prerequisites and `make bootstrap` installs the pinned tools and stops naming what is missing.
+- E2 (step 5): an error example (division by zero 422, validation 400, unknown operation 404) → the documented status and Problem body, including the `requestId` that equals `X-Request-ID`.
+- E3 (step 9): code changed after the measured revision → `docs/verification.md` states the revision each figure was measured at and the README repeats only figures that equal it.
+- E4 (step 10): `docs/api/index.html` does not exist yet → the README links `docs/api/README.md`, not the generated file.
+- E5 (any): a link points to a path that is not a committed file → defect; no link may point to an untracked or generated file or to something the repository does not build.
+- E6 (step 12): the edge rate limit and connection limit key on the address nginx sees → the trade-offs say that behind Docker's userland proxy all local clients share one budget; the all-in-one image sends the bundle uncompressed.
+
+**Acceptance:** a link checker over `README.md`, `docs/api/README.md` and `docs/verification.md` resolves every relative link to a committed file; the README sections appear in the order of RF-DOC-01; every command in the README is checked against the repository (Make targets exist, ports and defaults equal `scripts/ci/env.sh`, `compose.yaml` and `.env.example`, the configuration table equals the variables the service and the edge read); the curl examples run against a running service and their outputs equal the documented ones; the problem catalog equals the contract's `ProblemCode` enum; the Design decisions table equals the ADR index; the numbers equal `docs/verification.md`; the two screenshots are PNG files taken from the running app (checked by dimensions and by being produced by the recorded command).

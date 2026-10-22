@@ -165,3 +165,4 @@ Version 1 is launched when: (1) every requirement of `srs.md` traces to an artif
 | 2026-10-22 | Wave W2 closed; owner decision U16 (operator chaining after a unary result or a recall, RF-UI-04) | U16 |
 | 2026-10-22 | Owner decisions U17–U21 on the W2 backlog items; task OBS-LOG-01 added to RUN-M1-7 | U17–U21 |
 | 2026-10-22 | Wave W3 planned (RUN-M1-7, RUN-M1-8); standing 10-minute limit on local verification; owner decisions U22–U26 | U22–U26 |
+| 2026-10-22 | Milestone M1 completed (exit criterion checked against the records, `docs/state/history.md`); M2 expanded into `docs/state/current.md` and `docs/state/tasks/` with the pieces of every local command (U22); use cases UC-OPS-02, UC-OPS-03 and UC-DOC-01 completed; backlog items of W3 re-pointed to M2 tasks pending the owner's answers | milestone transition |

@@ -1,64 +1,49 @@
 # Current state
 
-## Current milestone: M1 — Working calculator
+## Current milestone: M2 — Release-ready delivery
 ## Current run: (none)
 ## Cycle step: (none)
 ## Active waves: (none)
 
 ## Run groups (order of execution)
 
-Each run chains related tasks executed by one agent, in the order listed.
+Each run chains related tasks executed by one agent. «Parallel» says which runs can share a wave: RUN-M2-1 runs alone and first (both later runs depend on OPS-E2E-01); RUN-M2-2 and RUN-M2-3 own disjoint files and can share W4 or run back to back in solo mode. Every local command of every run stays under 10 minutes (U22): the task entries name the pieces, the leases and what is left to CI.
 
 | Run | Milestone | Members | Status | Parallel | Notes |
 |---|---|---|---|---|---|
-| **RUN-M0-1** | M0 | OPS-REPO-01, API-CONTRACT-01, UI-BASE-01 | done (2026-10-22, f2b9693, 5d1969f, f2db811, e90d084, 235cc53) | solo | single review; nothing from the owner |
-| **RUN-M0-2** | M0 | OPS-ENV-01, OPS-CI-01 | done (2026-10-22, 8e0ed90, d9c7685, 02a52d4) | solo | single review; per-agent isolation and tiers that every wave needs |
-| **RUN-M1-1** | M1 | CALC-CORE-01, CALC-OPS-01, API-HTTPX-01 | done (2026-10-22, 5e3ecb5, 29aecc2, 509bc52; W1 merge eb327ca) | W1 with RUN-M1-2, RUN-M1-3 | backend track; double review on API-HTTPX-01 |
-| **RUN-M1-2** | M1 | UI-SCAF-01, UI-CLIENT-01 | done (2026-10-22, 9fc0caa, 75d84a1, 24131a9, fbb1984; W1 merge ce02a75) | W1 with RUN-M1-1, RUN-M1-3 | frontend track; consumes the M0 contract |
-| **RUN-M1-3** | M1 | DOC-ADR-01 | done (2026-10-22, 8460cea; W1 merge 0f22334) | W1 with RUN-M1-1, RUN-M1-2 | `docs/adr/` only; Claude subagents (no Codex) |
-| **RUN-M1-4** | M1 | OBS-METRICS-01, API-ROUTES-01, OBS-RUNTIME-01 | done (2026-10-22, 8c51c00, 6eef481, db4ab64, e9250f8, 857b3fc; W2 merge 6a50ff7) | W2 with RUN-M1-5, RUN-M1-6 | backend track; double review on API-ROUTES-01, OBS-RUNTIME-01 |
-| **RUN-M1-5** | M1 | UI-MODEL-01 | done (2026-10-22, b338c03; W2 merge 93812a9) | W2 with RUN-M1-4, RUN-M1-6 | frontend track; double review |
-| **RUN-M1-6** | M1 | OPS-EDGE-01 | done (2026-10-22, 21b98e3; W2 merge a2a6975) | W2 with RUN-M1-4, RUN-M1-5 | edge files only; double review; Claude subagents (no Codex) |
-| **RUN-M1-7** | M1 | OPS-IMAGE-01, OBS-LOG-01 | done (2026-10-22, 5f3a088, c929706; W3 merge e345dfd) | W3 with RUN-M1-8 | backend delivery; access-log bounds (U19, U20) |
-| **RUN-M1-8** | M1 | UI-HOOKS-01, UI-SCREEN-01 | done (2026-10-22, a08c288, 569c43f, 3329e28; W3 merge 69228cb) | W3 with RUN-M1-7 | frontend track; double review on UI-HOOKS-01; real-browser check against the service from W2 |
+| **RUN-M2-1** | M2 | OPS-STACK-01, OPS-E2E-01 | pending | solo — alone in the main checkout, before RUN-M2-2 and RUN-M2-3 | double review on OPS-STACK-01 (edge connection limit, compose surface); the composed stack comes up only in the one recorded `make up` + `make e2e` run of OPS-E2E-01, cut into pieces, and OPS-STACK-01 closes with it; Codex for compose, Dockerfile, Makefile and the edge change, Codex plus Claude subagents (Sonnet 5.5, high) for the specs; owner answers pending on the M2 question batch |
+| **RUN-M2-2** | M2 | OPS-CI-02 | pending | W4 with RUN-M2-3 (or back to back in solo mode); not with RUN-M2-1 | double review (CI permissions and publication); owns `.github/`, `scripts/ci/`, `tools/versions.env`, `frontend/.node-version` and, only if the owner allows a pin change, `frontend/package.json` plus its lockfile (a change there makes RUN-M2-3 run after it, not beside it); the local proof never repeats `make up` + `make e2e` |
+| **RUN-M2-3** | M2 | DOC-README-01 | pending | W4 with RUN-M2-2 (or back to back in solo mode); not with RUN-M2-1 | single review; owns `README.md`, `docs/verification.md`, `docs/api/README.md`, `docs/assets/`; names RUN-M2-2's new files as plain paths and the integrator links them and re-runs the link check; figures come from RUN-M2-1's evidence while the code is unchanged |
 
 ## Milestone checklist
 
-### M0 — Foundation
-- [x] **OPS-REPO-01** — Hygiene files, MIT licence, ADR index and template [BE] 🔎 findings: «Findings of OPS-REPO-01» (a)
-- [x] **API-CONTRACT-01** — OpenAPI 3.1 contract and Redocly configuration [BE] 🔎 findings: «Findings of API-CONTRACT-01» (a)–(d)
-- [x] **UI-BASE-01** — Design baseline: PRODUCT.md, DESIGN.md, measured contrast [FE] 🔎 findings: «Findings of UI-BASE-01» (a)–(e)
-- [x] **OPS-ENV-01** — Per-agent isolated environment (`scripts/ci/env.sh`) [BE] 🔎 findings: «Findings of OPS-ENV-01» (a)–(c)
-- [x] **OPS-CI-01** — Local test tiers and the disabled GitHub workflow [BE] 🔎 findings: «Findings of OPS-CI-01» (a)–(i)
-
-### M1 — Working calculator
-- [x] **CALC-CORE-01** — Go module, lint configuration, decimal parsing and formatting [BE] 🔎 findings: «Findings of CALC-CORE-01» (a)–(c)
-- [x] **CALC-OPS-01** — Operation catalog and calculator [BE] 🔎 findings: «Findings of CALC-OPS-01» (a)–(e)
-- [x] **API-HTTPX-01** — HTTP platform: problems, decoding, request context, middleware [BE] 🔎 findings: «Findings of API-HTTPX-01» (a)–(g)
-- [x] **OBS-METRICS-01** — Build info, request-aware logger and metrics [BE] 🔎 findings: «Findings of OBS-METRICS-01» (a)–(c)
-- [x] **API-ROUTES-01** — Routes, handlers and contract tests [BE] 🔎 findings: «Findings of API-ROUTES-01» (a)–(e)
-- [x] **OBS-RUNTIME-01** — Configuration, lifecycle, admin listener and entrypoint [BE] 🔎 findings: «Findings of OBS-RUNTIME-01» (a)–(g)
-- [x] **OPS-IMAGE-01** — Embedded web handler and the API image [BE] 🔎 findings: «Findings of OPS-IMAGE-01» (a)–(h)
-- [x] **OBS-LOG-01** — Access-log levels and field bounds [BE] 🔎 findings: «Findings of OBS-LOG-01» (a)–(c)
-- [x] **UI-SCAF-01** — Frontend scaffold, tooling, tokens and generated types [FE] 🔎 findings: «Findings of UI-SCAF-01» (a)–(g)
-- [x] **UI-CLIENT-01** — Typed, never-throwing API client [FE] 🔎 findings: «Findings of UI-CLIENT-01» (a)–(d)
-- [x] **UI-MODEL-01** — Pure calculator model [FE] 🔎 findings: «Findings of UI-MODEL-01» (a)–(f)
-- [x] **UI-HOOKS-01** — Effects, keyboard, delayed busy, persistence and theme hooks [FE] 🔎 findings: «Findings of UI-HOOKS-01» (a), (b)
-- [x] **UI-SCREEN-01** — Calculator screen, history, theme control and app shell [FE] 🔎 findings: «Findings of UI-SCREEN-01» (a)–(g)
-- [x] **OPS-EDGE-01** — Web image and nginx edge [BE] 🔎 findings: «Findings of OPS-EDGE-01» (a)–(j)
-- [x] **DOC-ADR-01** — Architecture decision records [BE] 🔎 findings: «Findings of DOC-ADR-01» (a)–(e)
+### M2 — Release-ready delivery
+- [ ] **OPS-STACK-01** — Compose stack, all-in-one image and developer commands [BE] 🔎 findings: «Findings of OPS-CI-01» (e), «Findings of CALC-OPS-01» (c), «Findings of OPS-EDGE-01» (b), (c), (h), «Findings of OPS-IMAGE-01» (c)
+- [ ] **OPS-E2E-01** — Playwright against the composed stack [FE] 🔎 findings: «Findings of OPS-EDGE-01» (b), (c), (g), (h), «Findings of OPS-IMAGE-01» (d), «Findings of UI-SCREEN-01» (b), (e)
+- [ ] **OPS-CI-02** — Complete CI definition and Dependabot [BE] 🔎 findings: «Findings of OPS-CI-01» (f), «Findings of UI-SCAF-01» (c), «Findings of OPS-IMAGE-01» (f)
+- [ ] **DOC-README-01** — README, verification record, screenshots and API reference notes [BE] 🔎 findings: «Findings of DOC-ADR-01» (b), «Findings of API-ROUTES-01» (e), «Findings of OPS-EDGE-01» (h), (i), «Findings of OPS-IMAGE-01» (b), (e), «Findings of UI-SCREEN-01» (b), (c), (f), «Findings of OBS-LOG-01» (b)
 
 ### Later milestones
-- M2 — Release-ready delivery: 4 tasks (OPS-STACK-01, OPS-E2E-01, OPS-CI-02, DOC-README-01) in RUN-M2-1 (solo) and RUN-M2-2 ∥ RUN-M2-3; see `docs/spec/roadmap.md`, section 0.
+(none — M2 is the last milestone of version 1)
 
 ## Active blockers
 (none)
 
+## Pending owner decisions (M2 question batch; defaults apply until answered)
+- Tier 2 split (amends RF-OPS-03): default T2 = affected-stage checks; lint, coverage, images, composed stack, E2E and the all-in-one smoke are stages selected with `--stage`.
+- «Findings of UI-SCREEN-01» (b) accessible names of AC and xʸ: default accept and pin the deviation (OPS-E2E-01, DOC-README-01); amending adds a UI task before RUN-M2-1.
+- «Findings of UI-SCREEN-01» (c) `AbortSignal.any`: default document the minimum browsers (DOC-README-01); the fallback adds a UI task.
+- «Findings of OBS-LOG-01» (b) raw `method`: default accept and document (DOC-README-01); truncation or `OTHER` adds a backend task.
+- API image size reading for RF-OPS-05: default the layer sum (16.5 MB), published with the compressed and `docker images` readings.
+- U13 pins in OPS-CI-02: default no change to `frontend/package.json`.
+- W4 as a wave or RUN-M2-2 and RUN-M2-3 back to back.
+
 ## Open decision gates
-- G1 — when to create the remote, push and enable the workflows; blocks no version 1 task. See `docs/spec/roadmap.md`, section 1.
+- G1 — when to create the remote, push and enable the workflows; blocks no version 1 task (hosted CI evidence waits for it). See `docs/spec/roadmap.md`, section 1.
 
 ## Completed milestones
 - M0 — Foundation: done 2026-10-22 (RUN-M0-1, RUN-M0-2)
+- M1 — Working calculator: done 2026-10-22 (RUN-M1-1…RUN-M1-8, waves W1–W3); exit criterion checked against the records in `docs/state/history.md`
 
 ## Document map
 

@@ -78,6 +78,30 @@ No local command — test suite, coverage run, benchmark, image build, Playwrigh
 - **A timeout is a finding.** Record it (`[type: trap]` or `debt` with a target) and fix it by narrowing the scope — fewer files, one project, smaller matrix pieces. Never raise the limit, drop assertions, lower thresholds or skip the check to make it fit.
 - **Record durations.** Every bounded check lists its measured duration in the run's evidence; a piece above 5 minutes is named in the closure so the next run can split it further.
 
+## M2 delivery pieces (U22; basis: the measured durations above, «expected» where not yet measured)
+
+Each row is one command under `timeout 600`; the lease is taken without `--wait` and other work continues while it is held. The task entries (`tasks/OPS.md`, `tasks/DOC.md`) assign the pieces to tasks.
+
+| Piece | Command | Lease | Duration |
+|---|---|---|---|
+| Compose render | `docker compose config --quiet` + JSON assertions | — | seconds |
+| Base image pull | `docker pull <pinned base image>` (one per image) | — | network, expected < 2 min each |
+| API image | `docker compose build api` / `docker build -f backend/Dockerfile …` | heavy | 53 s cold, 7–10 s warm |
+| Web image | `docker compose build web` / `docker build -f frontend/Dockerfile …` | heavy | 41 s cold, 2 s warm |
+| All-in-one image | `make image-aio` (stages buildable alone with `--target`) | heavy | expected 2–4 min cold |
+| Backend coverage | `make coverage-backend` | heavy | 23 s measured with race and `-coverpkg`; expected < 2 min with shuffle and atomic mode |
+| Frontend coverage | `make coverage-frontend` | heavy | 64 s |
+| Fuzz | `make fuzz` (30 s per target) | heavy | about 80 s |
+| Benchmarks | `make bench` alone (`-count=3` over both families) | heavy | 50 s measured |
+| Edge smoke against the stub | `edge-smoke.sh` (archived run evidence; extended copy in the run evidence) | — (the image build takes heavy) | about 2 min; a mutation about 3 min each, one piece per mutation |
+| Composed stack up | `make up` (images cached) | — | expected seconds |
+| E2E per project | `make e2e E2E_ARGS="--project=chromium"`, then `--project=mobile-chromium` | — | expected < 5 min each; split by spec file above 5 min |
+| Disruptive E2E specs | last, once, `chromium` only, one worker | — | expected < 2 min |
+| All-in-one smoke | `make smoke-aio` (after `make down`, same host port) | — | expected < 1 min |
+| `t3.sh --job contract` / `frontend` | per job | — | 9 s measured / expected about 90 s (19 s was measured before the screen existed) |
+
+The composed stack and `make e2e` run once locally (OPS-E2E-01) and every piece is recorded in `docs/verification.md`; after a fix only the failing spec files re-run. Left to CI (gate G1): the hosted run of the six jobs, the Trivy gate, the clean-clone build, the `publish` job.
+
 ## Too long for a session (pipeline or integrator only)
 - Tier 3 / the complete suite; the full CI workflow; image builds of all three images in one go.
 - `make up` + `make e2e` run once locally in OPS-E2E-01 (recorded in `docs/verification.md`); afterwards only failing spec files are re-run.
