@@ -3,7 +3,7 @@
 ## Current milestone: M1 — Working calculator
 ## Current run: (none)
 ## Cycle step: (none)
-## Active waves: (none)
+## Active waves: W3 (RUN-M1-7, RUN-M1-8) — plan in `docs/state/waves/W3.md`
 
 ## Run groups (order of execution)
 
@@ -19,8 +19,8 @@ Each run chains related tasks executed by one agent, in the order listed.
 | **RUN-M1-4** | M1 | OBS-METRICS-01, API-ROUTES-01, OBS-RUNTIME-01 | done (2026-10-22, 8c51c00, 6eef481, db4ab64, e9250f8, 857b3fc; W2 merge 6a50ff7) | W2 with RUN-M1-5, RUN-M1-6 | backend track; double review on API-ROUTES-01, OBS-RUNTIME-01 |
 | **RUN-M1-5** | M1 | UI-MODEL-01 | done (2026-10-22, b338c03; W2 merge 93812a9) | W2 with RUN-M1-4, RUN-M1-6 | frontend track; double review |
 | **RUN-M1-6** | M1 | OPS-EDGE-01 | done (2026-10-22, 21b98e3; W2 merge a2a6975) | W2 with RUN-M1-4, RUN-M1-5 | edge files only; double review; Claude subagents (no Codex) |
-| **RUN-M1-7** | M1 | OPS-IMAGE-01, OBS-LOG-01 | pending | W3 with RUN-M1-8 | backend delivery; access-log bounds (U19, U20) |
-| **RUN-M1-8** | M1 | UI-HOOKS-01, UI-SCREEN-01 | pending | W3 with RUN-M1-7 | frontend track; double review on UI-HOOKS-01; real-browser check against the service from W2 |
+| **RUN-M1-7** | M1 | OPS-IMAGE-01, OBS-LOG-01 | in W3 | W3 with RUN-M1-8 | backend delivery; access-log bounds (U19, U20) |
+| **RUN-M1-8** | M1 | UI-HOOKS-01, UI-SCREEN-01 | in W3 | W3 with RUN-M1-7 | frontend track; double review on UI-HOOKS-01; real-browser check against the service from W2 |
 
 ## Milestone checklist
 

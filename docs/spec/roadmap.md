@@ -91,6 +91,11 @@ Run grouping: RUN-M2-1 = OPS-STACK-01, OPS-E2E-01 (solo); RUN-M2-2 = OPS-CI-02 a
 | U19 | 2026-10-22 | The draining readiness 503 is an expected state and its access line is logged at `info`; every other 5xx stays `error`. The readiness handler sets the level for its response; the access log never matches paths («Findings of OBS-RUNTIME-01» (c)). | OBS-LOG-01 |
 | U20 | 2026-10-22 | The access log truncates `path` and `user_agent` to their first 256 characters without splitting a UTF-8 sequence; `remote_addr` stays as RF-OBS-05 lists it — behind the edge it is the edge's address, and abuse diagnosis of a direct client needs it («Findings of OBS-RUNTIME-01» (d)). | OBS-LOG-01 |
 | U21 | 2026-10-22 | The edge adds a per-address connection limit: `limit_conn_zone $binary_remote_addr`, 20 concurrent connections on `/api/`, answered with the `RATE_LIMITED` 429 problem; the probes stay without a connection limit but their body limit drops to 16 KiB (no probe body is buffered to `/tmp`); static files stay unlimited; the compose stack caps the web `/tmp` tmpfs at 64 MiB («Findings of OPS-EDGE-01» (h)). | OPS-STACK-01, OPS-E2E-01, DOC-README-01 |
+| U22 | 2026-10-22 | Standing rule — 10-minute limit on local verification: every local command (test suite, coverage run, benchmark, image build, Playwright or browser check) finishes in under 10 minutes of wall-clock time; any that could run long is wrapped in `timeout 600`; a check that cannot fit is split into targeted pieces that each fit, or left to CI and recorded in the run's closure with the reason; nobody sits waiting on a running command or on a lease with nothing else to do (work continues in parallel or moves on); a timeout is a finding to fix by narrowing the scope, never a reason to raise the limit or weaken the check. Recipe in `docs/state/context/test-environment.md`. | every run from W3 on |
+| U23 | 2026-10-22 | Wave W3 = RUN-M1-7, RUN-M1-8 as two parallel sessions, launched manually by the owner; the worker sessions run on Claude Sonnet 5.5 at high effort; Codex in both runs (two jobs on the machine), Claude implementation subagents alongside. | RUN-M1-7, RUN-M1-8 |
+| U24 | 2026-10-22 | The theme bootstrap and the screen under the real browser policy (RNF-SEC-03) are verified in W3 by RUN-M1-8 on the web image built from its own branch (`frontend/Dockerfile`, `heavy` lease) with `API_UPSTREAM` pointing at the service of its worktree: Chromium desktop, System, Light and Dark, initial and error states, zero CSP violations and a clean console. The Vite dev server stays the main real-browser target. | UI-SCREEN-01 |
+| U25 | 2026-10-22 | The calculator screen is shaped and built from the approved design baseline (U5) without an owner stop after the shape step; Codex may produce desktop and mobile comps; the owner reviews the screenshots in the run evidence at integration. | UI-SCREEN-01 |
+| U26 | 2026-10-22 | In W3, RUN-M1-8 may add frontend devDependencies its tests need, at their latest stable release, under the `deps` lease, with `frontend/pnpm-lock.yaml` committed; the U13 pins (`typescript` 5.9.3, `jsdom` 29, `@types/node` 24, the jsx-a11y peer override) and the `packageManager`/`engines` pins (U10) stay unchanged. | UI-HOOKS-01, UI-SCREEN-01 |
 
 ### Adopted for planning (recommended defaults; the owner can override at any task's step 1)
 | Topic | Default adopted | Why |
@@ -117,7 +122,7 @@ Run grouping: RUN-M2-1 = OPS-STACK-01, OPS-E2E-01 (solo); RUN-M2-2 = OPS-CI-02 a
 - Hosting: local only (`docker compose`, `docker run`); no public hosting. No paid services.
 - The owner creates the remote, pushes, enables workflows and publishes images; agents never do.
 - No frontend arithmetic; no CORS; no inline scripts or styles; no `any` or non-null `!`; no weakened checks.
-- Local verification: short targeted checks; one recorded local composed-stack E2E run.
+- Local verification: short targeted checks; one recorded local composed-stack E2E run; no local command over 10 minutes (U22).
 - English everywhere in the repository; exact strings from `srs.md`.
 
 ## 3. Version 1 scope
@@ -159,3 +164,4 @@ Version 1 is launched when: (1) every requirement of `srs.md` traces to an artif
 | 2026-10-22 | Wave W2 planned (RUN-M1-4, RUN-M1-5, RUN-M1-6); owner decisions U12–U15; worst-case benchmark budget in the adopted defaults and the validation metrics | U12–U15 |
 | 2026-10-22 | Wave W2 closed; owner decision U16 (operator chaining after a unary result or a recall, RF-UI-04) | U16 |
 | 2026-10-22 | Owner decisions U17–U21 on the W2 backlog items; task OBS-LOG-01 added to RUN-M1-7 | U17–U21 |
+| 2026-10-22 | Wave W3 planned (RUN-M1-7, RUN-M1-8); standing 10-minute limit on local verification; owner decisions U22–U26 | U22–U26 |

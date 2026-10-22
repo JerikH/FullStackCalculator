@@ -65,6 +65,16 @@ No database, cache or external service.
 | Browser checks | M1: `go run ./cmd/calculator` + `pnpm -C frontend dev` on the agent's ports, Playwright ad hoc; M2: `make up` + `make e2e` | — |
 | Mutation check | break the named rule in the source, run the single test file/package, watch it fail, restore with `git checkout -- <file>` before anyone else runs tests | — |
 
+## 10-minute limit on every local command (U22, every run from W3 on)
+
+No local command — test suite, coverage run, benchmark, image build, Playwright or browser check, tier script — may take 10 minutes of wall-clock time or more.
+
+- **Bound it.** Wrap any command that could run long in `timeout 600` (`timeout 600 scripts/ci/t1.sh …`, `timeout 600 docker build …`, `timeout 600 pnpm -C frontend exec playwright test …`); give polling loops their own shorter bound (`timeout 120 bash -c 'until …; do sleep 2; done'`). Background servers (`go run ./cmd/calculator`, `pnpm -C frontend dev`) are started with their PID recorded and stopped by that PID; they are not waited on.
+- **Split what cannot fit.** A check that does not fit is cut into targeted pieces that each fit (one package, one test file, one Playwright project or spec, one width group, one image), each run under its own `timeout 600`. Only when no split fits is it left to CI, recorded in the run's `closure.md` with the reason.
+- **Never wait idle.** Do not sit on a running command or on a lease with nothing else to do: run long pieces in the background and keep working (review, next dispatch, records), or move on. Leases: `wf lease acquire <name>` without `--wait` first; when it is held, do other work and retry; `--wait` only with `--timeout 600` and only when nothing else can advance.
+- **A timeout is a finding.** Record it (`[type: trap]` or `debt` with a target) and fix it by narrowing the scope — fewer files, one project, smaller matrix pieces. Never raise the limit, drop assertions, lower thresholds or skip the check to make it fit.
+- **Record durations.** Every bounded check lists its measured duration in the run's evidence; a piece above 5 minutes is named in the closure so the next run can split it further.
+
 ## Too long for a session (pipeline or integrator only)
 - Tier 3 / the complete suite; the full CI workflow; image builds of all three images in one go.
 - `make up` + `make e2e` run once locally in OPS-E2E-01 (recorded in `docs/verification.md`); afterwards only failing spec files are re-run.
