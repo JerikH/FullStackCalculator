@@ -31,12 +31,17 @@
   line-height: 1.5;
 }
 
+/* The list scrolls inside the panel once it outgrows the height cap (at most 20 rows). The padding keeps
+   the 3px focus ring plus its 2px offset from being clipped; the negative margin cancels it. */
 .list {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  margin: 0;
-  padding: 0;
+  max-height: min(24rem, 60dvh);
+  margin: -5px;
+  padding: 5px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   list-style: none;
 }
 
