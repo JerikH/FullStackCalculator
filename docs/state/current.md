@@ -2,7 +2,7 @@
 
 ## Current milestone: M0 — Foundation
 ## Current run: RUN-M0-1
-## Cycle step: 6 (plan review)
+## Cycle step: 7 (implement)
 ## Active waves: (none)
 
 ## Run groups (order of execution)
