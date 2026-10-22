@@ -17,7 +17,9 @@ case "$1" in
     printf '%s\n' "$*" > frontend/playwright-report/index.html
     printf '{}\n' > frontend/test-results/report.json ;;
 esac
-if [[ -n ${SHIM_FAIL_ON:-} && "$*" == *"$SHIM_FAIL_ON"* ]]; then exit 1; fi
+# SHIM_FAIL_ON is a glob matched against the whole argument string.
+# shellcheck disable=SC2053
+if [[ -n ${SHIM_FAIL_ON:-} && "$*" == $SHIM_FAIL_ON ]]; then exit 1; fi
 exit 0
 EOF
 cat > "$work/shim/docker" <<'EOF'
@@ -31,6 +33,17 @@ exit 0
 EOF
 chmod +x "$work/shim/make" "$work/shim/docker"
 fail=0
+assert() { # assert <description> <command…>
+  local description=$1
+  shift
+  if "$@"; then printf 'PASS %s\n' "$description"; else printf 'FAIL %s\n' "$description"; fail=1; fi
+}
+# shellcheck disable=SC2329 # invoked indirectly through assert
+report_is() { [[ $(cat "coverage/e2e/$1/playwright-report/index.html") == *"$2"* ]]; }
+# shellcheck disable=SC2329 # invoked indirectly through assert
+report_kept_and_skipped() { [[ -s coverage/e2e/mobile-chromium/playwright-report/index.html && ! -e coverage/e2e/disruptive ]]; }
+# shellcheck disable=SC2329 # invoked indirectly through assert
+logs_collected() { [[ -s coverage/e2e/logs/ps.txt && -s coverage/e2e/logs/compose.log ]]; }
 run() { # run <name> <fail-on> <expected log file content>
   local name=$1 fail_on=$2 expected=$3 status log="$work/$1.log"
   rm -rf coverage/e2e frontend/playwright-report frontend/test-results
@@ -56,16 +69,15 @@ run ok '' "$(printf '%s\n' "$up" "$chromium" "$mobile" "$disruptive" "$down")"
 for d in chromium mobile-chromium disruptive; do
   [[ -s coverage/e2e/$d/playwright-report/index.html && -s coverage/e2e/$d/test-results/report.json ]] || { echo "FAIL ok: coverage/e2e/$d missing"; fail=1; }
 done
-[[ $(cat coverage/e2e/chromium/playwright-report/index.html) == *'--project=chromium'* && $(cat coverage/e2e/mobile-chromium/playwright-report/index.html) == *mobile-chromium* ]] \
-  && echo 'PASS ok: each run kept its own report' || { echo 'FAIL ok: reports overwritten'; fail=1; }
+assert 'ok: the chromium run kept its own report' report_is chromium '--project=chromium'
+assert 'ok: the mobile run kept its own report' report_is mobile-chromium 'mobile-chromium'
 
-run mobile-fails 'project=mobile-chromium' "$(printf '%s\n' "$up" "$chromium" "$mobile" "$ps" "$logs" "$down")"
-[[ -s coverage/e2e/mobile-chromium/playwright-report/index.html && ! -e coverage/e2e/disruptive ]] \
-  && echo 'PASS mobile-fails: failed run kept, disruptive skipped' || { echo 'FAIL mobile-fails: report/skip'; fail=1; }
-[[ -s coverage/e2e/logs/ps.txt && -s coverage/e2e/logs/compose.log ]] \
-  && echo 'PASS mobile-fails: logs collected' || { echo 'FAIL mobile-fails: logs missing'; fail=1; }
+run mobile-fails '*project=mobile-chromium' "$(printf '%s\n' "$up" "$chromium" "$mobile" "$ps" "$logs" "$down")"
+assert 'mobile-fails: the failed run kept its report and the disruptive run was skipped' report_kept_and_skipped
+assert 'mobile-fails: ps and logs collected' logs_collected
 
-run up-fails 'make up' "$(printf '%s\n' "$up" "$ps" "$logs" "$down")"
-run chromium-fails 'project=chromium e2e' "$(printf '%s\n' "$up" "$chromium" "$mobile" "$disruptive" "$ps" "$logs" "$down")"
-run down-fails 'make down' "$(printf '%s\n' "$up" "$chromium" "$mobile" "$disruptive" "$down")"
+run up-fails 'up' "$(printf '%s\n' "$up" "$ps" "$logs" "$down")"
+run chromium-fails 'e2e E2E_ARGS=--project=chromium' "$(printf '%s\n' "$up" "$chromium" "$mobile" "$ps" "$logs" "$down")"
+run disruptive-fails '*stack-disruptive*' "$(printf '%s\n' "$up" "$chromium" "$mobile" "$disruptive" "$ps" "$logs" "$down")"
+run down-fails 'down' "$(printf '%s\n' "$up" "$chromium" "$mobile" "$disruptive" "$down")"
 exit "$fail"

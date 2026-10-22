@@ -62,7 +62,12 @@ expect_ok 'v10.20.30' "sha-$c3${nl}10.20.30" push refs/tags/v10.20.30 "$c3"
 expect_ok 'tag on an older ancestor of main' "sha-$c1${nl}3.0.0" push refs/tags/v3.0.0 "$c1"
 expect_ok 'tag on the middle ancestor of main' "sha-$c2${nl}4.0.0" push refs/tags/v4.0.0 "$c2"
 expect_ok 'explicit local main-ref' "sha-$c3${nl}1.2.3" push refs/tags/v1.2.3 "$c3" main
-expect_ok 'main push' "sha-$c3${nl}main" push refs/heads/main "$c3"
+expect_ok 'main push at the tip' "sha-$c3${nl}main" push refs/heads/main "$c3"
+expect_ok 'main push at the tip, explicit local main-ref' "sha-$c3${nl}main" push refs/heads/main "$c3" main
+expect_ok 'main push of an older commit publishes only the sha tag' "sha-$c2" push refs/heads/main "$c2"
+expect_fail 'main push of a commit not on main' push refs/heads/main "$side"
+expect_fail 'main push with an unusable main-ref' push refs/heads/main "$c3" --all
+expect_fail 'main push, main-ref missing' push refs/heads/main "$c3" origin/absent
 
 for bad in v1.2 v1.2.3-rc1 v01.2.3 v1.2.3+b1 1.2.3 V1.2.3 v1.2.3.4; do
   expect_fail "tag name $bad" push "refs/tags/$bad" "$c3"
@@ -93,9 +98,10 @@ g update-ref -d refs/remotes/origin/main
 expect_fail 'default origin/main is missing' push refs/tags/v1.2.3 "$c3"
 g update-ref refs/remotes/origin/main "$c1"
 expect_fail 'origin/main behind the tagged commit' push refs/tags/v1.2.3 "$c3"
-expect_ok 'main push does not need origin/main' "sha-$c3${nl}main" push refs/heads/main "$c3"
+expect_fail 'main push needs origin/main' push refs/heads/main "$c3"
 
 # CLI behavior.
+g update-ref refs/remotes/origin/main "$c3"
 cli_out=$("$here/publish-tags.sh" push refs/heads/main "$c3" 2>/dev/null) || cli_out=FAILED
 if [[ $cli_out == "sha-$c3${nl}main" ]]; then pass=$((pass + 1)); printf 'PASS cli main push\n'
 else fail=$((fail + 1)); printf 'FAIL cli main push: %q\n' "$cli_out"; fi

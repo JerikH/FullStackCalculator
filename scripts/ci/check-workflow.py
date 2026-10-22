@@ -41,6 +41,12 @@ Rule ids (workflow):
   publish-if                    publish.if names push, refs/heads/main and
                                 startsWith(github.ref, 'refs/tags/v'), and neither
                                 pull_request nor workflow_dispatch
+  job-permissions               every job other than publish has no permissions block or exactly
+                                {contents: read}
+  token-only-in-push-step       secrets.GITHUB_TOKEN is used only by the step that runs
+                                `t3.sh --job publish --stage push`
+  no-continue-on-error          no continue-on-error anywhere, and `always()` only on upload steps
+  lib-calls-exist               every scripts/ path and Make target that lib.sh and t3.sh call exists
   node-no-literal               no `node-version:` key; setup-node uses
                                 node-version-file: frontend/.node-version
   node-pin                      frontend/.node-version equals the Node tag of both Dockerfiles
@@ -77,13 +83,16 @@ WORKFLOW_RULES = [
     "no-pull-request-target", "triggers", "concurrency", "timeouts", "uses-pinned",
     "checkout-no-credentials", "no-secrets-outside-publish", "no-expression-in-run",
     "upload-retention", "upload-names-unique", "publish-if", "node-no-literal", "node-pin",
-    "t3-calls", "paths-exist", "make-targets-exist", "artifact-paths",
+    "t3-calls", "paths-exist", "make-targets-exist", "artifact-paths", "job-permissions",
+    "token-only-in-push-step", "no-continue-on-error", "lib-calls-exist",
 ]
 DEPENDABOT_RULES = [
     "dependabot-version", "dependabot-set", "dependabot-weekly", "dependabot-groups",
     "dependabot-no-automerge",
 ]
 
+PUBLISH_IF = ("github.event_name == 'push' && !github.event.repository.fork && "
+              "(github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))")
 EXPECTED_JOBS = {"contract", "backend", "frontend", "e2e", "images", "publish"}
 EXPECTED_DEPENDABOT = {
     ("gomod", "/backend"), ("npm", "/frontend"), ("docker", "/"), ("docker", "/backend"),
@@ -255,6 +264,53 @@ def rule_packages_write(doc: dict, jobs: dict, lines: list[str], ranges) -> None
              f"publish permissions are {jobs['publish'].get('permissions')!r}; expected contents: read, packages: write")
 
 
+def rule_job_permissions(jobs: dict) -> None:
+    for jid, job in jobs.items():
+        if jid == "publish" or "permissions" not in job:
+            continue
+        if job["permissions"] != {"contents": "read"}:
+            fail("job-permissions", f"job {jid}: permissions are {job['permissions']!r}; expected none or contents: read")
+
+
+def rule_token_step(jobs: dict) -> None:
+    for jid, job in jobs.items():
+        for step in steps_of(job):
+            blob = repr(step.get("env")) + repr(step.get("with"))
+            if "GITHUB_TOKEN" not in blob and "github.token" not in blob:
+                continue
+            run = step.get("run")
+            if not (jid == "publish" and isinstance(run, str) and re.search(r"--job\s+publish\s+--stage\s+push\b", run)):
+                fail("token-only-in-push-step", f"job {jid}: step {step.get('name')!r} receives the token")
+
+
+def rule_no_continue_on_error(jobs: dict, lines: list[str]) -> None:
+    for number, line in enumerate(lines, 1):
+        if re.match(r"^\s*(?:-\s+)?continue-on-error\s*:", line):
+            fail("no-continue-on-error", f"line {number}: continue-on-error")
+    for jid, job in jobs.items():
+        for step in steps_of(job):
+            cond = step.get("if")
+            if isinstance(cond, str) and "always()" in cond and not str(step.get("uses", "")).startswith("actions/upload-artifact"):
+                fail("no-continue-on-error", f"job {jid}: step {step.get('name')!r} uses always() outside an upload")
+
+
+def rule_lib_calls(root: Path) -> None:
+    makefile = read_text(root / "Makefile")
+    targets = makefile_targets(makefile) if makefile is not None else set()
+    for rel in ("scripts/ci/lib.sh", "scripts/ci/t3.sh"):
+        text = read_text(root / rel)
+        if text is None:
+            fail("lib-calls-exist", f"cannot read {rel}")
+            continue
+        for match in sorted(set(re.findall(r"(?<![\w./$-])(scripts/[A-Za-z0-9_][\w./-]*\.(?:sh|py|mjs))", text))):
+            if not (root / match).is_file():
+                fail("lib-calls-exist", f"{rel} calls {match}, which does not exist")
+        for match in sorted(set(re.findall(r"ci_stage_make\s+\S+\s+([a-z][a-z0-9-]*)", text))
+                            | set(re.findall(r"\"\$limit\"\s+make\s+([a-z][a-z0-9-]*)", text))):
+            if match not in targets:
+                fail("lib-calls-exist", f"{rel} calls make {match}, which is not a Makefile target")
+
+
 def rule_no_pull_request_target(doc: dict) -> None:
     if "pull_request_target" in triggers_of(doc):
         fail("no-pull-request-target", "pull_request_target is a trigger")
@@ -349,6 +405,8 @@ def rule_publish_if(jobs: dict) -> None:
         fail("publish-if", "publish has no if condition")
         return
     cond = " ".join(cond.split())
+    if cond != PUBLISH_IF:
+        fail("publish-if", f"publish.if is {cond!r}; expected exactly {PUBLISH_IF!r}")
     for needle in ("github.event_name == 'push'", "refs/heads/main", "startsWith(github.ref, 'refs/tags/v')"):
         if needle not in cond:
             fail("publish-if", f"publish.if lacks `{needle}`")
@@ -610,6 +668,10 @@ def main() -> int:
     rule_paths_exist(jobs, root)
     rule_make_targets(jobs, root)
     rule_artifact_paths(jobs, root)
+    rule_job_permissions(jobs)
+    rule_token_step(jobs)
+    rule_no_continue_on_error(jobs, lines)
+    rule_lib_calls(root)
     check_dependabot(dep)
 
     for rule, detail in failures:

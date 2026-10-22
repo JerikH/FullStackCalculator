@@ -3,7 +3,12 @@
 # automatically: update pull requests run the same checks as any other.
 # Not covered by Dependabot, updated by hand: the standalone tools in tools/versions.env
 # (procedure in its header) and the Node version in frontend/.node-version (it must equal
-# the Node tag of the two Dockerfiles that Dependabot does update).
+# the Node tag of the two Dockerfiles that Dependabot does update; a Node image pull
+# request stays red on the contract job until the other Dockerfile and that file are
+# changed by hand). Dependabot reads only .github/workflows/*.yml and *.yaml: while the
+# workflow is ci.yml.disabled its action pins are updated by hand (git ls-remote of the
+# tag; scripts/ci/check-workflow.py checks the pin format), and the github-actions entry
+# below starts working when the file is renamed to ci.yml.
 version: 2
 updates:
   - package-ecosystem: gomod

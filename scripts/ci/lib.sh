@@ -467,6 +467,7 @@ CI_IMAGE_FILES=(coverage/images/calculator-api.tar.gz coverage/images/calculator
 CI_IMAGE_MANIFEST=coverage/images/image-ids.txt
 CI_TRIVY_PREFIX=coverage/images/trivy-
 CI_E2E_FAILED=0
+CI_E2E_STACK_DOWN=0
 
 # ci_t3_list: one line per job, `<job>: <default stages>`, then ` +<stage>` for stages selected only by name.
 ci_t3_list() {
@@ -593,6 +594,22 @@ ci_t3_contract_publish_tags() {
   ci_run publish-tags:test -- timeout -k 30 "${CI_STAGE_TIMEOUT:-600}" bash scripts/ci/publish-tags-test.sh
 }
 
+# ci_t3_make_gate <label> <target>: `make <target>` that does not end the run when it fails, so the
+# report and its totals can still reach the job summary; returns the make status for the caller,
+# which ends the stage with ci_t3_gate_end.
+ci_t3_make_gate() {
+  local keep=$CI_KEEP_GOING status=0
+  CI_KEEP_GOING=1
+  if ! ci_stage_make "$1" "$2"; then status=1; fi
+  CI_KEEP_GOING=$keep
+  return "$status"
+}
+# ci_t3_gate_end <status>: after the summary was written, a failed gate ends the stage like any failure.
+ci_t3_gate_end() {
+  if (( $1 )); then ci_failure || :; return 1; fi
+  return 0
+}
+
 # --- backend ---
 ci_t3_backend_modules() {
   ci_need backend go || return 1
@@ -613,23 +630,31 @@ ci_t3_backend_static() {
   ci_run backend:test-embedui -C backend -- timeout -k 30 "${CI_STAGE_TIMEOUT:-600}" go test -race -tags embedui ./internal/web/
 }
 ci_t3_backend_coverage_backend() {
-  local threshold=''
+  local threshold='' status=0
   ci_need backend go || return 1
-  ci_stage_make backend:coverage-backend coverage-backend || return 1
-  ci_require_files backend:coverage-reports coverage/backend/index.html coverage/backend/coverage.out coverage/backend/summary.txt || return 1
-  if [[ -f scripts/coverage.sh ]]; then threshold=$(sed -n 's/^threshold=\([0-9][0-9]*\)$/\1/p' scripts/coverage.sh | head -n 1); fi
-  ci_summary '### Backend coverage' '' '```text' "$(cat coverage/backend/summary.txt)" '```'
-  if [[ -n $threshold ]]; then ci_summary '' "Gate: statement coverage of the unique blocks must reach $threshold %." ''; fi
+  ci_t3_make_gate backend:coverage-backend coverage-backend || status=1
+  # The totals are summarized whether or not the gate passed; a missing report is its own failure.
+  if [[ -s coverage/backend/summary.txt ]]; then
+    if [[ -f scripts/coverage.sh ]]; then threshold=$(sed -n 's/^threshold=\([0-9][0-9]*\)$/\1/p' scripts/coverage.sh | head -n 1); fi
+    ci_summary '### Backend coverage' '' '```text' "$(cat coverage/backend/summary.txt)" '```'
+    if [[ -n $threshold ]]; then ci_summary '' "Gate: statement coverage of the unique blocks must reach $threshold %." ''; fi
+  fi
+  if (( status )); then ci_t3_gate_end 1; return 1; fi
+  ci_require_files backend:coverage-reports coverage/backend/index.html coverage/backend/coverage.out coverage/backend/summary.txt
 }
 ci_t3_backend_fuzz() {
   ci_need backend go || return 1
   ci_stage_make backend:fuzz fuzz
 }
 ci_t3_backend_bench() {
+  local status=0
   ci_need backend go || return 1
-  ci_stage_make backend:bench bench || return 1
-  ci_require_files backend:bench-output coverage/bench/bench.txt || return 1
-  ci_summary '### Backend benchmarks' '' '```text' "$(grep '^Benchmark' coverage/bench/bench.txt || :)" '```' ''
+  ci_t3_make_gate backend:bench bench || status=1
+  if [[ -s coverage/bench/bench.txt ]]; then
+    ci_summary '### Backend benchmarks' '' '```text' "$(grep '^Benchmark' coverage/bench/bench.txt || :)" '```' ''
+  fi
+  if (( status )); then ci_t3_gate_end 1; return 1; fi
+  ci_require_files backend:bench-output coverage/bench/bench.txt
 }
 ci_t3_backend_govulncheck() {
   local tool
@@ -655,24 +680,27 @@ ci_t3_frontend_lint() { ci_t3_frontend_script lint lint; }
 ci_t3_frontend_format() { ci_t3_frontend_script format format:check; }
 ci_t3_frontend_build() { ci_t3_frontend_script build build; }
 ci_t3_frontend_coverage_frontend() {
-  local file=coverage/frontend/coverage-summary.json table=''
+  local file=coverage/frontend/coverage-summary.json table='' status=0
   ci_t3_node_ready coverage-frontend || return 1
-  ci_stage_make frontend:coverage-frontend coverage-frontend || return 1
-  ci_require_files frontend:coverage-reports coverage/frontend/index.html coverage/frontend/lcov.info "$file" || return 1
-  # The totals come from the report with jq, else python3 (the scripts never need node).
-  if command -v jq >/dev/null 2>&1; then
-    table=$(jq -r '.total | ["lines", "statements", "functions", "branches"][] as $k | "| \($k) | \(.[$k].pct)% |"' "$file") || table=''
-  elif command -v python3 >/dev/null 2>&1; then
-    table=$(python3 -I -c 'import json, sys
+  ci_t3_make_gate frontend:coverage-frontend coverage-frontend || status=1
+  # The totals come from the report with jq, else python3 (the scripts never need node), gate or not.
+  if [[ -s $file ]]; then
+    if command -v jq >/dev/null 2>&1; then
+      table=$(jq -r '.total | ["lines", "statements", "functions", "branches"][] as $k | "| \($k) | \(.[$k].pct)% |"' "$file") || table=''
+    elif command -v python3 >/dev/null 2>&1; then
+      table=$(python3 -I -c 'import json, sys
 total = json.load(open(sys.argv[1]))["total"]
 for key in ("lines", "statements", "functions", "branches"):
     print("| %s | %s%% |" % (key, total[key]["pct"]))' "$file") || table=''
+    fi
+    if [[ -n $table ]]; then
+      ci_summary '### Frontend coverage' '' '| metric | covered |' '|---|---|' "$table" ''
+    else
+      ci_note frontend:coverage-frontend 'cannot read the totals of coverage-summary.json (no jq or python3)'
+    fi
   fi
-  if [[ -n $table ]]; then
-    ci_summary '### Frontend coverage' '' '| metric | covered |' '|---|---|' "$table" ''
-  else
-    ci_note frontend:coverage-frontend 'cannot read the totals of coverage-summary.json (no jq or python3)'
-  fi
+  if (( status )); then ci_t3_gate_end 1; return 1; fi
+  ci_require_files frontend:coverage-reports coverage/frontend/index.html coverage/frontend/lcov.info "$file"
 }
 ci_t3_frontend_audit() {
   ci_t3_node_ready audit || return 1
@@ -713,12 +741,15 @@ ci_e2e_logs() {
     ci_note e2e:logs "docker compose logs failed (exit $status); see $directory/compose.log"
   fi
 }
-# ci_e2e_playwright <run> <command…>: one Playwright run (skipped after an earlier failure); its
-# report is kept under coverage/e2e/<run>/ whatever the result.
+# ci_e2e_playwright <run> <always|clean> <command…>: one Playwright run; its report is kept under
+# coverage/e2e/<run>/ whatever the result. «clean» runs (the disruptive specs, which stop and recreate
+# services) are skipped after any earlier failure, because the stack state is then unknown; «always»
+# runs are skipped only when the stack never came up.
 ci_e2e_playwright() {
-  local run=$1
-  shift
-  if (( CI_E2E_FAILED )); then ci_note "e2e:$run" 'skipped: an earlier e2e step failed'; return 0; fi
+  local run=$1 gate=$2
+  shift 2
+  if (( CI_E2E_STACK_DOWN )); then ci_note "e2e:$run" 'skipped: the stack did not start'; return 0; fi
+  if [[ $gate == clean ]] && (( CI_E2E_FAILED )); then ci_note "e2e:$run" 'skipped: an earlier e2e step failed'; return 0; fi
   rm -rf frontend/playwright-report frontend/test-results
   if ! ci_run "e2e:$run" -- "$@"; then CI_E2E_FAILED=1; fi
   ci_e2e_save "$run"
@@ -728,20 +759,14 @@ ci_e2e_playwright() {
 ci_t3_e2e() {
   local saved=$CI_KEEP_GOING up_attempted=0 limit=${CI_STAGE_TIMEOUT:-600}
   CI_KEEP_GOING=1
-  CI_E2E_FAILED=0
+  CI_E2E_FAILED=0 CI_E2E_STACK_DOWN=0
   ci_compose_env
   if ci_need_cmd e2e make docker; then
     up_attempted=1
-    if ! ci_run e2e:up -- timeout -k 30 "$limit" make up; then CI_E2E_FAILED=1; fi
-    if (( CI_E2E_FAILED )); then
-      ci_note e2e:chromium 'skipped: the stack did not start'
-      ci_note e2e:mobile-chromium 'skipped: the stack did not start'
-      ci_note e2e:disruptive 'skipped: the stack did not start'
-    else
-      ci_e2e_playwright chromium timeout -k 30 "$limit" make e2e E2E_ARGS=--project=chromium
-      ci_e2e_playwright mobile-chromium timeout -k 30 "$limit" make e2e E2E_ARGS=--project=mobile-chromium
-      ci_e2e_playwright disruptive env E2E_STACK=1 timeout -k 30 "$limit" make e2e 'E2E_ARGS=--project=chromium e2e/stack-disruptive.spec.ts'
-    fi
+    if ! ci_run e2e:up -- timeout -k 30 "$limit" make up; then CI_E2E_FAILED=1 CI_E2E_STACK_DOWN=1; fi
+    ci_e2e_playwright chromium always timeout -k 30 "$limit" make e2e E2E_ARGS=--project=chromium
+    ci_e2e_playwright mobile-chromium always timeout -k 30 "$limit" make e2e E2E_ARGS=--project=mobile-chromium
+    ci_e2e_playwright disruptive clean env E2E_STACK=1 timeout -k 30 "$limit" make e2e 'E2E_ARGS=--project=chromium e2e/stack-disruptive.spec.ts'
     if (( CI_E2E_FAILED )); then ci_e2e_logs; fi
     if (( up_attempted )); then
       if ! ci_run e2e:down -- timeout -k 30 "$limit" make down; then CI_E2E_FAILED=1; fi
@@ -894,6 +919,7 @@ ci_t3_images_scan_aio() { ci_t3_scan_image aio; }
 # GITHUB_SHA when unset), in CI_PUB_TAGS and CI_PUB_TAG_LIST. The ref is only matched, never evaluated.
 ci_t3_publish_tags_compute() {
   local event=${EVENT_NAME:-${GITHUB_EVENT_NAME:-}} ref=${REF:-${GITHUB_REF:-}} sha=${SHA:-${GITHUB_SHA:-}}
+  CI_PUB_SHA=$sha
   # shellcheck source=scripts/ci/publish-tags.sh
   source "$CI_ROOT/scripts/ci/publish-tags.sh" || { ci_problem "$1" 'cannot load scripts/ci/publish-tags.sh' || :; return 1; }
   ci_run_capture "$1" CI_PUB_TAGS -- publish_tags "$event" "$ref" "$sha" || return 1
@@ -911,13 +937,23 @@ ci_t3_publish_tags() {
 # ci_ghcr_login: the token goes in on stdin, never as an argument and never to the output.
 ci_ghcr_login() { printf '%s' "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin; }
 ci_ghcr_logout() { docker logout ghcr.io >/dev/null 2>&1 || :; }
+# ci_ghcr_tag_state <remote>: prints «exists» or «absent»; any other answer (network, authorization) is a
+# failure, so a release tag is never overwritten because the registry could not be asked.
+ci_ghcr_tag_state() {
+  local out status=0
+  out=$(timeout -k 10 120 docker manifest inspect "$1" 2>&1) || status=$?
+  if (( status == 0 )); then printf 'exists'; return 0; fi
+  if [[ $out == *'no such manifest'* || $out == *'manifest unknown'* || $out == *'not found'* ]]; then printf 'absent'; return 0; fi
+  printf 'cannot tell whether %s exists: %s\n' "$1" "${out%%$'\n'*}" >&2
+  return 1
+}
 # push: only inside GitHub Actions with a token; recomputes the tags itself; pushes the exact images the
 # images job tested (their archives, checked against the manifest before the login).
 ci_t3_publish_push() {
-  local label=publish:push directory=${PUBLISH_IMAGES_DIR:-coverage/images} manifest owner name tag remote digest failed=0
+  local label=publish:push directory=${PUBLISH_IMAGES_DIR:-coverage/images} manifest owner name tag remote digest failed=0 pushed sha
   local -A ref_of=() id_of=()
   local -a rows=() names=("${CI_IMAGE_NAMES[@]}")
-  local mname mref mid
+  local mname mref mid mcommit state
   if [[ ${GITHUB_ACTIONS:-} != true ]]; then ci_problem "$label" 'refusing to push outside GitHub Actions (GITHUB_ACTIONS is not true)' || :; return 1; fi
   if [[ -z ${GITHUB_TOKEN:-} ]]; then ci_problem "$label" 'refusing to push without GITHUB_TOKEN' || :; return 1; fi
   if [[ -z ${GITHUB_ACTOR:-} ]]; then ci_problem "$label" 'refusing to push without GITHUB_ACTOR' || :; return 1; fi
@@ -931,8 +967,12 @@ ci_t3_publish_push() {
   local -a files=("$manifest")
   for name in "${names[@]}"; do files+=("$directory/$name.tar.gz"); done
   ci_require_files publish:images "${files[@]}" || return 1
-  while read -r mname mref mid _; do
+  while read -r mname mref mid mcommit _; do
     [[ -n $mname ]] || continue
+    if [[ ! $mref =~ ^calculator(-api|-web)?:[A-Za-z0-9_][A-Za-z0-9_.-]*$ || ! $mid =~ ^sha256:[0-9a-f]{64}$ ]]; then
+      ci_problem publish:verify "malformed manifest line for $mname" || :; return 1
+    fi
+    if [[ $mcommit != "$CI_PUB_SHA" ]]; then ci_problem publish:verify "image $mname was built from $mcommit, not from $CI_PUB_SHA" || :; return 1; fi
     ref_of[$mname]=$mref id_of[$mname]=$mid
   done <"$manifest"
   for name in "${names[@]}"; do
@@ -948,12 +988,21 @@ ci_t3_publish_push() {
   if (( failed )); then return 1; fi
   trap ci_ghcr_logout EXIT
   ci_run publish:login -- ci_ghcr_login || return 1
+  # A release version (X.Y.Z) is published once: an existing tag is never moved. sha-<sha> and main move by design.
+  for name in "${names[@]}"; do
+    for tag in "${CI_PUB_TAG_LIST[@]}"; do
+      [[ $tag =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || continue
+      ci_run_capture "publish:exists-$name:$tag" state -- ci_ghcr_tag_state "ghcr.io/$owner/$name:$tag" || return 1
+      if [[ $state == exists ]]; then ci_problem publish:exists "ghcr.io/$owner/$name:$tag already exists: a release version is never overwritten" || :; return 1; fi
+    done
+  done
   for name in "${names[@]}"; do
     for tag in "${CI_PUB_TAG_LIST[@]}"; do
       remote=ghcr.io/$owner/$name:$tag
       if ! ci_run "publish:tag-$name:$tag" -- docker tag "${ref_of[$name]}" "$remote"; then failed=1; continue; fi
-      if ! ci_run_capture "publish:push-$name:$tag" CI_PUSH_OUT -- timeout -k 30 "${CI_STAGE_TIMEOUT:-600}" docker push "$remote"; then failed=1; continue; fi
+      if ci_run_capture "publish:push-$name:$tag" CI_PUSH_OUT -- timeout -k 30 "${CI_STAGE_TIMEOUT:-600}" docker push "$remote"; then pushed=1; else pushed=0; fi
       printf '%s\n' "$CI_PUSH_OUT"
+      if (( ! pushed )); then failed=1; continue; fi
       digest='(not reported)'
       if [[ $CI_PUSH_OUT =~ digest:\ (sha256:[0-9a-f]{64}) ]]; then digest=${BASH_REMATCH[1]}; fi
       rows+=("| $name | $tag | \`$digest\` |")

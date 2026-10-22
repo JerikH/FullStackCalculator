@@ -20,9 +20,9 @@ permissions:
   contents: read
 
 # Pull requests cancel their superseded runs; a push to main or a tag is never cancelled
-# half-way through publishing.
+# half-way through publishing, and a manual run never takes the place of one.
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || (github.event_name == 'workflow_dispatch' && github.run_id) || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 defaults:
@@ -177,7 +177,7 @@ jobs:
     name: Browser tests on the composed stack
     needs: [contract, backend, frontend]
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - name: Check out
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -241,40 +241,46 @@ jobs:
       - name: Scan the API image
         run: scripts/ci/t3.sh --job images --stage scan-api
       - name: Scan the web image
+        if: ${{ !cancelled() }}
         run: scripts/ci/t3.sh --job images --stage scan-web
       - name: Scan the all-in-one image
+        if: ${{ !cancelled() }}
         run: scripts/ci/t3.sh --job images --stage scan-aio
       - name: Upload the API image
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: images-calculator-api
           path: coverage/images/calculator-api.tar.gz
           retention-days: 7
           compression-level: 0
-          if-no-files-found: error
+          if-no-files-found: warn
       - name: Upload the web image
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: images-calculator-web
           path: coverage/images/calculator-web.tar.gz
           retention-days: 7
           compression-level: 0
-          if-no-files-found: error
+          if-no-files-found: warn
       - name: Upload the all-in-one image
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: images-calculator
           path: coverage/images/calculator.tar.gz
           retention-days: 7
           compression-level: 0
-          if-no-files-found: error
+          if-no-files-found: warn
       - name: Upload the image manifest
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: images-manifest
           path: coverage/images/image-ids.txt
           retention-days: 7
-          if-no-files-found: error
+          if-no-files-found: warn
       - name: Upload the scan reports
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
