@@ -277,6 +277,15 @@ ci_stage_backend() {
   ci_run backend:vet -C backend -- go vet "${lint[@]}" || return 0
   ci_run backend:lint -C backend -- "$(ci_tool golangci-lint)" run "${lint[@]}" || return 0
   ci_run backend:test -C backend -- go test -race "${tests[@]}" || return 0
+  # The embedded app is compiled only with the embedui tag: vet everything with it, and
+  # lint and test the web package under it. Other packages are not re-tested with the tag:
+  # an empty dist makes the router's catch-all the web handler, which their tests do not expect.
+  ci_run backend:vet-embedui -C backend -- go vet -tags embedui "${lint[@]}" || return 0
+  # $module is parsed only outside --full mode; the arithmetic test short-circuits before it is read.
+  if (( full )) || [[ ${selected[$module/internal/web]+yes} ]]; then
+    ci_run backend:lint-embedui -C backend -- "$(ci_tool golangci-lint)" run --build-tags embedui ./internal/web/ || return 0
+    ci_run backend:test-embedui -C backend -- go test -race -tags embedui ./internal/web/ || return 0
+  fi
 }
 ci_stage_frontend() {
   if [[ ! -f frontend/package.json ]]; then ci_note frontend 'not present (frontend/package.json missing)'; return 0; fi
