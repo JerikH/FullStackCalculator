@@ -29,7 +29,7 @@ What exists (step 2): the code knowledge graph holds only `docs/` sections (43 f
 
 ## API-CONTRACT-01 — OpenAPI 3.1 contract and Redocly configuration
 
-**Scope:** RF-API-01 (document, components, Redocly configuration, embedding file `backend/api/spec.go` exporting `Spec`), listing every endpoint, schema and status code of RF-API-02…08 and RF-OBS-02/03, the 13 `ProblemCode` values and the `Decimal` pattern/length. The document declares `X-Request-ID` on the success responses of the two operation endpoints and on `BadRequest`, and `Allow` on `MethodNotAllowed`; `X-Request-ID` on every response (RF-API-07) and the RF-API-08 cache and security headers are asserted by the transport and contract tests, not declared per response. `Problem.required` is `type, title, status, code`: the client reads `detail` and `requestId` as optional (RF-UI-09), and their presence on every service problem is asserted by the same tests.
+**Scope:** RF-API-01 (document, components, Redocly configuration, embedding file `backend/api/spec.go` exporting `Spec`), listing every endpoint, schema and status code of RF-API-02…08 and RF-OBS-02/03, the 13 `ProblemCode` values and the `Decimal` pattern/length. The document declares `X-Request-ID` on the success responses of the two operation endpoints and on `BadRequest`, and `Allow` on `MethodNotAllowed`; `X-Request-ID` on every response (RF-API-07) and the RF-API-08 cache and security headers are asserted by the transport and contract tests, not declared per response. `Problem.required` is `type, title, status, detail, code, requestId` (RF-API-05/07; `instance` optional because edge problems may omit it) — amended at step 8, see the end of this file.
 
 **Missing:** `backend/api/openapi.yaml`, `backend/api/spec.go`, `redocly.yaml`.
 
@@ -98,3 +98,5 @@ Step 4 — independent read-only Claude reviewer (ran Redocly 2.69.0 and libopen
 - No finding: lint rules other than `operation-4xx-response`; every contrast number; `.gitignore` coverage of RF-OPS-01; `.dockerignore` excluding `docs` and `**/dist`.
 
 Step 6 (plan review) amended this spec: touch targets of every control at 3rem; busy dimming limited to the value digits; width budgets with the 1 px card border; wording on declared statuses, headers and `Problem.required` (see plan.md Review log).
+
+Step 8 (diff review, Codex read-only) reversed one review-log decision: `Problem.required` now includes `detail` and `requestId` (RF-API-05 requires them on every problem, edge problems included; only `instance` may be omitted by the edge). The client-side consequence is registered for UI-CLIENT-01 and OPS-EDGE-01 (Findings of API-CONTRACT-01 (b)). The same review hardened the evidence checks (declarations without a trailing semicolon, the contrast exit status inside the record check, type and status-to-response assertions in the contract check) and fixed the design.json narrative extraction and the lg size arithmetic (20 px floor at 320 px).
