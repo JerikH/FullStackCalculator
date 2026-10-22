@@ -92,6 +92,14 @@ func TestListOperations(t *testing.T) {
 	if diff := cmp.Diff(map[string]any{"name": "add", "symbol": "+", "arity": float64(2), "description": "Sum of two numbers"}, first); diff != "" {
 		t.Fatal(diff)
 	}
+	catalog := calc.New().Operations()
+	want := make([]any, len(catalog))
+	for i, op := range catalog {
+		want[i] = map[string]any{"name": op.Name, "symbol": op.Symbol, "arity": float64(op.Arity), "description": op.Description}
+	}
+	if diff := cmp.Diff(want, ops); diff != "" {
+		t.Fatalf("catalog order (-want +got):\n%s", diff)
+	}
 }
 
 func TestProblems(t *testing.T) {
@@ -179,6 +187,9 @@ func TestProblems(t *testing.T) {
 			if diff := cmp.Diff(tt.violations, r.body["errors"]); tt.violations != nil && diff != "" {
 				t.Fatalf("errors mismatch (-want +got):\n%s", diff)
 			}
+			if _, ok := r.body["errors"]; tt.violations == nil && ok {
+				t.Fatalf("errors present on %s: %s", tt.code, r.raw)
+			}
 			assertSecurityHeaders(t, r.header)
 			if tt.status == 405 {
 				allow := "POST"
@@ -239,8 +250,8 @@ func TestWebHandlerIsMountedAtRootButNotUnderAPI(t *testing.T) {
 	t.Parallel()
 	web := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("spa")) })
 	h, _ := newTestServer(t, calc.New(), web)
-	if r := do(t, h, http.MethodGet, "/", "", ""); r.raw != "spa" {
-		t.Fatalf("root = %q", r.raw)
+	if r := do(t, h, http.MethodGet, "/", "", ""); r.raw != "spa" || r.header.Get("Cache-Control") != "no-store" {
+		t.Fatalf("root = %q, Cache-Control %q", r.raw, r.header.Get("Cache-Control"))
 	}
 	if r := do(t, h, http.MethodHead, "/", "", ""); r.status != 200 || r.raw != "spa" {
 		t.Fatalf("HEAD / = %d %q", r.status, r.raw)
@@ -414,5 +425,34 @@ func TestCalculationPanic(t *testing.T) {
 	}
 	if record.Level != "ERROR" || record.Message != "panic recovered" || record.RequestID != r.header.Get(httpx.HeaderRequestID) || record.RequestID == "" {
 		t.Fatalf("log: %s", logs.String())
+	}
+}
+
+func TestAsteriskTargetIsAProblem(t *testing.T) {
+	t.Parallel()
+	h, _ := newTestServer(t, calc.New(), nil)
+	for _, method := range []string{http.MethodGet, http.MethodPost} {
+		req := httptest.NewRequestWithContext(t.Context(), method, "*", nil)
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, req)
+		var problem httpx.Problem
+		if err := json.Unmarshal(rec.Body.Bytes(), &problem); err != nil {
+			t.Fatalf("%s *: %d %q", method, rec.Code, rec.Body.String())
+		}
+		if rec.Code != http.StatusNotFound || problem.Code != httpx.CodeNotFound || rec.Header().Get("Content-Type") != "application/problem+json" {
+			t.Fatalf("%s *: %d %s", method, rec.Code, rec.Body.String())
+		}
+	}
+}
+
+func TestEmptyPathIsAProblem(t *testing.T) {
+	t.Parallel()
+	h, _ := newTestServer(t, calc.New(), nil)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "http://example.com", nil)
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	var problem httpx.Problem
+	if err := json.Unmarshal(rec.Body.Bytes(), &problem); err != nil || rec.Code != http.StatusNotFound || problem.Code != httpx.CodeNotFound {
+		t.Fatalf("empty path: %d %s", rec.Code, rec.Body.String())
 	}
 }

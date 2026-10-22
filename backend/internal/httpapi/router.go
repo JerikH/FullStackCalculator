@@ -52,17 +52,26 @@ func NewRouter(d Deps) http.Handler {
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-store")
-		p := r.URL.EscapedPath()
-		c := path.Clean(p)
-		if strings.HasSuffix(p, "/") && c != "/" {
-			c += "/"
-		}
-		if c != p {
+		if r.RequestURI == "*" || !canonical(r.URL.EscapedPath()) {
 			httpx.NotFound(w, r)
 			return
 		}
 		mux.ServeHTTP(w, r)
 	})
+}
+
+// canonical reports whether p is an absolute path without empty, "." or ".."
+// segments. The mux would answer any other path itself (a redirect, or an
+// empty 400 for "*"), outside the problem vocabulary.
+func canonical(p string) bool {
+	if p == "" || p[0] != '/' {
+		return false
+	}
+	c := path.Clean(p)
+	if strings.HasSuffix(p, "/") && c != "/" {
+		c += "/"
+	}
+	return c == p
 }
 
 func serveSpec(w http.ResponseWriter, _ *http.Request) {
