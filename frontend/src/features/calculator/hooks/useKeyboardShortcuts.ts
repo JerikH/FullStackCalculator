@@ -6,6 +6,7 @@ const EDITABLE =
   'textarea, select, [contenteditable]:not([contenteditable="false" i]), [role="textbox"], [role="searchbox"], [role="combobox"], input:not([type="button" i], [type="checkbox" i], [type="radio" i], [type="range" i], [type="color" i], [type="file" i], [type="image" i], [type="reset" i], [type="submit" i])';
 const ACTIVATABLE =
   'button, summary, a[href], input, select, [role="button"], [role="radio"], [role="checkbox"], [role="switch"], [role="menuitem"], [role="tab"], [role="link"]';
+const REPEATABLE: ReadonlySet<KeyCommand['kind']> = new Set(['digit', 'decimal', 'backspace', 'clearEntry']);
 export function useKeyboardShortcuts(execute: (command: KeyCommand) => void): void {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -25,6 +26,8 @@ export function useKeyboardShortcuts(execute: (command: KeyCommand) => void): vo
       const command = commandForKey(event.key);
       if (command === undefined) return;
       event.preventDefault();
+      // Holding an operator, equals, sign or AC would queue a request after every answer; editing keys repeat.
+      if (event.repeat && !REPEATABLE.has(command.kind)) return;
       execute(command);
     };
     window.addEventListener('keydown', onKeyDown);

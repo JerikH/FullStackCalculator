@@ -132,12 +132,23 @@ it('handles noneditable content and guards text inside editable content', () => 
   expect(execute).toHaveBeenCalledOnce();
   div.remove();
 });
-it('executes repeated keydown events', () => {
+it.each(['5', '.', ',', 'Backspace', 'Delete'])('executes repeated keydown events of the editing key %s', (key) => {
   const execute = mount();
-  send('5', window, { repeat: true });
-  send('5', window, { repeat: true });
+  send(key, window, { repeat: true });
+  send(key, window, { repeat: true });
   expect(execute).toHaveBeenCalledTimes(2);
 });
+it.each(['+', '-', '*', '/', '^', 'r', '%', 'n', 'Enter', '=', 'Escape'])(
+  'ignores, but still prevents, a repeated keydown of %s (a held key must not queue requests)',
+  (key) => {
+    const execute = mount();
+    const event = send(key, window, { repeat: true });
+    expect(execute).not.toHaveBeenCalled();
+    expect(event.defaultPrevented).toBe(true);
+    send(key, window);
+    expect(execute).toHaveBeenCalledOnce();
+  },
+);
 it('replaces callbacks with balanced listeners and removes on unmount', () => {
   const add = vi.spyOn(window, 'addEventListener');
   const remove = vi.spyOn(window, 'removeEventListener');
