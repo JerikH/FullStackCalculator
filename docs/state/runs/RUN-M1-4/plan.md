@@ -172,3 +172,9 @@ Step 6 — Codex (`gpt-6.1-sol`, medium, read-only task). No P0/P1. Triage:
 - P2 negative durations and the ParseBool rule untested — **accepted**: rows added.
 - P3 «body never read» asserted only indirectly — **accepted**: spy body with zero reads.
 - P2 coverage commands print without enforcing — **accepted**: awk gates per package (90/85) and on the total (90).
+
+Steps 8 and 10 — diff and security reviews:
+- httpapi (independent Claude diff + security review of 6eef481): no P0/P1. P2 list order never asserted on the HTTP response — **fixed** (full catalog comparison). P3 `*` target answered by the mux with an empty 400 — **fixed** (canonical-target guard also rejects `*` and empty paths). P3 `errors[]` outside VALIDATION_FAILED not asserted — **fixed**. P3 router-level `no-store` untested — **fixed** (web-handler response). P3 empty path problem without `instance` — **recorded** in the rule finding (direct-client corner). Commit db4ab64.
+- app/config (Codex adversarial review of e9250f8): healthcheck succeeded when a 200 body stalled or ended early — **fixed** (exit 1); the in-flight shutdown test could pass with an abrupt Close — **fixed** (listener-close signal, Run asserted still waiting; mutation «Shutdown replaced by Close» caught). Commit 857b3fc.
+- Whole run (Claude security and edge-case review against the real binary, `-race -count=20`, 32-client drain load): no P0–P2. P3 items recorded as findings: `instance` path reflection (API-backlog), draining 503 at ERROR and access-line size / `remote_addr` (OBS-backlog), admin listener on all interfaces and the default 0 s drain (deployment note), net/http's own 431/400 replies (note).
+- Implementation: Codex's sandbox could not bind sockets, so it added in-memory duplicates of the lifecycle tests; the controller ran the real socket suite, removed five duplicates (coverage unchanged at 97.9 %) and kept two that cover distinct branches.

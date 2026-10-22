@@ -1,0 +1,18 @@
+$ scripts/ci/t0.sh --base main
+stage · command · result · seconds
+backend:fmt · (cd backend) /home/jerik/dev/personal/FullStackCalculator.wt/RUN-M1-4/bin/.tools/golangci-lint-2.15.0/golangci-lint fmt --diff ./... · pass · 2.61s
+backend:vet · (cd backend) go vet ./... · pass · 0.69s
+backend:lint · (cd backend) /home/jerik/dev/personal/FullStackCalculator.wt/RUN-M1-4/bin/.tools/golangci-lint-2.15.0/golangci-lint run ./... · pass · 2.15s
+backend:test · (cd backend) go test -race ./... · pass · 0.78s
+total 6.31s
+
+$ scripts/ci/t1.sh backend/internal/httpapi backend/internal/app backend/internal/observability backend/internal/config backend/internal/buildinfo
+env.sh: RUN-M1-4 — web 4110 · api :4111 · admin :4112 · vite 4113 · compose fullstackcalculator-run-m1-4
+stage · command · result · seconds
+env:agent · agent environment · pass · 0.01s
+t1:backend/internal/httpapi · (cd backend) go test -race -cover ./internal/httpapi · pass · 4.54s
+t1:backend/internal/app · (cd backend) go test -race -cover ./internal/app · pass · 6.09s
+t1:backend/internal/observability · (cd backend) go test -race -cover ./internal/observability · pass · 0.25s
+t1:backend/internal/config · (cd backend) go test -race -cover ./internal/config · pass · 0.22s
+t1:backend/internal/buildinfo · (cd backend) go test -race -cover ./internal/buildinfo · pass · 0.19s
+total 11.34s
