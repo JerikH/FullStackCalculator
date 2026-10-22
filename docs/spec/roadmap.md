@@ -73,6 +73,7 @@ Run grouping: RUN-M2-1 = OPS-STACK-01, OPS-E2E-01 (solo); RUN-M2-2 = OPS-CI-02 a
 | U2 | 2026-10-22 | Parallel worker sessions start in the `bypassPermissions` permission mode. | M1 and M2 waves |
 | U3 | 2026-10-22 | Dependabot is committed active as `.github/dependabot.yml`; GitHub workflows are committed disabled (`*.yml.disabled`) until the owner enables them. | OPS-CI-01, OPS-CI-02 |
 | U4 | 2026-10-22 | M1 runs as three parallel waves of up to three runs; the backend and frontend tracks advance side by side; each run chains 1–3 related tasks executed by one agent. | M1 |
+| U5 | 2026-10-22 | Design baseline: the product record (web; the anonymous visitor as primary user and the technical reviewer as secondary audience) and the design north star «The Precision Instrument» are confirmed; the two measured contrast failures are fixed by token values — light focus ring `#b45309` (dark stays `#f59e0b`, declared in both dark blocks) and a dedicated display error colour `--color-display-danger` `#ff8a80`. | UI-BASE-01, UI-SCAF-01, UI-SCREEN-01 |
 
 ### Adopted for planning (recommended defaults; the owner can override at any task's step 1)
 | Topic | Default adopted | Why |
@@ -134,3 +135,4 @@ Version 1 is launched when: (1) every requirement of `srs.md` traces to an artif
 |---|---|---|
 | 2026-10-22 | Initial roadmap | U1–U4 |
 | 2026-10-22 | Specification review applied: `noembed.go` handoff, handler-chain order, risk owners | review |
+| 2026-10-22 | Owner decision U5 (design baseline and measured token changes) | U5 |
