@@ -1,0 +1,18 @@
+# Findings — general
+
+Findings not born from a task (bootstrap, audits, owner reports).
+
+### Findings of BOOTSTRAP — specification review (2026-10-22)
+- (a) **API** [topic: api-contract, security-privacy] [type: note] — Review P1: `unknown field "x"` reflects the submitted field name. Kept as specified error copy and listed as an explicit exception in RNF-SEC-02 (quoted with `%q`, bounded by the 4 KiB body, JSON-encoded problem with `nosniff` and `default-src 'none'`); API-HTTPX-01 tests a hostile field name. Adopted default in the roadmap.
+- (b) **API** [topic: api-contract] [type: note] — Review P2: repeated JSON keys were undefined. RF-API-04 now states the last occurrence wins (standard decoder behavior), pinned by a transport test in API-HTTPX-01.
+- (c) **API, OPS** [topic: security-privacy, edge-proxy] [type: note] — Review P2: two CSP values competed for API responses. RF-API-08 now covers responses served directly by the service; behind the edge RF-OPS-04 owns the security headers and hides upstream copies so each header has one value.
+- (d) **API** [topic: api-contract] [type: note] — Review P2: «every error is a Problem» conflicted with the draining readiness 503 and edge problems. RF-API-05 now scopes Problems to the service's error responses; edge problems may omit `instance`; draining readiness is Health JSON.
+- (e) **OBS** [topic: reliability-errors] [type: note] — Review P1: the runtime task needs the API-only web handler file before the embedded-handler task exists. OBS-RUNTIME-01 creates `backend/internal/web/noembed.go`; OPS-IMAGE-01 (next wave) completes the package.
+- (f) **OBS** [topic: observability, reliability-errors] [type: note] — Review P2: the handler-chain order had no requirement. Added RF-API-12 (RequestContext → AccessLog → Metrics → Recover → SecureHeaders → router), verified in OBS-RUNTIME-01.
+- (g) **API** [topic: reliability-errors] [type: note] — Review P2: UC-API-02 E14 promised cancellation mid-calculation. Narrowed to a context already cancelled when the calculation starts, which the engine checks deterministically.
+- (h) **OPS** [topic: ci-supply-chain] [type: note] — Review P2: CI artifact uploads (both coverage reports, API reference, Playwright reports, logs, scans, images) were missing from RF-OPS-11; added, and OPS-CI-02 verifies them.
+- (i) **UI** [topic: design-system] [type: note] — Review P2: RF-UI-14 mislabeled the light display colour. Corrected: light display panel `#11161d` with text `#f5f7fa`; dark display panel `#05080c`; surfaces and text tokens listed.
+- (j) **OPS** [topic: testing-environment] [type: note] — Review P1: «a package that exists is never skipped» blocked M0, where contract files exist before the Go module. Tier stages now key on `backend/go.mod` and `frontend/package.json`; contract files are linted regardless.
+- (k) **OPS** [topic: agent-process, deployment-infra] [type: note] — Review P2: the capacity mitigation had no owner. Product scripts do not call the agent coordination tool; agents take the `heavy` lease around image builds (OPS-IMAGE-01, OPS-EDGE-01, OPS-STACK-01). The proposed product-side wrapper was rejected.
+- (l) **OPS, DOC** [topic: agent-process] [type: note] — Review P3: each design exclusion in the SRS «Out of scope» list carries its reason (CORS, user accounts, expression parsing, distributed rate limiting, localisation); RF-DOC-01 states the README sections only.
+- (m) **OPS** [topic: edge-proxy, live-verification] [type: note] — Review (no finding in category «parallel collisions»): the web image of W2 is built from the scaffolded app; `docker compose up --build` in OPS-E2E-01 rebuilds it from the final app, so the composed-stack run proves the final bundle.
