@@ -34,7 +34,7 @@ Order: T1–T4 and T5/T6 in parallel (T5/T6 do not read the README: they take th
 
 ## Rules the checker implements (C1–C14), each proven by a mutation
 
-- C1 link targets exist and are tracked (`git ls-files`), anchors exist, image files exist; no link to `docs/api/index.html`, `pre_plan/`, `PROJECT-BRIEF.md`, `.workflow/`, `CLAUDE.md`; applies to `README.md`, `docs/api/README.md`, `docs/verification.md`.
+- C1 link targets exist and are tracked (`git ls-files`), anchors exist, image files exist; no link to `docs/api/index.html`, to any untracked path or to the workflow package files; applies to `README.md`, `docs/api/README.md`, `docs/verification.md`.
 - C2 section order and count of `##` headings in the README.
 - C3 Design decisions table = ADR index.
 - C4 Configuration table = variables read by the sources (set equality both ways) and defaults.
@@ -44,7 +44,7 @@ Order: T1–T4 and T5/T6 in parallel (T5/T6 do not read the README: they take th
 - C8 ports and defaults: `8080`, `8081`, `9091`, `5173`, `4110–4123`-style block statements are not in the README; the README ports equal `env.sh` main defaults and `compose.yaml`.
 - C9 figures equal across README, verification.md and the RUN-M2-1 raw logs (token list above).
 - C10 screenshots: both files exist, are tracked/staged, are PNG (signature), width 1280 × height 800 for desktop (scale 1), Pixel 7 width 412 × scale 2.625 = 1082 px wide for mobile (height ≥ 2000), each under 600 KB.
-- C11 hard-rule wording: no `pre_plan`, `PROJECT-BRIEF`, `T[0-9]+` plan ids, `§`, no `(not yet|planned|future|deferred|skipped|removed|out of scope)` outside the Trade-offs section; no `Co-Authored`; no secrets patterns.
+- C11 hard-rule wording: the generic patterns (`T[0-9]+` plan ids, `§`, removal and deferral words, `Co-Authored`, secrets patterns) are in the committed checker; the project-specific product and planning names are read from a term file kept outside the repository (`--terms-file` or `DOC_TERMS_FILE`) so that no committed file contains them, and only the result («N terms, 0 matches») is recorded.
 - C12 CI/CD section states: `ci.yml.disabled`, the rename to `ci.yml`, the six job names, the four triggers, the publish tags `sha-`, `main`, version, Dependabot weekly; contains no badge (`shields.io`, `actions/workflows/.../badge`) and no `github.io`.
 - C13 `docs/api/README.md` names `make docs-api`, `docs/api/index.html` as git-ignored (`git check-ignore`), and does not link it.
 - C15 Overview embeds both screenshots with non-empty alt text; Architecture has two fenced diagrams; the README names no registry path and no `env.sh`; plain paths absent on this branch must be in the pending list `.github/dependabot.yml`, `scripts/ci/image-smoke.sh`, `scripts/ci/edge-smoke.sh`, `scripts/ci/edge-stub-smoke.sh`, `scripts/ci/edge-mutations.sh`, `scripts/ci/publish-tags.sh` (reported as pending, not failed); CI/CD states the tags `sha-<full 40-character SHA>`, `main`, `X.Y.Z`.
@@ -82,4 +82,18 @@ Nothing in this run needs a migration, a container, `make up`, `make e2e`, an im
 
 ## Review log
 
-(filled after the independent plan review)
+Independent read-only review (Claude subagent, Sonnet 5.5) of the plan against the draft README and the code: 4 P0, 5 P1, 4 P2, P3 notes; its emulation of the curl convention matched all 19 README pairs (status and body), and the 13 problem codes, limits, log fields, metric names, keypad names and 21 Make targets were confirmed. Triage:
+
+- **P0-1 (C11 words) not applicable as written:** the dispatched C11 lists only removal/deferral words (`deferred`, `postponed`, `descoped`, `scaled back`, `temporarily`); «skipped» and the fixed heading «future work» are not matched.
+- **P0-2/P0-3 clarified:** C15 forbids only sourcing instructions for `env.sh` (the layout line names the file); C7 reads only code spans and fences.
+- **P0-4 accepted:** one mechanism for curl blocks — a `curl()` wrapper around `command curl`, each block under `bash -c`; the Response line is ``Response `NNN` `` plus an optional note; the 413 example is a pipeline; the `/healthz` example is exempt from the request-id header; the runner already does this (19/19, and a mutated README fails it).
+- **P1-5 accepted:** the real-repo check counts untracked, non-ignored files as «will be tracked»; the scratch harness uses `--no-git`.
+- **P1-6 accepted:** commas and spaces are normalised, benchmark rows are keyed by case name, image sizes and durations are taken from the existing `docs/verification.md` rows (not from the raw logs), coverage and benchmark numbers from the raw logs.
+- **P1-7 accepted:** exclusion list extended, defaults checked only for `CALC_*` and the literal-expectation names with `config.go` and the Makefile as authorities, `CI_STAGE_TIMEOUT` added as a documented variable read by `scripts/ci/lib.sh`.
+- **P1-8, P1-9 accepted:** localhost autolinks allowed, everything else forbidden; the «Emitted by» grammar fixed.
+- **P2-10 accepted:** README CI/CD sentences reworded to what the merged workflow will show (concurrency grouping, jobs use the same Make targets and `scripts/ci` scripts); the integrator compares the section with the merged workflow.
+- **P2-11 rejected with reason:** roadmap task IDs in `docs/verification.md` headings are project IDs, not the forbidden plan task IDs (T1–T20) or design section numbers; unchanged existing rows.
+- **P2-12 accepted:** generated and ignored paths are not checked.
+- **P2-13/14 accepted:** the screenshot script already uses the `title` attribute and the accessible button names; the mobile height check is > 2202 and the DOM asserts the open `<details>`.
+- **P3 accepted:** the README now says «Without Make … build and run the same image», `IMAGE_TAG` is set by Make from the project name, «Running it again is safe», the layout lists `src/app` and the UI helpers, «the CI definition builds and publishes linux/amd64 only».
+- **Process note:** Codex is not installed in this environment (the job failed at start with «Codex CLI is not installed»); the checker was written by a Claude subagent instead (workflow step 7, outage rule).

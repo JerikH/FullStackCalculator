@@ -1,0 +1,22 @@
+pairs found: 20
+ 1  GET http://localhost:8080/api/v1/operations                  expected 200 actual 200  OK
+ 2  POST http://localhost:8080/api/v1/operations/add             expected 200 actual 200  OK
+ 3  POST http://localhost:8080/api/v1/operations/subtract        expected 200 actual 200  OK
+ 4  POST http://localhost:8080/api/v1/operations/multiply        expected 200 actual 200  OK
+ 5  POST http://localhost:8080/api/v1/operations/divide          expected 200 actual 200  OK
+ 6  POST http://localhost:8080/api/v1/operations/power           expected 200 actual 200  OK
+ 7  POST http://localhost:8080/api/v1/operations/sqrt            expected 200 actual 200  OK
+ 8  POST http://localhost:8080/api/v1/operations/percentage      expected 200 actual 200  OK
+ 9  POST http://localhost:8080/api/v1/operations/add             expected 400 actual 400  OK
+10  POST http://localhost:8080/api/v1/operations/add             expected 400 actual 400  OK
+11  POST http://localhost:8080/api/v1/operations/add             expected 400 actual 400  OK
+12  POST http://localhost:8080/api/v1/operations/modulo          expected 404 actual 404  OK
+13  GET http://localhost:8080/api/v1/nothing                     expected 404 actual 404  OK
+14  DELETE http://localhost:8080/api/v1/operations               expected 405 actual 405  OK
+15  POST http://localhost:8080/api/v1/operations/add             expected 415 actual 415  OK
+16  POST http://localhost:8080/api/v1/operations/add             expected 413 actual 413  OK
+17  POST http://localhost:8080/api/v1/operations/divide          expected 422 actual 422  OK
+18  POST http://localhost:8080/api/v1/operations/sqrt            expected 422 actual 422  OK
+19  POST http://localhost:8080/api/v1/operations/power           expected 422 actual 422  OK
+20  GET http://localhost:8080/healthz                            expected 200 actual 200  OK
+20/20 OK
