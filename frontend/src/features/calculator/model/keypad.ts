@@ -28,12 +28,12 @@ function digit(d: Digit, row: number, column: number): KeyDefinition {
   return key(`digit-${d}`, d, d, { kind: 'digit', digit: d }, 'digit', row, column, [d]);
 }
 export const KEYPAD: readonly KeyDefinition[] = Object.freeze([
-  key('all-clear', 'AC', 'all clear', { kind: 'allClear' }, 'function', 1, 1, ['Escape']),
+  key('all-clear', 'AC', 'AC, all clear', { kind: 'allClear' }, 'function', 1, 1, ['Escape']),
   key('clear-entry', 'C', 'clear entry', { kind: 'clearEntry' }, 'function', 1, 2, ['Delete']),
   key('backspace', '⌫', 'backspace', { kind: 'backspace' }, 'function', 1, 3, ['Backspace']),
   key('divide', OPERATIONS.divide.symbol, 'divide', { kind: 'binary', operation: 'divide' }, 'operator', 1, 4, ['/']),
   key('sqrt', OPERATIONS.sqrt.symbol, 'square root', { kind: 'unary', operation: 'sqrt' }, 'function', 2, 1, ['r']),
-  key('power', 'xʸ', 'power', { kind: 'binary', operation: 'power' }, 'operator', 2, 2, ['^']),
+  key('power', 'xʸ', 'xʸ, power', { kind: 'binary', operation: 'power' }, 'operator', 2, 2, ['^']),
   key(
     'percentage',
     OPERATIONS.percentage.symbol,

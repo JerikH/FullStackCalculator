@@ -1,13 +1,19 @@
 // @vitest-environment node
 import { delay, http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
-import { afterAll, afterEach, beforeAll, describe, expect, expectTypeOf, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, expectTypeOf, it, vi } from 'vitest';
 import { createCalculatorApi, DEFAULT_TIMEOUT_MS, resolveBaseUrl } from './calculatorApi';
 import { PROBLEM_CODES } from './problem';
 import type { ApiError, OperationName } from './types';
 
 const BASE = 'http://calculator.test';
 const ENDPOINT = `${BASE}/api/v1/operations/:operation`;
+
+const signalDescriptors = {
+  any: Object.getOwnPropertyDescriptor(AbortSignal, 'any'),
+  timeout: Object.getOwnPropertyDescriptor(AbortSignal, 'timeout'),
+};
+const controllerDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'AbortController');
 
 const server = setupServer();
 // Created before server.listen() runs: proves the default fetch is late-bound.
@@ -17,6 +23,14 @@ beforeAll(() => {
   server.listen({ onUnhandledFrame: 'error' });
 });
 afterEach(() => {
+  vi.restoreAllMocks();
+  vi.useRealTimers();
+  for (const name of ['any', 'timeout'] as const) {
+    const descriptor = signalDescriptors[name];
+    if (descriptor) Object.defineProperty(AbortSignal, name, descriptor);
+    else Reflect.deleteProperty(AbortSignal, name);
+  }
+  if (controllerDescriptor) Object.defineProperty(globalThis, 'AbortController', controllerDescriptor);
   server.resetHandlers();
 });
 afterAll(() => {
@@ -368,6 +382,209 @@ describe('calculate: caller abort', () => {
       ok: false,
       error: { kind: 'aborted' },
     });
+  });
+});
+
+function stalledResponse(request: Request): Promise<Response> {
+  return Promise.resolve(
+    new Response(
+      new ReadableStream({
+        start(controller) {
+          request.signal.addEventListener('abort', () => {
+            controller.error(request.signal.reason);
+          });
+        },
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    ),
+  );
+}
+
+describe('calculate: signal compatibility', () => {
+  it('keeps a fallback timeout when an abort listener aborts the caller synchronously', async () => {
+    Reflect.deleteProperty(AbortSignal, 'any');
+    const caller = new AbortController();
+    const racing = createCalculatorApi({
+      baseUrl: BASE,
+      timeoutMs: 100,
+      fetch: (request) => {
+        request.signal.addEventListener('abort', () => {
+          caller.abort();
+        });
+        return stalledResponse(request);
+      },
+    });
+    expect(await racing.calculate('add', ['1', '2'], { signal: caller.signal })).toEqual({
+      ok: false,
+      error: { kind: 'timeout' },
+    });
+  });
+
+  it('succeeds with a caller signal when only any is unavailable', async () => {
+    Reflect.deleteProperty(AbortSignal, 'any');
+    respondWith(() => HttpResponse.json(addResult));
+    await expect(api.calculate('add', ['0.1', '0.2'], { signal: new AbortController().signal })).resolves.toEqual({
+      ok: true,
+      data: addResult,
+    });
+  });
+
+  it('keeps the native timeout without a caller when only any is unavailable', async () => {
+    Reflect.deleteProperty(AbortSignal, 'any');
+    const timeout = vi.spyOn(AbortSignal, 'timeout');
+    const timer = vi.spyOn(globalThis, 'setTimeout');
+    respondWith(() => HttpResponse.json(addResult));
+    expect(await api.calculate('add', ['0.1', '0.2'])).toEqual({ ok: true, data: addResult });
+    expect(timeout).toHaveBeenCalledWith(100);
+    expect(timer.mock.calls.filter(([, ms]) => ms === 100)).toHaveLength(0);
+  });
+
+  it('works without a caller signal when only the timeout API is unavailable', async () => {
+    Reflect.deleteProperty(AbortSignal, 'timeout');
+    respondWith(() => HttpResponse.json(addResult));
+    expect(await api.calculate('add', ['0.1', '0.2'])).toEqual({ ok: true, data: addResult });
+    const stalled = createCalculatorApi({ baseUrl: BASE, timeoutMs: 100, fetch: stalledResponse });
+    expect(await stalled.calculate('add', ['1', '2'])).toEqual({ ok: false, error: { kind: 'timeout' } });
+  });
+
+  describe.each(['timeout', 'both'] as const)('without %s', (missing) => {
+    function removeApis(): void {
+      Reflect.deleteProperty(AbortSignal, 'timeout');
+      if (missing === 'both') Reflect.deleteProperty(AbortSignal, 'any');
+    }
+
+    it('succeeds with a caller signal', async () => {
+      removeApis();
+      respondWith(() => HttpResponse.json(addResult));
+      await expect(api.calculate('add', ['0.1', '0.2'], { signal: new AbortController().signal })).resolves.toEqual({
+        ok: true,
+        data: addResult,
+      });
+    });
+
+    it('reports a caller abort in flight', async () => {
+      removeApis();
+      const caller = new AbortController();
+      const aborting = createCalculatorApi({
+        baseUrl: BASE,
+        timeoutMs: 100,
+        fetch: (request) => {
+          const response = stalledResponse(request);
+          caller.abort();
+          return response;
+        },
+      });
+      expect(await aborting.calculate('add', ['1', '2'], { signal: caller.signal })).toEqual({
+        ok: false,
+        error: { kind: 'aborted' },
+      });
+    });
+
+    it('times out a stalled injected fetch', async () => {
+      removeApis();
+      const stalled = createCalculatorApi({ baseUrl: BASE, timeoutMs: 100, fetch: stalledResponse });
+      expect(await stalled.calculate('add', ['1', '2'], { signal: new AbortController().signal })).toEqual({
+        ok: false,
+        error: { kind: 'timeout' },
+      });
+    });
+  });
+
+  it.each(['fallback', 'native'] as const)('reports a caller already aborted with %s signals', async (path) => {
+    if (path === 'fallback') Reflect.deleteProperty(AbortSignal, 'any');
+    const caller = new AbortController();
+    caller.abort();
+    const fetch = vi.fn(() => Promise.resolve(Response.json(addResult)));
+    const timer = vi.spyOn(globalThis, 'setTimeout');
+    const aborted = createCalculatorApi({ baseUrl: BASE, timeoutMs: 4321, fetch });
+    expect(await aborted.calculate('add', ['1', '2'], { signal: caller.signal })).toEqual({
+      ok: false,
+      error: { kind: 'aborted' },
+    });
+    if (path === 'fallback') {
+      expect(timer.mock.calls.filter(([, ms]) => ms === 4321)).toHaveLength(0);
+    }
+  });
+
+  it('returns a network error when signal construction throws', async () => {
+    const caller = new AbortController();
+    Reflect.deleteProperty(AbortSignal, 'any');
+    Reflect.deleteProperty(AbortSignal, 'timeout');
+    Reflect.deleteProperty(globalThis, 'AbortController');
+    await expect(api.calculate('add', ['1', '2'], { signal: caller.signal })).resolves.toEqual({
+      ok: false,
+      error: { kind: 'network' },
+    });
+  });
+
+  it.each(['success', 'problem', 'network', 'timeout', 'abort'] as const)(
+    'releases fallback timers and caller listeners after %s',
+    async (outcome) => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+      Reflect.deleteProperty(AbortSignal, 'any');
+      const caller = new AbortController();
+      const add = vi.spyOn(caller.signal, 'addEventListener');
+      const remove = vi.spyOn(caller.signal, 'removeEventListener');
+      const set = globalThis.setTimeout;
+      const clear = globalThis.clearTimeout;
+      const created: ReturnType<typeof setTimeout>[] = [];
+      const cleared: Parameters<typeof clearTimeout>[0][] = [];
+      vi.spyOn(globalThis, 'setTimeout').mockImplementation((callback, ms, ...args: unknown[]) => {
+        const id = set(callback, ms, ...args);
+        if (ms === 4321) created.push(id);
+        return id;
+      });
+      vi.spyOn(globalThis, 'clearTimeout').mockImplementation((id) => {
+        cleared.push(id);
+        clear(id);
+      });
+      const client = createCalculatorApi({
+        baseUrl: BASE,
+        timeoutMs: 4321,
+        fetch: (request) => {
+          if (outcome === 'success') return Promise.resolve(Response.json(addResult));
+          if (outcome === 'problem') return Promise.resolve(problemResponse(problemBody, 422));
+          if (outcome === 'network') throw new TypeError('offline');
+          const response = stalledResponse(request);
+          if (outcome === 'abort') caller.abort();
+          return response;
+        },
+      });
+      const pending = client.calculate('add', ['0.1', '0.2'], { signal: caller.signal });
+      if (outcome === 'timeout') await vi.advanceTimersByTimeAsync(4321);
+      const result = await pending;
+      if (outcome === 'success') expect(result).toEqual({ ok: true, data: addResult });
+      else if (outcome === 'problem') expect(result).toMatchObject({ ok: false, error: { kind: 'problem' } });
+      else expect(result).toEqual({ ok: false, error: { kind: outcome === 'abort' ? 'aborted' : outcome } });
+      expect(created).toHaveLength(1);
+      for (const id of created) expect(cleared).toContain(id);
+      expect(add).toHaveBeenCalledWith('abort', expect.any(Function), { once: true });
+      for (const [event, listener] of add.mock.calls) {
+        expect(remove).toHaveBeenCalledWith(event, listener);
+      }
+    },
+  );
+
+  it('keeps a caller abort when the timer fires before an ignored fetch settles', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    Reflect.deleteProperty(AbortSignal, 'any');
+    const caller = new AbortController();
+    let finish: (response: Response) => void = () => {
+      throw new Error('fetch has not started');
+    };
+    const late = createCalculatorApi({
+      baseUrl: BASE,
+      timeoutMs: 100,
+      fetch: () =>
+        new Promise<Response>((resolve) => {
+          finish = resolve;
+        }),
+    });
+    const pending = late.calculate('add', ['0.1', '0.2'], { signal: caller.signal });
+    caller.abort();
+    await vi.advanceTimersByTimeAsync(101);
+    finish(Response.json(addResult));
+    expect(await pending).toEqual({ ok: false, error: { kind: 'aborted' } });
   });
 });
 

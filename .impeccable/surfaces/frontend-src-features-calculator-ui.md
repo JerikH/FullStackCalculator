@@ -29,4 +29,4 @@ Initial; typing; pending expression (accumulator up to 34 digits); busy (digits 
 Mouse presses on keys and history rows never move focus (a following Enter evaluates); keyboard shortcuts mirror the keypad table; Enter/Space on buttons, the summary and radios keep native activation; Clear history returns focus to the summary. Mobile first, 320 px no horizontal scroll, every control at least 48 × 48 px.
 
 ## Constraints and open decisions
-RNF-SEC-03 policy (no inline script/style), WCAG 2.2 AA, English only. Open: the accessible names mandated by RF-UI-01 for AC («all clear») and xʸ («power») do not contain their visible text (WCAG 2.5.3, an axe experimental rule); recorded as a finding for the owner.
+RNF-SEC-03 policy (no inline script/style), WCAG 2.2 AA, English only. Label in name (WCAG 2.5.3) holds: RF-UI-01 names AC `AC, all clear` and xʸ `xʸ, power` (U28) and the history rows are named `<visible expression>, use result` (U34); axe's `label-content-name-mismatch` rule runs in the component and browser checks and reports zero violations.

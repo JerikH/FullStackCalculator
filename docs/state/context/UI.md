@@ -33,7 +33,7 @@ The calculator screen (UI-SCREEN-01): display, keypad, history panel, theme cont
 - Package-wide frontend inputs re-check the whole package in the tiers (Findings of UI-SCAF-01 (b)).
 - `@playwright/test` 1.64.1 runs Chromium build 1248 (Findings of UI-SCAF-01 (e)).
 - Completions carry the captured request object; the reducer accepts only the very object in state.request (request IDs restart at 1 after AC). A binary operator after a unary result or a recall chains; only the stored operand (entryMode 'operand') has its pending operator replaced (Findings of UI-MODEL-01 (b), (d)).
-- Mouse presses on keys, history rows and Clear history never move focus; hover tones are declared only under `(hover: hover)`; the 768 px breakpoint is written in px in CSS and JS; the History summary is refocused only after keyboard activation; the accessible names of AC and xʸ follow RF-UI-01 as amended by U28 (`AC, all clear`, `xʸ, power`, built by UI-FIX-01; until it closes the shipped names are `all clear` and `power`, Findings of UI-SCREEN-01 (b)).
+- Mouse presses on keys, history rows and Clear history never move focus; hover tones are declared only under `(hover: hover)`; the 768 px breakpoint is written in px in CSS and JS; the History summary is refocused only after keyboard activation; label in name holds (WCAG 2.5.3): the accessible names of AC and xʸ follow RF-UI-01 as amended by U28 (`AC, all clear`, `xʸ, power`) and a history row is named `<visible expression>, use result` (U34); component tests use the axe wrapper `src/test/axe.ts`, which stubs the canvas jsdom lacks so `label-content-name-mismatch` really runs and fails when axe skips it (built by UI-FIX-01; Findings of UI-SCREEN-01 (b)).
 
 ## Where to look
 - Open debt: `findings/by-owner/UI.md`

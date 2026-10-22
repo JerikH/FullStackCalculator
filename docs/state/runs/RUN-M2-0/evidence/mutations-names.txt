@@ -1,0 +1,4 @@
+AC name reverted -> KILLED by an axe test | FAIL  src/app/App.test.tsx > App accessibility (axe) > has zero violations initially; FAIL  src/app/App.test.tsx > App accessibility (axe) > has zero violations with a populated history; FAIL  src/app/App.test.tsx > App accessibility (axe) > has zero violations in an error state
+xʸ name reverted -> KILLED by an axe test | FAIL  src/app/App.test.tsx > App accessibility (axe) > has zero violations initially; FAIL  src/app/App.test.tsx > App accessibility (axe) > has zero violations with a populated history; FAIL  src/app/App.test.tsx > App accessibility (axe) > has zero violations in an error state
+history row name reverted -> KILLED by an axe test | FAIL  src/features/calculator/ui/HistoryPanel.test.tsx > HistoryPanel > has no axe violations (populated)
+restored; survivors: 0

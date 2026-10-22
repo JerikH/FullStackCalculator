@@ -1,0 +1,323 @@
+{
+  "config": {
+    "argv": [
+      "/home/jerik/.nvm/versions/node/v24.22.1/bin/node",
+      "/home/jerik/dev/personal/FullStackCalculator/frontend/node_modules/@playwright/test/cli.js",
+      "test",
+      "-c",
+      "/tmp/fullstackcalculator/main/e2e/playwright.config.ts",
+      "axe",
+      "--project=chromium-desktop",
+      "--workers=2"
+    ],
+    "configFile": "/tmp/fullstackcalculator/main/e2e/playwright.config.ts",
+    "rootDir": "/tmp/fullstackcalculator/main/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/home/jerik/dev/personal/FullStackCalculator/docs/state/runs/RUN-M2-0/evidence/browser/results/artifacts",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium-desktop",
+        "name": "chromium-desktop",
+        "testDir": "/tmp/fullstackcalculator/main/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "*.spec.ts"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/home/jerik/dev/personal/FullStackCalculator/docs/state/runs/RUN-M2-0/evidence/browser/results/artifacts",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "mobile-chromium",
+        "name": "mobile-chromium",
+        "testDir": "/tmp/fullstackcalculator/main/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "*.spec.ts"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "filteredProjects": [
+      {
+        "grep": {},
+        "grepInvert": null,
+        "outputDir": "/home/jerik/dev/personal/FullStackCalculator/docs/state/runs/RUN-M2-0/evidence/browser/results/artifacts",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "name": "chromium-desktop",
+        "testDir": "/tmp/fullstackcalculator/main/e2e",
+        "snapshotDir": "/tmp/fullstackcalculator/main/e2e",
+        "testIgnore": [],
+        "testMatch": "*.spec.ts",
+        "timeout": 30000,
+        "use": {
+          "baseURL": "http://127.0.0.1:4103",
+          "trace": "off",
+          "screenshot": "off",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36",
+          "viewport": {
+            "width": 1280,
+            "height": 720
+          },
+          "screen": {
+            "width": 1920,
+            "height": 1080
+          },
+          "deviceScaleFactor": 1,
+          "isMobile": false,
+          "hasTouch": false,
+          "defaultBrowserType": "chromium"
+        },
+        "dependencies": [],
+        "ignoreSnapshots": false,
+        "__projectId": "chromium-desktop"
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "line",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "/home/jerik/dev/personal/FullStackCalculator/docs/state/runs/RUN-M2-0/evidence/browser/results/report-axe-chromium-desktop.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "default",
+    "updateSourceMethod": "patch",
+    "version": "1.64.1",
+    "workers": 2,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "axe.spec.ts",
+      "file": "axe.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "WCAG 2.5.3 label-in-name: zero violations on keys and history rows; 12 keys pass, 11 are not applicable",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-desktop",
+              "projectName": "chromium-desktop",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1315,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T22:16:56.770Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9abf67be62d153b4ed8c-f88d11c4257fdb2631e9",
+          "file": "axe.spec.ts",
+          "line": 17,
+          "column": 5
+        },
+        {
+          "title": "axe light: initial and error states, populated history",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-desktop",
+              "projectName": "chromium-desktop",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3206,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T22:16:57.123Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9abf67be62d153b4ed8c-7b579694e718d5dbd79c",
+          "file": "axe.spec.ts",
+          "line": 40,
+          "column": 7
+        },
+        {
+          "title": "axe dark: initial and error states, populated history",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-desktop",
+              "projectName": "chromium-desktop",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3092,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T22:16:57.886Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9abf67be62d153b4ed8c-83684b503c32f2790916",
+          "file": "axe.spec.ts",
+          "line": 40,
+          "column": 7
+        },
+        {
+          "title": "dynamic-state contrast light",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-desktop",
+              "projectName": "chromium-desktop",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4085,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "{\"theme\":\"light\",\"project\":\"chromium-desktop\",\"rows\":[[\"theme checked segment label\",5.72,4.5],[\"theme unchecked label\",5.72,4.5],[\"key 7 rest\",15.73,4.5],[\"key 7 hover\",13.45,4.5],[\"key 7 active\",11.27,4.5],[\"key add rest\",5.72,4.5],[\"key add hover\",6.34,4.5],[\"key add active\",7.02,4.5],[\"key AC, all clear rest\",13.68,4.5],[\"key AC, all clear hover\",11.71,4.5],[\"key AC, all clear active\",9.93,4.5],[\"key equals rest\",9.5,4.5],[\"key equals hover\",10.09,4.5],[\"key equals active\",10.7,4.5],[\"busy digits (opacity 0.6)\",6.67,4.5],[\"error copy\",7.96,4.5],[\"Ref line\",7.2,4.5]]}\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T22:16:58.622Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9abf67be62d153b4ed8c-63988da56032f22a8623",
+          "file": "axe.spec.ts",
+          "line": 136,
+          "column": 7
+        },
+        {
+          "title": "dynamic-state contrast dark",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium-desktop",
+              "projectName": "chromium-desktop",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3962,
+                  "errors": [],
+                  "stdout": [
+                    {
+                      "text": "{\"theme\":\"dark\",\"project\":\"chromium-desktop\",\"rows\":[[\"theme checked segment label\",4.98,4.5],[\"theme unchecked label\",6.86,4.5],[\"key 7 rest\",12.11,4.5],[\"key 7 hover\",9.73,4.5],[\"key 7 active\",7.6,4.5],[\"key add rest\",4.98,4.5],[\"key add hover\",5.51,4.5],[\"key add active\",6.11,4.5],[\"key AC, all clear rest\",10.21,4.5],[\"key AC, all clear hover\",8.21,4.5],[\"key AC, all clear active\",6.5,4.5],[\"key equals rest\",8.98,4.5],[\"key equals hover\",9.45,4.5],[\"key equals active\",9.86,4.5],[\"busy digits (opacity 0.6)\",6.88,4.5],[\"error copy\",8.79,4.5],[\"Ref line\",6.62,4.5]]}\n"
+                    }
+                  ],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T22:16:59.592Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9abf67be62d153b4ed8c-59d9b4513fdd98c10f70",
+          "file": "axe.spec.ts",
+          "line": 136,
+          "column": 7
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-22T22:16:56.518Z",
+    "duration": 17061.72,
+    "expected": 5,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

@@ -282,7 +282,7 @@ Every case is complete: M0, M1 and M2 cases carry their full flow, extensions an
 |---|---|---|
 | 1 | Opens History (open by default at ≥ 768 px). | |
 | 2 | | Lists entries newest first (`12 × 3 = 36`, `√16 = 4`, `50% = 0.5`), at most 20. |
-| 3 | Selects `Use result 36`. | |
+| 3 | Selects `12 × 3 = 36, use result` (the row showing `12 × 3 = 36`). | |
 | 4 | | Sets the entry to the raw result `36`, fresh, `≈` cleared; a pending operator stays (`9 + [36] =` → `add ["9","36"]`). |
 
 **Extensions:**

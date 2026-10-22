@@ -1,8 +1,8 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { axe } from 'vitest-axe';
 import { KEYPAD } from '@/features/calculator/model/keypad';
+import { axe } from '@/test/axe';
 import { Keypad } from './Keypad';
 import keyStyles from './KeyButton.module.css';
 
@@ -79,6 +79,20 @@ describe('Keypad', () => {
     await user.keyboard(' ');
     expect(execute).toHaveBeenCalledTimes(2);
     expect(execute.mock.calls[1]?.[0]).toEqual({ kind: 'digit', digit: '7' });
+  });
+
+  it('starts every accessible name with the visible label where axe applies label-in-name', () => {
+    // axe skips a label that is a single non-digit character or only symbols and punctuation.
+    const applicable = KEYPAD.filter(
+      (definition) => /[\p{L}\p{N}]/u.test(definition.label) && !/^\P{N}$/u.test(definition.label),
+    );
+    expect(applicable.map((definition) => definition.label)).toEqual(['AC', 'xʸ', ...'789456123'.split(''), '0']);
+    render(<Keypad execute={vi.fn()} />);
+    for (const definition of applicable) {
+      const button = screen.getByRole('button', { name: definition.ariaLabel });
+      expect(definition.ariaLabel.toLowerCase().startsWith(definition.label.toLowerCase())).toBe(true);
+      expect(button).toHaveAccessibleName(definition.ariaLabel);
+    }
   });
 
   it('has no axe violations', async () => {

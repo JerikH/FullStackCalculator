@@ -5,12 +5,12 @@ import { deepFreeze } from './testing';
 import type { CalculatorAction, Digit, KeyCommand } from './types';
 
 const expected = deepFreeze([
-  ['all-clear', 'AC', 'all clear', { kind: 'allClear' }, 'function', 1, 1, 1, ['Escape']],
+  ['all-clear', 'AC', 'AC, all clear', { kind: 'allClear' }, 'function', 1, 1, 1, ['Escape']],
   ['clear-entry', 'C', 'clear entry', { kind: 'clearEntry' }, 'function', 1, 2, 1, ['Delete']],
   ['backspace', '⌫', 'backspace', { kind: 'backspace' }, 'function', 1, 3, 1, ['Backspace']],
   ['divide', '÷', 'divide', { kind: 'binary', operation: 'divide' }, 'operator', 1, 4, 1, ['/']],
   ['sqrt', '√', 'square root', { kind: 'unary', operation: 'sqrt' }, 'function', 2, 1, 1, ['r']],
-  ['power', 'xʸ', 'power', { kind: 'binary', operation: 'power' }, 'operator', 2, 2, 1, ['^']],
+  ['power', 'xʸ', 'xʸ, power', { kind: 'binary', operation: 'power' }, 'operator', 2, 2, 1, ['^']],
   ['percentage', '%', 'percentage', { kind: 'unary', operation: 'percentage' }, 'function', 2, 3, 1, ['%']],
   ['multiply', '×', 'multiply', { kind: 'binary', operation: 'multiply' }, 'operator', 2, 4, 1, ['*']],
   ['digit-7', '7', '7', { kind: 'digit', digit: '7' }, 'digit', 3, 1, 1, ['7']],
@@ -29,11 +29,40 @@ const expected = deepFreeze([
   ['digit-0', '0', '0', { kind: 'digit', digit: '0' }, 'digit', 6, 2, 1, ['0']],
   ['decimal', '.', 'decimal point', { kind: 'decimal' }, 'digit', 6, 3, 1, ['.', ',']],
 ]);
+const ACCESSIBLE_NAMES = [
+  'AC, all clear',
+  'clear entry',
+  'backspace',
+  'divide',
+  'square root',
+  'xʸ, power',
+  'percentage',
+  'multiply',
+  '7',
+  '8',
+  '9',
+  'subtract',
+  '4',
+  '5',
+  '6',
+  'add',
+  '1',
+  '2',
+  '3',
+  'equals',
+  'toggle sign',
+  '0',
+  'decimal point',
+];
 describe('keypad', () => {
   it('matches every specified key in row-major order', () => {
     expect(
       KEYPAD.map((k) => [k.id, k.label, k.ariaLabel, k.command, k.variant, k.row, k.column, k.rowSpan, k.bindings]),
     ).toEqual(expected);
+  });
+  it('names the 23 keys as specified, in table order', () => {
+    expect(ACCESSIBLE_NAMES).toHaveLength(23);
+    expect(KEYPAD.map((k) => k.ariaLabel)).toEqual(ACCESSIBLE_NAMES);
   });
   it('covers all cells once, with unique ids and bindings', () => {
     expect(KEYPAD).toHaveLength(23);

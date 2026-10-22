@@ -1,8 +1,8 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { axe } from 'vitest-axe';
 import { useKeyboardShortcuts } from '@/features/calculator/hooks/useKeyboardShortcuts';
+import { axe } from '@/test/axe';
 import { installCssEscape } from '@/test/cssEscape';
 import { THEME_STORAGE_KEY } from './theme';
 import { ThemeToggle } from './ThemeToggle';

@@ -304,7 +304,7 @@ describe('UC-UI-01 extensions', () => {
     expect(api.calls).toHaveLength(2);
     expect(callAt(api, 1).signal?.aborted).toBe(false);
 
-    await press(user, 'all clear');
+    await press(user, 'AC, all clear');
     expect(callAt(api, 1).signal?.aborted).toBe(true);
     expect(value()).toBe('0');
     expect(screen.queryByText('4 ×')).toBeNull();
@@ -316,7 +316,7 @@ describe('UC-UI-01 extensions', () => {
     const { api, user } = setup({ ignoreAbort: true });
     await press(user, '2', 'add', '3', 'equals');
     expect(api.calls).toHaveLength(1);
-    await press(user, 'all clear');
+    await press(user, 'AC, all clear');
     expect(callAt(api, 0).signal?.aborted).toBe(true);
 
     await settle(api, 0, success('add', ['2', '3'], '5'));
@@ -397,7 +397,7 @@ describe('UC-UI-01 extensions', () => {
     it('AC', async () => {
       const { api, user } = setup();
       await reachError(user, api, timeoutError());
-      await press(user, 'all clear');
+      await press(user, 'AC, all clear');
       expect(alertBox()).toBeEmptyDOMElement();
       expect(value()).toBe('0');
     });
@@ -410,7 +410,7 @@ describe('UC-UI-01 extensions', () => {
       expect(alertBox()).toHaveTextContent('Cannot divide by zero');
       expect(rows()).toEqual(['2 + 3 = 5']);
 
-      await press(user, 'Use result 5');
+      await press(user, '2 + 3 = 5, use result');
       expect(alertBox()).toBeEmptyDOMElement();
       expect(value()).toBe('5');
       expect(api.calls).toHaveLength(2);
@@ -503,7 +503,7 @@ describe('UC-UI-02 extensions', () => {
 
   it('E2: the sign toggles a scientific result (1e+21) in place and keeps the ≈ marker', async () => {
     const { api, user } = setup();
-    await press(user, '1', '0', 'power', '2', '1', 'equals');
+    await press(user, '1', '0', 'xʸ, power', '2', '1', 'equals');
     expect(callAt(api, 0).operation).toBe('power');
     expect(callAt(api, 0).operands).toEqual(['10', '21']);
     await settle(api, 0, success('power', ['10', '21'], '1e+21', true));
@@ -543,7 +543,7 @@ describe('UC-UI-02 extensions', () => {
     expect(callAt(api, 0).operands).toEqual(['9', '3']);
     await settle(api, 0, success('add', ['9', '3'], '12'));
 
-    await press(user, '5', 'subtract', 'all clear');
+    await press(user, '5', 'subtract', 'AC, all clear');
     expect(value()).toBe('0');
     expect(screen.queryByText('5 −')).toBeNull();
     expect(rows()).toEqual(['9 + 3 = 12']);
@@ -558,9 +558,9 @@ describe('UC-UI-03 extensions', () => {
     return context;
   }
 
-  it('recalls a result as the right operand: 9 + [Use result 36] = sends add ["9","36"]', async () => {
+  it('recalls a result as the right operand: 9 + [6 × 6 = 36, use result] = sends add ["9","36"]', async () => {
     const { api, user } = await withSixTimesSix();
-    await press(user, '9', 'add', 'Use result 36');
+    await press(user, '9', 'add', '6 × 6 = 36, use result');
     expect(value()).toBe('36');
     expect(api.calls).toHaveLength(1);
     await press(user, 'equals');
@@ -571,8 +571,8 @@ describe('UC-UI-03 extensions', () => {
 
   it('a mouse recall followed by Enter on the page evaluates: focus did not stay on the row', async () => {
     const { api, user } = await withSixTimesSix();
-    await press(user, '9', 'add', 'Use result 36');
-    expect(screen.getByRole('button', { name: 'Use result 36' })).not.toHaveFocus();
+    await press(user, '9', 'add', '6 × 6 = 36, use result');
+    expect(screen.getByRole('button', { name: '6 × 6 = 36, use result' })).not.toHaveFocus();
     expect(document.body).toHaveFocus();
     await user.keyboard('{Enter}');
     expect(api.calls).toHaveLength(2);
@@ -603,7 +603,7 @@ describe('UC-UI-03 extensions', () => {
     const { api, user } = await withSixTimesSix();
     await press(user, '2', 'add', '3', 'equals');
     expect(api.calls).toHaveLength(2);
-    await press(user, 'Use result 36', 'Clear history');
+    await press(user, '6 × 6 = 36, use result', 'Clear history');
     expect(value()).toBe('3');
     expect(rows()).toEqual(['6 × 6 = 36']);
     await settle(api, 1, success('add', ['2', '3'], '5'));

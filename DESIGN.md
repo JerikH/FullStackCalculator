@@ -354,7 +354,7 @@ Tactile and confident.
 - **Touch:** `-webkit-tap-highlight-color: transparent` on buttons, summaries and labels, so the browser's tap overlay never covers the active tone.
 - **Transition:** background only, `--transition-fast` (120 ms ease-out); under `prefers-reduced-motion: reduce` a global rule shrinks every transition and animation to 0.01 ms.
 - **Focus:** see Focus ring. A mouse press never moves focus (the key prevents default on mousedown), so a following Enter evaluates instead of pressing the key again.
-- **Names:** native `<button type="button">` with the accessible names of the keypad table (`all clear`, `clear entry`, `backspace`, `divide`, `square root`, `power`, `percentage`, `multiply`, `subtract`, `add`, `equals`, `toggle sign`, `decimal point`, digits); the keypad is a `role="group"` named `Keypad`.
+- **Names:** native `<button type="button">` with the accessible names of the keypad table (`AC, all clear`, `clear entry`, `backspace`, `divide`, `square root`, `xʸ, power`, `percentage`, `multiply`, `subtract`, `add`, `equals`, `toggle sign`, `decimal point`, digits); the keypad is a `role="group"` named `Keypad`. Where a key shows text, that text begins its accessible name (WCAG 2.5.3): `AC` and `xʸ` are the only two keys whose names add words after the label.
 
 ### Focus ring
 - One global `:focus-visible` rule for every control: 3px solid `--color-focus`, `outline-offset: 2px`, so the ring always sits on the surface around the control, leaving a 2px band of surface between ring and key. Measured ≥ 4.60:1 light, ≥ 7.45:1 dark.
@@ -377,7 +377,7 @@ Tactile and confident.
 
 ### History panel
 - Card surface (`--radius-lg`, 1 px hairline, `--shadow-card`); a `<details>` that is open by default from 768 px and collapsed below it. Its `<summary>` reads `History` in the summary style, at least 48 px tall, padded `--space-3` by `--space-4`.
-- **Body:** padding `0 --space-4 --space-4`. An ordered list newest first, `--space-1` between rows; each row a full-width native button on a transparent fill in the label style (`12 × 3 = 36`, `√16 = 4`, `50% = 0.5`, `≈` when inexact), wrapping anywhere, at least 48 px tall, named `Use result <formatted result>`. Hover tint `--color-surface-raised` inside `@media (hover: hover)`, with the 120 ms background transition.
+- **Body:** padding `0 --space-4 --space-4`. An ordered list newest first, `--space-1` between rows; each row a full-width native button on a transparent fill in the label style (`12 × 3 = 36`, `√16 = 4`, `50% = 0.5`, `≈` when inexact), wrapping anywhere, at least 48 px tall, named `<visible expression>, use result` (`12 × 3 = 36, use result`) so the visible text begins the name (WCAG 2.5.3). Hover tint `--color-surface-raised` inside `@media (hover: hover)`, with the 120 ms background transition.
 - **Clear history:** function-key styling (Key Muted fill, label style, at least 48 px tall, `--space-4` side padding, `--space-3` above); hover 8% inside `@media (hover: hover)`, active 16%. A mouse press on a row or on it never moves focus; activating it returns focus to the summary.
 - **Empty:** `No calculations yet` in Graphite body text.
 

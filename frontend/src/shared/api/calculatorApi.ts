@@ -34,9 +34,50 @@ function toCalculationResult(value: unknown, operation: OperationName): Calculat
   return { operation, operands: [...decimals], result, inexact };
 }
 
-/** AbortSignal.any keeps the reason of the first source that aborted. */
-function abortError(signal: AbortSignal, timeout: AbortSignal): ApiError {
-  return { kind: signal.reason === timeout.reason ? 'timeout' : 'aborted' };
+interface Combined {
+  readonly signal: AbortSignal;
+  expired(): boolean;
+  release(): void;
+}
+
+function combineSignals(caller: AbortSignal | undefined, timeoutMs: number): Combined {
+  if (typeof AbortSignal.timeout === 'function' && (!caller || typeof AbortSignal.any === 'function')) {
+    const timeout = AbortSignal.timeout(timeoutMs);
+    const signal = caller ? AbortSignal.any([caller, timeout]) : timeout;
+    return { signal, expired: () => signal.reason === timeout.reason, release: () => undefined };
+  }
+
+  const controller = new AbortController();
+  let timedOut = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const onAbort = () => {
+    controller.abort(caller?.reason);
+  };
+  if (caller?.aborted) {
+    controller.abort(caller.reason);
+  } else {
+    // The timer first: if arming it threw, no listener would be left on the caller's signal.
+    timer = setTimeout(() => {
+      // A caller abort that won the race must not be reported as a timeout.
+      if (!controller.signal.aborted) {
+        timedOut = true;
+        controller.abort(new DOMException('The operation timed out.', 'TimeoutError'));
+      }
+    }, timeoutMs);
+    caller?.addEventListener('abort', onAbort, { once: true });
+  }
+  return {
+    signal: controller.signal,
+    expired: () => timedOut,
+    release: () => {
+      clearTimeout(timer);
+      caller?.removeEventListener('abort', onAbort);
+    },
+  };
+}
+
+function abortError(combined: Combined): ApiError {
+  return { kind: combined.expired() ? 'timeout' : 'aborted' };
 }
 
 function toApiError(body: unknown, status: number): ApiError {
@@ -60,14 +101,14 @@ export function createCalculatorApi({
   const client = createClient<paths>({ baseUrl });
   return {
     async calculate(operation, operands, options = {}) {
-      const timeout = AbortSignal.timeout(timeoutMs);
-      const signal = options.signal ? AbortSignal.any([options.signal, timeout]) : timeout;
+      let combined: Combined | undefined;
       let status: number | undefined;
       try {
+        combined = combineSignals(options.signal, timeoutMs);
         const { data, error, response } = await client.POST('/api/v1/operations/{operation}', {
           params: { path: { operation } },
           body: { operands: [...operands] },
-          signal,
+          signal: combined.signal,
           fetch: async (request) => {
             const received = await configuredFetch(request);
             status = received.status;
@@ -75,7 +116,7 @@ export function createCalculatorApi({
           },
         });
         // A response that settles after the signal fired is stale: the caller has moved on.
-        if (signal.aborted) return { ok: false, error: abortError(signal, timeout) };
+        if (combined.signal.aborted) return { ok: false, error: abortError(combined) };
         if (response.ok) {
           const result = toCalculationResult(data, operation);
           return result
@@ -84,12 +125,14 @@ export function createCalculatorApi({
         }
         return { ok: false, error: toApiError(error, response.status) };
       } catch (caught) {
-        if (signal.aborted) return { ok: false, error: abortError(signal, timeout) };
+        if (combined?.signal.aborted) return { ok: false, error: abortError(combined) };
         // Checked by name, not instanceof: the error may come from another realm.
         if (status !== undefined && isRecord(caught) && caught.name === 'SyntaxError') {
           return { ok: false, error: { kind: 'unexpected', status } };
         }
         return { ok: false, error: { kind: 'network' } };
+      } finally {
+        combined?.release();
       }
     },
   };

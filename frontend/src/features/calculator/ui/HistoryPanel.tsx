@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { MouseEvent, SyntheticEvent } from 'react';
 import { useMediaQuery } from '../hooks/useMediaQuery';
-import { formatEntry, historyExpression } from '@/features/calculator/model/selectors';
+import { historyExpression } from '@/features/calculator/model/selectors';
 import type { HistoryEntry } from '@/features/calculator/model/types';
 import styles from './HistoryPanel.module.css';
 
@@ -62,7 +62,7 @@ export function HistoryPanel({ entries, recall, clearHistory }: HistoryPanelProp
                   <button
                     type="button"
                     className={styles.row}
-                    aria-label={`Use result ${formatEntry(entry.result)}`}
+                    aria-label={`${historyExpression(entry)}, use result`}
                     onMouseDown={keepFocus}
                     onClick={() => {
                       recall(entry.result);

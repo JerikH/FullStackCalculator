@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import type { ComponentProps } from 'react';
 import { describe, expect, it } from 'vitest';
-import { axe } from 'vitest-axe';
+import { axe } from '@/test/axe';
 import { Display } from './Display';
 import styles from './Display.module.css';
 

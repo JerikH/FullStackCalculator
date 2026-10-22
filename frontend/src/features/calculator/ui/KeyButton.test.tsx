@@ -1,9 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { axe } from 'vitest-axe';
 import { KEYPAD } from '@/features/calculator/model/keypad';
 import type { KeyDefinition } from '@/features/calculator/model/types';
+import { axe } from '@/test/axe';
 import { KeyButton } from './KeyButton';
 import styles from './KeyButton.module.css';
 

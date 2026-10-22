@@ -35,7 +35,7 @@ The browser never does arithmetic. Numbers travel as decimal strings, the server
 - Exact interface copy (binding):
   - Errors: `Cannot divide by zero`, `Result is undefined`, `Result is out of range`, `Invalid input`, `Too many requests, try again shortly`, `Calculator service is unreachable`, `Calculator service timed out`, `Something went wrong`, plus `Ref: <requestId>` when available. Server details and titles are never shown.
   - Rounded marker: `≈` with the explanation `Rounded to 34 significant digits`.
-  - History: items such as `12 × 3 = 36`, `√16 = 4`, `50% = 0.5` (with `≈` when inexact); item name `Use result <formatted result>`; `Clear history`; empty state `No calculations yet`.
+  - History: items such as `12 × 3 = 36`, `√16 = 4`, `50% = 0.5` (with `≈` when inexact); item name `<visible expression>, use result` (for example `12 × 3 = 36, use result`); `Clear history`; empty state `No calculations yet`.
   - Theme: radio group `Theme` with `System`, `Light`, `Dark`.
   - Page heading `Calculator`; keypad group `Keypad`.
 

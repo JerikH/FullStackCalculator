@@ -2,8 +2,8 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { axe } from 'vitest-axe';
 import type { HistoryEntry } from '@/features/calculator/model/types';
+import { axe } from '@/test/axe';
 import { installMatchMedia } from '@/test/matchMedia';
 import type { MatchMediaController } from '@/test/matchMedia';
 import { HistoryPanel } from './HistoryPanel';
@@ -47,30 +47,58 @@ describe('HistoryPanel', () => {
     expect(screen.queryByRole('list')).toBeNull();
   });
 
-  it('lists the entries in the given order as expressions, named by their formatted result', () => {
+  it('lists the entries in the given order as expressions, named by their visible text', () => {
     render(<HistoryPanel entries={ENTRIES} recall={vi.fn()} clearHistory={vi.fn()} />);
     const list = screen.getByRole('list');
     const items = within(list).getAllByRole('listitem');
     expect(items.map((item) => item.textContent)).toEqual(['1 ÷ 3 ≈ 0.3333', '√16 = 4', '12 × 3 = 36']);
     const rows = within(list).getAllByRole('button');
     expect(rows.map((row) => row.getAttribute('aria-label'))).toEqual([
-      'Use result 0.3333',
-      'Use result 4',
-      'Use result 36',
+      '1 ÷ 3 ≈ 0.3333, use result',
+      '√16 = 4, use result',
+      '12 × 3 = 36, use result',
     ]);
-    expect(screen.getByRole('button', { name: 'Use result 36' })).toBe(rows[2]);
+    expect(screen.getByRole('button', { name: '12 × 3 = 36, use result' })).toBe(rows[2]);
     for (const row of rows) expect(row).toHaveAttribute('type', 'button');
   });
 
-  it('formats the accessible name with grouping and the minus sign, and recalls the raw result', async () => {
+  it('names the row after its formatted expression, with grouping and the minus sign, and recalls the raw result', async () => {
     const recall = vi.fn();
     const entries: readonly HistoryEntry[] = [
       { id: 'a', operation: 'multiply', operands: ['-1234', '1'], result: '-1234.5', inexact: false },
     ];
     render(<HistoryPanel entries={entries} recall={recall} clearHistory={vi.fn()} />);
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Use result −1,234.5' }));
+    await userEvent.setup().click(screen.getByRole('button', { name: '−1,234 × 1 = −1,234.5, use result' }));
     expect(recall).toHaveBeenCalledTimes(1);
     expect(recall).toHaveBeenCalledWith('-1234.5');
+  });
+
+  it.each<[string, HistoryEntry, string]>([
+    ['binary', { id: 'b', operation: 'multiply', operands: ['12', '3'], result: '36', inexact: false }, '12 × 3 = 36'],
+    ['unary square root', { id: 'u', operation: 'sqrt', operands: ['16'], result: '4', inexact: false }, '√16 = 4'],
+    ['percentage', { id: 'p', operation: 'percentage', operands: ['50'], result: '0.5', inexact: false }, '50% = 0.5'],
+    [
+      'inexact result',
+      { id: 'i', operation: 'divide', operands: ['1', '3'], result: '0.3333', inexact: true },
+      '1 ÷ 3 ≈ 0.3333',
+    ],
+    [
+      'negative result',
+      { id: 'n', operation: 'subtract', operands: ['2', '1234'], result: '-1232', inexact: false },
+      '2 − 1,234 = −1,232',
+    ],
+    [
+      'scientific result',
+      { id: 's', operation: 'power', operands: ['10', '21'], result: '1e+21', inexact: true },
+      '10 ^ 21 ≈ 1e+21',
+    ],
+  ])('names a %s row after its visible text', (_name, entry, text) => {
+    render(<HistoryPanel entries={[entry]} recall={vi.fn()} clearHistory={vi.fn()} />);
+    const row = within(screen.getByRole('list')).getByRole('button');
+    expect(row).toHaveTextContent(text);
+    expect(row.textContent).toBe(text);
+    expect(row).toHaveAccessibleName(`${text}, use result`);
+    expect(screen.getByRole('button', { name: `${text}, use result` })).toBe(row);
   });
 
   it('shows Clear history only with entries and calls clearHistory once per click', async () => {
@@ -84,7 +112,7 @@ describe('HistoryPanel', () => {
   it('prevents the default of mousedown on rows and on Clear history so a click leaves focus alone', async () => {
     render(<HistoryPanel entries={ENTRIES} recall={vi.fn()} clearHistory={vi.fn()} />);
     const user = userEvent.setup();
-    for (const name of ['Use result 36', 'Use result 4', 'Clear history']) {
+    for (const name of ['12 × 3 = 36, use result', '√16 = 4, use result', 'Clear history']) {
       const button = screen.getByRole('button', { name });
       expect(fireEvent.mouseDown(button)).toBe(false);
       await user.click(button);

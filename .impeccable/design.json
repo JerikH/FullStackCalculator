@@ -616,7 +616,7 @@
       "kind": "button",
       "refersTo": "key-function",
       "description": "Keypad function variant; hover tone only where a hover exists, active tone on press, amber ring on keyboard focus.",
-      "html": "<button type=\"button\" class=\"ds-key ds-key-function\" aria-label=\"all clear\">AC</button>",
+      "html": "<button type=\"button\" class=\"ds-key ds-key-function\" aria-label=\"AC, all clear\">AC</button>",
       "css": ".ds-key { width: 100%; min-height: var(--key-size, 3.5rem); border: 0; border-radius: var(--radius-sm, 0.5rem); font: 500 1.25rem/1 var(--font-sans, system-ui, sans-serif); font-variant-numeric: tabular-nums; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background-color var(--transition-fast, 120ms ease-out); } .ds-key:focus-visible { outline: 3px solid var(--color-focus, #b45309); outline-offset: 2px; } @media (prefers-reduced-motion: reduce) { .ds-key { transition-duration: 0.01ms; } } .ds-key-function { background: var(--color-key-function); color: var(--color-key-function-text); } @media (hover: hover) { .ds-key-function:hover { background: color-mix(in srgb, var(--color-key-function), var(--color-text) 8%); } } .ds-key-function:active { background: color-mix(in srgb, var(--color-key-function), var(--color-text) 16%); }"
     },
     {
@@ -672,7 +672,7 @@
       "kind": "button",
       "refersTo": "history-row",
       "description": "Full-width native button on a transparent fill recalling a past result; tabular label text; surface-raised tint on hover only where a hover exists.",
-      "html": "<button type=\"button\" class=\"ds-history-row\" aria-label=\"Use result 36\">12 × 3 = 36</button>",
+      "html": "<button type=\"button\" class=\"ds-history-row\" aria-label=\"12 × 3 = 36, use result\">12 × 3 = 36</button>",
       "css": ".ds-history-row { display: block; width: 100%; min-height: 3rem; margin: 0; padding: var(--space-3, 0.75rem); border: 0; border-radius: var(--radius-sm, 0.5rem); background: transparent; color: var(--color-text); text-align: left; font: 500 0.875rem/1.4 var(--font-sans, system-ui, sans-serif); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background-color var(--transition-fast, 120ms ease-out); } @media (hover: hover) { .ds-history-row:hover { background: var(--color-surface-raised); } } .ds-history-row:focus-visible { outline: 3px solid var(--color-focus, #b45309); outline-offset: 2px; }"
     },
     {

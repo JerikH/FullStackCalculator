@@ -1,8 +1,8 @@
 import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { axe } from 'vitest-axe';
 import { THEME_STORAGE_KEY } from '@/shared/theme/theme';
+import { axe } from '@/test/axe';
 import { apiWrapper, createFakeApi, problem, success } from '@/test/calculatorFake';
 import type { FakeApi } from '@/test/calculatorFake';
 import { installCssEscape } from '@/test/cssEscape';
@@ -103,7 +103,7 @@ describe('App structure', () => {
       await Promise.resolve();
     });
     expect(screen.getByRole('status', { name: 'Result' })).toHaveTextContent('5');
-    expect(screen.getByRole('button', { name: 'Use result 5' })).toHaveTextContent('2 + 3 = 5');
+    expect(screen.getByRole('button', { name: '2 + 3 = 5, use result' })).toHaveTextContent('2 + 3 = 5');
   });
 });
 
