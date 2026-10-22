@@ -3,7 +3,7 @@
 ## Current milestone: M1 — Working calculator
 ## Current run: (none)
 ## Cycle step: (none)
-## Active waves: (none)
+## Active waves: W2 (RUN-M1-4, RUN-M1-5, RUN-M1-6) — plan in `docs/state/waves/W2.md`
 
 ## Run groups (order of execution)
 
@@ -16,9 +16,9 @@ Each run chains related tasks executed by one agent, in the order listed.
 | **RUN-M1-1** | M1 | CALC-CORE-01, CALC-OPS-01, API-HTTPX-01 | done (2026-10-22, 5e3ecb5, 29aecc2, 509bc52; W1 merge eb327ca) | W1 with RUN-M1-2, RUN-M1-3 | backend track; double review on API-HTTPX-01 |
 | **RUN-M1-2** | M1 | UI-SCAF-01, UI-CLIENT-01 | done (2026-10-22, 9fc0caa, 75d84a1, 24131a9, fbb1984; W1 merge ce02a75) | W1 with RUN-M1-1, RUN-M1-3 | frontend track; consumes the M0 contract |
 | **RUN-M1-3** | M1 | DOC-ADR-01 | done (2026-10-22, 8460cea; W1 merge 0f22334) | W1 with RUN-M1-1, RUN-M1-2 | `docs/adr/` only; Claude subagents (no Codex) |
-| **RUN-M1-4** | M1 | OBS-METRICS-01, API-ROUTES-01, OBS-RUNTIME-01 | pending | W2 with RUN-M1-5, RUN-M1-6 | backend track; double review on API-ROUTES-01, OBS-RUNTIME-01 |
-| **RUN-M1-5** | M1 | UI-MODEL-01 | pending | W2 with RUN-M1-4, RUN-M1-6 | frontend track; double review |
-| **RUN-M1-6** | M1 | OPS-EDGE-01 | pending | W2 with RUN-M1-4, RUN-M1-5 | edge files only; double review; Claude subagents (no Codex) |
+| **RUN-M1-4** | M1 | OBS-METRICS-01, API-ROUTES-01, OBS-RUNTIME-01 | in W2 | W2 with RUN-M1-5, RUN-M1-6 | backend track; double review on API-ROUTES-01, OBS-RUNTIME-01 |
+| **RUN-M1-5** | M1 | UI-MODEL-01 | in W2 | W2 with RUN-M1-4, RUN-M1-6 | frontend track; double review |
+| **RUN-M1-6** | M1 | OPS-EDGE-01 | in W2 | W2 with RUN-M1-4, RUN-M1-5 | edge files only; double review; Claude subagents (no Codex) |
 | **RUN-M1-7** | M1 | OPS-IMAGE-01 | pending | W3 with RUN-M1-8 | backend delivery |
 | **RUN-M1-8** | M1 | UI-HOOKS-01, UI-SCREEN-01 | pending | W3 with RUN-M1-7 | frontend track; double review on UI-HOOKS-01; real-browser check against the service from W2 |
 

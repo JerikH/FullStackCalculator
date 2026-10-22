@@ -80,6 +80,10 @@ Run grouping: RUN-M2-1 = OPS-STACK-01, OPS-E2E-01 (solo); RUN-M2-2 = OPS-CI-02 a
 | U9 | 2026-10-22 | Parallel sessions take the `deps` lease for dependency installs and the `heavy` lease for fuzzing, benchmarks and coverage runs; targeted tests take no lease. | M1 waves |
 | U10 | 2026-10-22 | The frontend package pins `packageManager` to `pnpm@10.33.0` (the CI pin) and `engines.node` to `>=24`; every other dependency at its latest stable release with the lockfile committed, `@redocly/cli` at 2.69.0. | UI-SCAF-01 |
 | U11 | 2026-10-22 | The eight ADRs are committed with status «Accepted» and date 2026-10-22, on the existing template (no author field). | DOC-ADR-01 |
+| U12 | 2026-10-22 | The worst-case cost of fractional powers (range-edge operands) is measured by a separate `BenchmarkCalculateWorstCase` with its own budget of < 50,000,000 ns/op per case; the six `BenchmarkCalculate` cases keep < 1,000,000 ns/op; RNF-PERF-01 names both budgets; ADR 0002 stands unchanged; the README and `docs/verification.md` publish both. | API-ROUTES-01 (adds the benchmark in RUN-M1-4), OPS-STACK-01, DOC-README-01 |
+| U13 | 2026-10-22 | `typescript` 5.9.3, `jsdom` 29, `@types/node` 24 and the jsx-a11y peer override for ESLint 10 stay as recorded until OPS-CI-02; nobody changes `frontend/package.json` or the lockfile in W2; the web image build stage uses Node 24.14.1, the local and CI pin. | UI-MODEL-01, OPS-EDGE-01, OPS-CI-02 |
+| U14 | 2026-10-22 | The edge serves the source maps of the production build as hashed static files under `/assets/` with the immutable cache policy; the build configuration is unchanged. | OPS-EDGE-01 |
+| U15 | 2026-10-22 | Wave W2 = RUN-M1-4, RUN-M1-5, RUN-M1-6 as three parallel sessions, launched manually by the owner; Codex in RUN-M1-4 and RUN-M1-5, Claude subagents only in RUN-M1-6. | RUN-M1-4, RUN-M1-5, RUN-M1-6 |
 
 ### Adopted for planning (recommended defaults; the owner can override at any task's step 1)
 | Topic | Default adopted | Why |
@@ -88,7 +92,7 @@ Run grouping: RUN-M2-1 = OPS-STACK-01, OPS-E2E-01 (solo); RUN-M2-2 = OPS-CI-02 a
 | Disabled CI file | `.github/workflows/ci.yml.disabled`, created in M0 with the contract job and completed by OPS-CI-02; enabled by renaming to `ci.yml` | GitHub only runs `.yml`/`.yaml`; the definition stays current with the tier scripts |
 | Go version | `go.mod` directive set to the installed Go release (≥ 1.25), no `toolchain` line; build images use the same minor | Latest stable at implementation time |
 | Local composed-stack run | One `make up` + `make e2e` during OPS-E2E-01, recorded in `docs/verification.md`; after a fix only the failing spec files are re-run | Long suites belong to CI |
-| Benchmark budget | `make bench` saves the raw output under `coverage/` and fails when any case reaches 1,000,000 ns/op | Makes RNF-PERF-01 a gate |
+| Benchmark budget | `make bench` saves the raw output under `coverage/` and fails when any `BenchmarkCalculate` case reaches 1,000,000 ns/op or any `BenchmarkCalculateWorstCase` case reaches 50,000,000 ns/op (U12) | Makes RNF-PERF-01 a gate |
 | History disclosure | A small breakpoint hook opens history at ≥ 768 px and keeps the user's toggle within a breakpoint | Single semantic list for both layouts |
 | Quoted input in details | `unknown field "x"` keeps the submitted field name quoted with `%q` (bounded by the 4 KiB body, JSON-encoded), like the operation name | The decoder detail is part of the specified error copy |
 | Repeated JSON keys | Not rejected; the last occurrence wins (standard decoder behavior), pinned by a transport test | Keeps strict decoding without a custom parser |
@@ -118,6 +122,7 @@ Version 1 is launched when: (1) every requirement of `srs.md` traces to an artif
 | Backend statement coverage (`./internal/...`) | ≥ 90 % |
 | Frontend lines / statements / functions / branches | ≥ 90 / 90 / 90 / 85 % |
 | `BenchmarkCalculate` per case (`add`, `divide_repeating`, `sqrt_irrational`, `power_large_integer`, `power_fractional`, `power_overflow`) | < 1,000,000 ns/op |
+| `BenchmarkCalculateWorstCase` per case (fractional powers with range-edge operands) | < 50,000,000 ns/op |
 | axe violations | 0 |
 | Trivy fixable HIGH/CRITICAL | 0 |
 | API image size | expected < 20 MB |
@@ -144,3 +149,4 @@ Version 1 is launched when: (1) every requirement of `srs.md` traces to an artif
 | 2026-10-22 | Owner decision U5 (design baseline and measured token changes) | U5 |
 | 2026-10-22 | Owner decision U6 (shellcheck in the tiers; tool pins from M0) | U6 |
 | 2026-10-22 | Wave W1 planned (RUN-M1-1, RUN-M1-2, RUN-M1-3); owner decisions U7–U11 | U7–U11 |
+| 2026-10-22 | Wave W2 planned (RUN-M1-4, RUN-M1-5, RUN-M1-6); owner decisions U12–U15; worst-case benchmark budget in the adopted defaults and the validation metrics | U12–U15 |

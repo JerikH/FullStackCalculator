@@ -46,6 +46,7 @@
   **Review level:** double (new trust boundary: public edge, browser policy, rate limiting).
   **Needs from the owner:** nothing.
   - Registered follow-up (from API-CONTRACT-01): edge problems (429, 503, 413) carry detail and the validated requestId and validate against the Problem schema. 🔎 findings: «Findings of API-CONTRACT-01» (b)
+  - Registered follow-up (owner decisions U13, U14, from UI-SCAF-01 and UI-CLIENT-01): the build stage uses Node 24.14.1 and the frozen lockfile as committed; the source maps of the build are served as hashed /assets/ files with the immutable cache policy. 🔎 findings: «Findings of UI-SCAF-01» (c), «Findings of UI-CLIENT-01» (d)
 
 ### OPS-STACK-01 — Compose stack, all-in-one image and developer commands [BE] — M2 [topic: deployment-infra, testing-environment]
 
@@ -56,6 +57,7 @@
   **Review level:** single.
   **Needs from the owner:** nothing.
   - Registered follow-up (from OPS-CI-01): extend tools/versions.env (same layout), make scripts/bootstrap.sh call scripts/ci/install-tools.sh, and wire the integration targets into t2.sh (compose up with a down afterwards) and make:<target> into t1.sh in the commit that adds the Makefile. 🔎 findings: «Findings of OPS-CI-01» (e)
+  - Registered follow-up (owner decision U12): make bench fails when any BenchmarkCalculate case reaches 1,000,000 ns/op or any BenchmarkCalculateWorstCase case reaches 50,000,000 ns/op. 🔎 findings: «Findings of CALC-OPS-01» (c)
 
 ### OPS-E2E-01 — Playwright against the composed stack [FE] — M2 [topic: live-verification, ui-accessibility, testing-environment]
 
