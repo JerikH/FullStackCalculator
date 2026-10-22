@@ -1,0 +1,41 @@
+# Contrast check against a stylesheet (--css mode) — 2026-10-22T19:33Z
+tokens-fixture.css is the expected stylesheet of frontend/src/shared/styles/tokens.css for the colour tokens (light :root, :root[data-theme='dark'], and the system-dark block inside @media (prefers-color-scheme: dark)).
+$ python3 docs/state/runs/RUN-M0-1/evidence/contrast.py DESIGN.md --css docs/state/runs/RUN-M0-1/evidence/tokens-fixture.css
+0 failing pair(s)
+exit=0
+
+## Mutation 1: light focus #f59e0b — must exit 1
+ERROR tokens.css light: --color-focus #f59e0b != DESIGN.md #b45309
+exit=1
+
+## Mutation 2: --color-focus absent from both dark blocks — must exit 1
+ERROR tokens.css dark: --color-focus missing or not #rrggbb
+ERROR tokens.css system-dark: --color-focus missing or not #rrggbb
+exit=1
+
+## Mutation 3: one colour differs in the system-dark block only — must exit 1
+ERROR tokens.css system-dark: --color-surface #171b22 != DESIGN.md #161b22
+ERROR tokens.css: dark blocks differ for --color-surface (#161b22 vs #171b22)
+exit=1
+
+## Mutation 4: a later :root block overrides the light focus — must exit 1
+ERROR tokens.css light: --color-focus #f59e0b != DESIGN.md #b45309
+exit=1
+
+## Mutation 5: system-dark block moved outside its media query, followed by another @media rule — must exit 1
+ERROR tokens.css: --color-* declared under ':root:not([data-theme='light'])'
+ERROR tokens.css system-dark: --color-bg missing or not #rrggbb
+ERROR tokens.css system-dark: --color-surface missing or not #rrggbb
+exit=1
+
+## Mutation 6: an extra colour token — must exit 1
+ERROR tokens.css light: unexpected colour token extra
+exit=1
+
+## Mutation 7: a later :root override without a trailing semicolon — must exit 1
+ERROR tokens.css light: --color-focus #ffffff != DESIGN.md #b45309
+exit=1
+
+## Mutation 8: a colour value that is not #rrggbb — must exit 1
+ERROR tokens.css light: --color-focus missing or not #rrggbb
+exit=1

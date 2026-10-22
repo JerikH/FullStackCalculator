@@ -1,0 +1,716 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-22T19:33:05Z",
+  "title": "Design System: FullStackCalculator",
+  "extensions": {
+    "colorMeta": {
+      "bg": {
+        "role": "neutral",
+        "displayName": "Bench Grey",
+        "canonical": "oklch(97.0% 0.003 264.5)",
+        "tonalRamp": [
+          "#0b0b0c",
+          "#232425",
+          "#3f4041",
+          "#5d5e5f",
+          "#7f8082",
+          "#a4a4a6",
+          "#c9cacc",
+          "#edeef0"
+        ]
+      },
+      "bg-dark": {
+        "role": "neutral",
+        "displayName": "Bench Grey (dark)",
+        "canonical": "oklch(17.6% 0.014 258.4)",
+        "tonalRamp": [
+          "#080b11",
+          "#20242b",
+          "#3b4047",
+          "#595e66",
+          "#7b8189",
+          "#9fa5ae",
+          "#c5cbd4",
+          "#e9eff8"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Panel White",
+        "canonical": "oklch(100.0% 0.000 89.9)",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#242424",
+          "#404040",
+          "#5d5d5d",
+          "#808080",
+          "#a4a4a4",
+          "#cacaca",
+          "#eeeeee"
+        ]
+      },
+      "surface-dark": {
+        "role": "neutral",
+        "displayName": "Panel White (dark)",
+        "canonical": "oklch(22.0% 0.016 256.8)",
+        "tonalRamp": [
+          "#070b12",
+          "#1f242c",
+          "#3a4048",
+          "#585e67",
+          "#7a818a",
+          "#9ea5af",
+          "#c4cbd5",
+          "#e8eff9"
+        ]
+      },
+      "surface-raised": {
+        "role": "neutral",
+        "displayName": "Raised Panel",
+        "canonical": "oklch(98.8% 0.002 247.8)",
+        "tonalRamp": [
+          "#0b0b0c",
+          "#232425",
+          "#3f4041",
+          "#5d5e5e",
+          "#7f8081",
+          "#a4a5a5",
+          "#cacacb",
+          "#edeeef"
+        ]
+      },
+      "surface-raised-dark": {
+        "role": "neutral",
+        "displayName": "Raised Panel (dark)",
+        "canonical": "oklch(25.0% 0.019 258.4)",
+        "tonalRamp": [
+          "#070b13",
+          "#1e242d",
+          "#3a404a",
+          "#575e69",
+          "#79818c",
+          "#9da5b1",
+          "#c3cbd7",
+          "#e7effc"
+        ]
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "oklch(91.2% 0.008 260.7)",
+        "tonalRamp": [
+          "#090b0e",
+          "#222428",
+          "#3d4044",
+          "#5b5e62",
+          "#7e8085",
+          "#a2a5a9",
+          "#c8cbcf",
+          "#eceff4"
+        ]
+      },
+      "border-dark": {
+        "role": "neutral",
+        "displayName": "Hairline (dark)",
+        "canonical": "oklch(31.9% 0.020 257.3)",
+        "tonalRamp": [
+          "#060b14",
+          "#1e242e",
+          "#39404b",
+          "#565e69",
+          "#79818d",
+          "#9da5b2",
+          "#c2cbd8",
+          "#e6effd"
+        ]
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "oklch(20.4% 0.007 258.4)",
+        "tonalRamp": [
+          "#090b0e",
+          "#222427",
+          "#3e4043",
+          "#5b5e61",
+          "#7e8084",
+          "#a2a5a9",
+          "#c8cbcf",
+          "#eceff3"
+        ]
+      },
+      "text-dark": {
+        "role": "neutral",
+        "displayName": "Ink (dark)",
+        "canonical": "oklch(93.9% 0.006 255.5)",
+        "tonalRamp": [
+          "#090b0e",
+          "#222427",
+          "#3e4043",
+          "#5b5e61",
+          "#7e8084",
+          "#a2a5a8",
+          "#c8cbcf",
+          "#eceff3"
+        ]
+      },
+      "text-muted": {
+        "role": "neutral",
+        "displayName": "Graphite",
+        "canonical": "oklch(49.1% 0.018 260.7)",
+        "tonalRamp": [
+          "#070b13",
+          "#1f242d",
+          "#3a4049",
+          "#585e68",
+          "#7a818b",
+          "#9ea5b0",
+          "#c4cbd6",
+          "#e8effb"
+        ]
+      },
+      "text-muted-dark": {
+        "role": "neutral",
+        "displayName": "Graphite (dark)",
+        "canonical": "oklch(71.5% 0.023 256.8)",
+        "tonalRamp": [
+          "#050b15",
+          "#1d252f",
+          "#38404c",
+          "#555e6b",
+          "#77818e",
+          "#9ba5b4",
+          "#c1cbda",
+          "#e5efff"
+        ]
+      },
+      "display-bg": {
+        "role": "neutral",
+        "displayName": "Readout Black",
+        "canonical": "oklch(19.8% 0.016 256.8)",
+        "tonalRamp": [
+          "#070b12",
+          "#1f242c",
+          "#3a4048",
+          "#585e67",
+          "#7a818a",
+          "#9ea5af",
+          "#c4cbd5",
+          "#e8effa"
+        ]
+      },
+      "display-bg-dark": {
+        "role": "neutral",
+        "displayName": "Readout Black (dark)",
+        "canonical": "oklch(13.2% 0.011 250.2)",
+        "tonalRamp": [
+          "#080c10",
+          "#202529",
+          "#3b4046",
+          "#595e64",
+          "#7b8187",
+          "#9fa5ac",
+          "#c5cbd2",
+          "#e9eff6"
+        ]
+      },
+      "display-text": {
+        "role": "neutral",
+        "displayName": "Readout White",
+        "canonical": "oklch(97.5% 0.005 258.3)",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#232426",
+          "#3e4042",
+          "#5c5e60",
+          "#7e8083",
+          "#a3a5a7",
+          "#c9cbcd",
+          "#edeff1"
+        ]
+      },
+      "display-text-dark": {
+        "role": "neutral",
+        "displayName": "Readout White (dark)",
+        "canonical": "oklch(97.5% 0.005 258.3)",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#232426",
+          "#3e4042",
+          "#5c5e60",
+          "#7e8083",
+          "#a3a5a7",
+          "#c9cbcd",
+          "#edeff1"
+        ]
+      },
+      "display-muted": {
+        "role": "neutral",
+        "displayName": "Readout Grey",
+        "canonical": "oklch(71.5% 0.023 256.8)",
+        "tonalRamp": [
+          "#050b15",
+          "#1d252f",
+          "#38404c",
+          "#555e6b",
+          "#77818e",
+          "#9ba5b4",
+          "#c1cbda",
+          "#e5efff"
+        ]
+      },
+      "display-muted-dark": {
+        "role": "neutral",
+        "displayName": "Readout Grey (dark)",
+        "canonical": "oklch(66.6% 0.024 256.8)",
+        "tonalRamp": [
+          "#050b15",
+          "#1d2530",
+          "#38404c",
+          "#555e6b",
+          "#77818f",
+          "#9ba5b4",
+          "#c1cbda",
+          "#e5f0ff"
+        ]
+      },
+      "display-danger": {
+        "role": "error",
+        "displayName": "Readout Coral",
+        "canonical": "oklch(75.9% 0.144 26.1)",
+        "tonalRamp": [
+          "#2d0000",
+          "#4f0000",
+          "#721c1b",
+          "#963d38",
+          "#bd6159",
+          "#e6867d",
+          "#ffaba1",
+          "#ffcfc4"
+        ]
+      },
+      "display-danger-dark": {
+        "role": "error",
+        "displayName": "Readout Coral (dark)",
+        "canonical": "oklch(75.9% 0.144 26.1)",
+        "tonalRamp": [
+          "#2d0000",
+          "#4f0000",
+          "#721c1b",
+          "#963d38",
+          "#bd6159",
+          "#e6867d",
+          "#ffaba1",
+          "#ffcfc4"
+        ]
+      },
+      "key-digit": {
+        "role": "neutral",
+        "displayName": "Key Neutral",
+        "canonical": "oklch(95.4% 0.005 258.3)",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#232426",
+          "#3e4042",
+          "#5c5e60",
+          "#7e8083",
+          "#a3a5a7",
+          "#c9cbcd",
+          "#edeff2"
+        ]
+      },
+      "key-digit-dark": {
+        "role": "neutral",
+        "displayName": "Key Neutral (dark)",
+        "canonical": "oklch(28.2% 0.019 254.8)",
+        "tonalRamp": [
+          "#060c13",
+          "#1e252d",
+          "#39404a",
+          "#565e69",
+          "#79818c",
+          "#9da5b1",
+          "#c2cbd7",
+          "#e6effc"
+        ]
+      },
+      "key-function": {
+        "role": "neutral",
+        "displayName": "Key Muted",
+        "canonical": "oklch(90.8% 0.009 258.3)",
+        "tonalRamp": [
+          "#090b0f",
+          "#212429",
+          "#3d4045",
+          "#5a5e63",
+          "#7d8086",
+          "#a1a5aa",
+          "#c7cbd1",
+          "#ebeff5"
+        ]
+      },
+      "key-function-dark": {
+        "role": "neutral",
+        "displayName": "Key Muted (dark)",
+        "canonical": "oklch(33.0% 0.022 256.4)",
+        "tonalRamp": [
+          "#060b14",
+          "#1d252f",
+          "#38404c",
+          "#565e6a",
+          "#78818e",
+          "#9ca5b3",
+          "#c1cbd9",
+          "#e5effe"
+        ]
+      },
+      "key-operator": {
+        "role": "primary",
+        "displayName": "Instrument Blue",
+        "canonical": "oklch(52.0% 0.183 263.8)",
+        "tonalRamp": [
+          "#01003c",
+          "#041b5d",
+          "#1d3b7e",
+          "#3a5aa1",
+          "#5b7ec8",
+          "#7ea3f0",
+          "#a2caff",
+          "#c5eeff"
+        ]
+      },
+      "key-operator-dark": {
+        "role": "primary",
+        "displayName": "Instrument Blue (dark)",
+        "canonical": "oklch(61.3% 0.182 264.7)",
+        "tonalRamp": [
+          "#01003c",
+          "#061b5d",
+          "#1f3a7e",
+          "#3b5aa1",
+          "#5c7ec8",
+          "#7fa3f0",
+          "#a4c9ff",
+          "#c7eeff"
+        ]
+      },
+      "key-equals": {
+        "role": "primary",
+        "displayName": "Evaluate Blue",
+        "canonical": "oklch(40.0% 0.150 264.5)",
+        "tonalRamp": [
+          "#01003c",
+          "#051b5d",
+          "#1f3a7e",
+          "#3b5aa1",
+          "#5c7ec8",
+          "#7fa3f0",
+          "#a3c9ff",
+          "#c6eeff"
+        ]
+      },
+      "key-equals-dark": {
+        "role": "primary",
+        "displayName": "Evaluate Blue (dark)",
+        "canonical": "oklch(76.4% 0.120 266.3)",
+        "tonalRamp": [
+          "#02003c",
+          "#091a5d",
+          "#223a7e",
+          "#3e59a1",
+          "#5f7dc8",
+          "#82a2f0",
+          "#a6c8ff",
+          "#c9edff"
+        ]
+      },
+      "danger": {
+        "role": "error",
+        "displayName": "Alarm Red",
+        "canonical": "oklch(50.0% 0.182 29.5)",
+        "tonalRamp": [
+          "#2d0000",
+          "#4f0000",
+          "#721d15",
+          "#953e33",
+          "#bd6255",
+          "#e68678",
+          "#ffac9c",
+          "#ffd0bf"
+        ]
+      },
+      "danger-dark": {
+        "role": "error",
+        "displayName": "Alarm Red (dark)",
+        "canonical": "oklch(75.9% 0.144 26.1)",
+        "tonalRamp": [
+          "#2d0000",
+          "#4f0000",
+          "#721c1b",
+          "#963d38",
+          "#bd6159",
+          "#e6867d",
+          "#ffaba1",
+          "#ffcfc4"
+        ]
+      },
+      "danger-bg": {
+        "role": "error",
+        "displayName": "Alarm Wash",
+        "canonical": "oklch(95.6% 0.019 25.6)",
+        "tonalRamp": [
+          "#120807",
+          "#2d211f",
+          "#493c3b",
+          "#685a58",
+          "#8b7c7a",
+          "#b0a09f",
+          "#d7c6c4",
+          "#fbeae8"
+        ]
+      },
+      "danger-bg-dark": {
+        "role": "error",
+        "displayName": "Alarm Wash (dark)",
+        "canonical": "oklch(25.7% 0.056 26.7)",
+        "tonalRamp": [
+          "#1d0101",
+          "#3b1815",
+          "#5a3430",
+          "#7a514d",
+          "#9f746e",
+          "#c69892",
+          "#edbdb7",
+          "#ffe1db"
+        ]
+      },
+      "focus": {
+        "role": "accent",
+        "displayName": "Signal Amber",
+        "canonical": "oklch(55.5% 0.146 49.0)",
+        "tonalRamp": [
+          "#2c0000",
+          "#4d0000",
+          "#6f2500",
+          "#924510",
+          "#b96839",
+          "#e18d5e",
+          "#ffb383",
+          "#ffd6a6"
+        ]
+      },
+      "focus-dark": {
+        "role": "accent",
+        "displayName": "Signal Amber (dark)",
+        "canonical": "oklch(76.9% 0.165 70.1)",
+        "tonalRamp": [
+          "#260000",
+          "#451000",
+          "#662f00",
+          "#874e00",
+          "#ad721c",
+          "#d49648",
+          "#fdbc6f",
+          "#ffe093"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display-xl": {
+        "displayName": "Display Xl",
+        "purpose": "Readout value up to 10 characters."
+      },
+      "display-lg": {
+        "displayName": "Display Lg",
+        "purpose": "Readout value of 11 to 16 characters."
+      },
+      "display-md": {
+        "displayName": "Display Md",
+        "purpose": "Longer readout values; wraps, never truncates."
+      },
+      "display-secondary": {
+        "displayName": "Display Secondary",
+        "purpose": "Pending expression line."
+      },
+      "display-error": {
+        "displayName": "Display Error",
+        "purpose": "Error sentence in the readout."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "The single h1."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Default text."
+      },
+      "key-label": {
+        "displayName": "Key Label",
+        "purpose": "Keypad glyphs."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Theme segments, history rows, the Ref line."
+      }
+    },
+    "shadows": [
+      {
+        "name": "card",
+        "value": "0 1px 2px rgb(16 24 40 / 0.06), 0 8px 24px rgb(16 24 40 / 0.08)",
+        "purpose": "Calculator card and history panel (light)."
+      },
+      {
+        "name": "card-dark",
+        "value": "0 1px 2px rgb(0 0 0 / 0.4), 0 12px 32px rgb(0 0 0 / 0.35)",
+        "purpose": "Calculator card and history panel (dark)."
+      }
+    ],
+    "motion": [
+      {
+        "name": "transition-fast",
+        "value": "120ms ease-out",
+        "purpose": "Key background tone changes; removed under reduced motion."
+      },
+      {
+        "name": "spinner-delay",
+        "value": "150ms",
+        "purpose": "Delay before the busy spinner appears."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "two-column",
+        "value": "768px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Digit key",
+      "kind": "button",
+      "refersTo": "key-digit",
+      "description": "Keypad digit variant; tone change on hover and press, amber ring on keyboard focus.",
+      "html": "<button type=\"button\" class=\"ds-key ds-key-digit\" aria-label=\"7\">7</button>",
+      "css": ".ds-key { min-height: var(--key-size, 3.5rem); min-width: 3rem; border: 0; border-radius: var(--radius-sm, 0.5rem); font: 500 1.25rem/1 var(--font-sans, system-ui, sans-serif); cursor: pointer; transition: background-color var(--transition-fast, 120ms ease-out); } .ds-key:focus-visible { outline: 3px solid var(--color-focus, #b45309); outline-offset: 2px; } @media (prefers-reduced-motion: reduce) { .ds-key { transition: none; } } .ds-key-digit { background: var(--color-key-digit); color: var(--color-key-digit-text); } .ds-key-digit:hover { background: color-mix(in srgb, var(--color-key-digit), var(--color-text) 8%); } .ds-key-digit:active { background: color-mix(in srgb, var(--color-key-digit), var(--color-text) 16%); }"
+    },
+    {
+      "name": "Function key",
+      "kind": "button",
+      "refersTo": "key-function",
+      "description": "Keypad function variant; tone change on hover and press, amber ring on keyboard focus.",
+      "html": "<button type=\"button\" class=\"ds-key ds-key-function\" aria-label=\"all clear\">AC</button>",
+      "css": ".ds-key { min-height: var(--key-size, 3.5rem); min-width: 3rem; border: 0; border-radius: var(--radius-sm, 0.5rem); font: 500 1.25rem/1 var(--font-sans, system-ui, sans-serif); cursor: pointer; transition: background-color var(--transition-fast, 120ms ease-out); } .ds-key:focus-visible { outline: 3px solid var(--color-focus, #b45309); outline-offset: 2px; } @media (prefers-reduced-motion: reduce) { .ds-key { transition: none; } } .ds-key-function { background: var(--color-key-function); color: var(--color-key-function-text); } .ds-key-function:hover { background: color-mix(in srgb, var(--color-key-function), var(--color-text) 8%); } .ds-key-function:active { background: color-mix(in srgb, var(--color-key-function), var(--color-text) 16%); }"
+    },
+    {
+      "name": "Operator key",
+      "kind": "button",
+      "refersTo": "key-operator",
+      "description": "Keypad operator variant; tone change on hover and press, amber ring on keyboard focus.",
+      "html": "<button type=\"button\" class=\"ds-key ds-key-operator\" aria-label=\"divide\">÷</button>",
+      "css": ".ds-key { min-height: var(--key-size, 3.5rem); min-width: 3rem; border: 0; border-radius: var(--radius-sm, 0.5rem); font: 500 1.25rem/1 var(--font-sans, system-ui, sans-serif); cursor: pointer; transition: background-color var(--transition-fast, 120ms ease-out); } .ds-key:focus-visible { outline: 3px solid var(--color-focus, #b45309); outline-offset: 2px; } @media (prefers-reduced-motion: reduce) { .ds-key { transition: none; } } .ds-key-operator { background: var(--color-key-operator); color: var(--color-key-operator-text); } .ds-key-operator:hover { background: color-mix(in srgb, var(--color-key-operator), var(--color-text) 8%); } .ds-key-operator:active { background: color-mix(in srgb, var(--color-key-operator), var(--color-text) 16%); }"
+    },
+    {
+      "name": "Equals key",
+      "kind": "button",
+      "refersTo": "key-equals",
+      "description": "Keypad equals variant; tone change on hover and press, amber ring on keyboard focus.",
+      "html": "<button type=\"button\" class=\"ds-key ds-key-equals\" aria-label=\"equals\">=</button>",
+      "css": ".ds-key { min-height: var(--key-size, 3.5rem); min-width: 3rem; border: 0; border-radius: var(--radius-sm, 0.5rem); font: 500 1.25rem/1 var(--font-sans, system-ui, sans-serif); cursor: pointer; transition: background-color var(--transition-fast, 120ms ease-out); } .ds-key:focus-visible { outline: 3px solid var(--color-focus, #b45309); outline-offset: 2px; } @media (prefers-reduced-motion: reduce) { .ds-key { transition: none; } } .ds-key-equals { background: var(--color-key-equals); color: var(--color-key-equals-text); } .ds-key-equals:hover { background: color-mix(in srgb, var(--color-key-equals), var(--color-text) 8%); } .ds-key-equals:active { background: color-mix(in srgb, var(--color-key-equals), var(--color-text) 16%); }"
+    },
+    {
+      "name": "Readout",
+      "kind": "custom",
+      "refersTo": "display",
+      "description": "Dark display panel in both themes: expression line, value with tabular numerals, rounded marker.",
+      "html": "<div class=\"ds-display\"><p class=\"ds-display-expr\">12 ×</p><p class=\"ds-display-value\"><span class=\"ds-display-approx\" title=\"Rounded to 34 significant digits\">≈</span><output>0.3333333333</output></p></div>",
+      "css": ".ds-display { background: var(--color-display-bg); color: var(--color-display-text); border-radius: var(--radius-md, 0.875rem); padding: var(--space-4, 1rem); text-align: right; font-variant-numeric: tabular-nums; font-family: var(--font-sans, system-ui, sans-serif); } .ds-display p { margin: 0; } .ds-display-expr { color: var(--color-display-muted); font-size: 1rem; line-height: 1.4; } .ds-display-value { font-size: clamp(1.75rem, 9vw, 2.5rem); font-weight: 500; line-height: 1.15; overflow-wrap: anywhere; } .ds-display-approx { color: var(--color-display-muted); font-size: 0.75em; margin-inline-end: 0.25em; }"
+    },
+    {
+      "name": "Readout error",
+      "kind": "custom",
+      "refersTo": "display",
+      "description": "Error state: fixed sentence in Readout Coral inside an alert, with the request reference.",
+      "html": "<div class=\"ds-display\"><p class=\"ds-display-error\" role=\"alert\">Cannot divide by zero</p><p class=\"ds-display-ref\">Ref: 9f2b7c1d</p></div>",
+      "css": ".ds-display { background: var(--color-display-bg); border-radius: var(--radius-md, 0.875rem); padding: var(--space-4, 1rem); text-align: right; font-family: var(--font-sans, system-ui, sans-serif); } .ds-display p { margin: 0; } .ds-display-error { color: var(--color-display-danger); font-size: 1.25rem; font-weight: 500; line-height: 1.3; } .ds-display-ref { color: var(--color-display-muted); font-size: 0.875rem; font-variant-numeric: tabular-nums; }"
+    },
+    {
+      "name": "Theme control",
+      "kind": "nav",
+      "refersTo": "theme-segment",
+      "description": "Native radio group drawn as a segmented control; the checked segment takes the operator fill and weight 600.",
+      "html": "<fieldset class=\"ds-theme\"><legend class=\"ds-vh\">Theme</legend><label><input type=\"radio\" name=\"ds-theme\" checked><span>System</span></label><label><input type=\"radio\" name=\"ds-theme\"><span>Light</span></label><label><input type=\"radio\" name=\"ds-theme\"><span>Dark</span></label></fieldset>",
+      "css": ".ds-theme { display: inline-flex; gap: 0.25rem; margin: 0; padding: 0.25rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm, 0.5rem); background: var(--color-surface); } .ds-vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } .ds-theme label { position: relative; } .ds-theme input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; } .ds-theme span { display: flex; align-items: center; justify-content: center; min-height: 3rem; min-width: 3rem; padding: 0 0.75rem; border-radius: var(--radius-sm, 0.5rem); color: var(--color-text-muted); font: 500 0.875rem/1.4 var(--font-sans, system-ui, sans-serif); } .ds-theme input:checked + span { background: var(--color-key-operator); color: var(--color-key-operator-text); font-weight: 600; } .ds-theme input:focus-visible + span { outline: 3px solid var(--color-focus, #b45309); outline-offset: 2px; }"
+    },
+    {
+      "name": "History row",
+      "kind": "button",
+      "refersTo": "history-row",
+      "description": "Full-width native button recalling a past result; tabular label text.",
+      "html": "<button type=\"button\" class=\"ds-history-row\" aria-label=\"Use result 36\">12 × 3 = 36</button>",
+      "css": ".ds-history-row { display: block; width: 100%; min-height: 3rem; padding: 0.75rem; border: 0; border-radius: var(--radius-sm, 0.5rem); background: var(--color-surface); color: var(--color-text); text-align: left; font: 500 0.875rem/1.4 var(--font-sans, system-ui, sans-serif); font-variant-numeric: tabular-nums; cursor: pointer; } .ds-history-row:hover { background: var(--color-surface-raised); } .ds-history-row:focus-visible { outline: 3px solid var(--color-focus, #b45309); outline-offset: 2px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Precision Instrument",
+    "overview": "The calculator is a measuring instrument, not a toy. A dark readout panel holds the number in both themes, the way an instrument's display stays the same whatever the room's lighting; everything around it is quiet, tonal and familiar. Colour carries intent only: blue marks an operation, a deeper blue marks the act of evaluating, amber marks where the keyboard is. Nothing decorative competes with the digits.\n\nDensity is moderate and touch-first: a 4 × 6 keypad of generous keys, a readout that never truncates a digit and steps its size down rather than cutting, and a history that is one tap away. The system uses the platform's own UI font and native controls, CSS Modules over custom-property tokens, and no UI library, icon system or runtime styling. The palette, the four key variants, the dark-override selectors and the favicon are fixed; token values change only when a measured contrast check fails, and every value below has been measured.",
+    "keyCharacteristics": [
+      "A dark readout in both themes, with tabular numerals and every digit visible.",
+      "Four tonal key variants: digit (neutral), function (muted), operator (accent), equals (strong accent).",
+      "Colour as intent, never as decoration; state is never conveyed by hue alone.",
+      "Native controls and the system font; no imagery, no icons beyond typographic glyphs.",
+      "Measured contrast: text ≥ 4.5:1 and indicators ≥ 3:1 in light, dark and system-dark."
+    ],
+    "rules": [
+      {
+        "name": "The Intent Rule",
+        "body": "Accent colour appears only on things that act: operators, equals, the checked theme segment, the focus ring. Never on text, borders or decoration.",
+        "section": "colors"
+      },
+      {
+        "name": "The Readout Rule",
+        "body": "The display panel is dark in both themes; anything shown inside it uses the `display-*` tokens, never the frame's text or danger colours.",
+        "section": "colors"
+      },
+      {
+        "name": "The Measured Change Rule",
+        "body": "A token value changes only when a measured contrast check fails, and the new value is recorded with its ratio.",
+        "section": "colors"
+      },
+      {
+        "name": "The Every-Digit Rule",
+        "body": "The value steps down in size and then wraps; it is never truncated, ellipsised or rounded to fit.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Rule",
+        "body": "Every number on screen uses tabular numerals.",
+        "section": "typography"
+      },
+      {
+        "name": "The Keypad Budget Rule",
+        "body": "The containers around the keypad add at most 20 px of horizontal padding plus border per side (card padding `--space-4` plus a 1 px hairline; the keypad itself has no padding). More than that pushes four 56 px keys past a 320 px viewport.",
+        "section": "layout"
+      },
+      {
+        "name": "The Flat Key Rule",
+        "body": "Keys never cast shadows or move; feedback is a tone change only.",
+        "section": "elevation & depth"
+      }
+    ],
+    "dos": [
+      "**Do** take every colour from a `--color-*` token, and inside the readout only from `--color-display-*`.",
+      "**Do** keep keys at least `--key-size` (3.5rem) tall, every other control at least 48 × 48 px, and the page free of horizontal scroll at 320 px.",
+      "**Do** use tabular numerals for every number and let long values wrap rather than shrink below display md.",
+      "**Do** mark the checked theme segment with fill and weight, not hue alone.",
+      "**Do** disable transitions and spinner rotation under `prefers-reduced-motion: reduce`.",
+      "**Do** re-measure contrast with the design-baseline check whenever a colour token changes."
+    ],
+    "donts": [
+      "**Don't** truncate, ellipsise or round a value to fit the display.",
+      "**Don't** use a UI component library, an icon system, runtime styling or inline style attributes.",
+      "**Don't** use `--color-danger` inside the readout (2.76:1 on the light readout).",
+      "**Don't** put accent colour on text, borders or decoration.",
+      "**Don't** add shadows or motion to keys beyond the tone change."
+    ]
+  }
+}
