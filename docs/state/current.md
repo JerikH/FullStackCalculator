@@ -1,8 +1,8 @@
 # Current state
 
 ## Current milestone: M2 — Release-ready delivery
-## Current run: (none)
-## Cycle step: (none)
+## Current run: RUN-M2-0 (UI-FIX-01, UI-DEPS-01, OBS-LOG-02)
+## Cycle step: 3 — spec
 ## Active waves: (none)
 
 ## Run groups (order of execution)
