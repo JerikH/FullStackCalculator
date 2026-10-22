@@ -1,0 +1,165 @@
+# Mutation checks of RUN-M1-1 (controller). Each: the source change, the failing tests, the exit code of `go test -count=1 <package>`.
+# The source file was restored from a copy after each run (cmp-verified). 19 checks, all caught by a test (no build failure).
+
+## CALC-OPS-01: remove the 0^0 pre-check
+mutation in backend/internal/calc/operations.go: replace «case base.IsZero() && exp.IsZero():» with «case false:»
+--- FAIL: TestCalculateResults (0.00s)
+FAIL
+FAIL	github.com/JerikH/FullStackCalculator/backend/internal/calc	0.049s
+FAIL
+exit=1 (caught)
+
+## API-HTTPX-01: drop the request-ID regex anchor
+mutation in backend/internal/platform/httpx/requestinfo.go: replace «`^[A-Za-z0-9._-]{1,128}$`» with «`[A-Za-z0-9._-]{1,128}$`»
+--- FAIL: TestRequestContextReplacesInvalidInboundID (0.00s)
+FAIL
+FAIL	github.com/JerikH/FullStackCalculator/backend/internal/platform/httpx	0.010s
+FAIL
+exit=1 (caught)
+
+## CALC-OPS-01: Operations without defensive copy
+mutation in backend/internal/calc/calculator.go: replace «func (c *Calculator) Operations() []OperationInfo { return slices.Clone(c.catalog) }» with «func (c *Calculator) Operations() []OperationInfo { _ = slices.Clone[[]OperationInfo]; return c.catalog }»
+--- FAIL: TestOperationsCatalog (0.00s)
+FAIL
+FAIL	github.com/JerikH/FullStackCalculator/backend/internal/calc	0.048s
+FAIL
+exit=1 (caught)
+
+## CALC-OPS-01: remove the flush below the range
+mutation in backend/internal/calc/calculator.go: replace «if !d.IsZero() && adjustedExponent(&d) < MinExponent {» with «if false {»
+--- FAIL: TestCalculateResults (0.00s)
+FAIL
+FAIL	github.com/JerikH/FullStackCalculator/backend/internal/calc	0.059s
+FAIL
+exit=1 (caught)
+
+## CALC-OPS-01: remove the fractional-power exactness check
+mutation in backend/internal/calc/operations.go: replace «	if err == nil && !isInteger(exp) && cond.Inexact()» with «	if false && err == nil && !isInteger(exp) && cond.Inexact()»
+--- FAIL: TestCalculateFractionalPowerValue (0.00s)
+FAIL
+FAIL	github.com/JerikH/FullStackCalculator/backend/internal/calc	0.055s
+FAIL
+exit=1 (caught)
+
+## CALC-CORE-01: drop the textual digit count (apd decides)
+mutation in backend/internal/calc/decimal.go: replace «	if len(digits) > Precision {» with «	if false {»
+--- FAIL: TestParseRejectsInvalidNumbers (0.00s)
+FAIL
+FAIL	github.com/JerikH/FullStackCalculator/backend/internal/calc	0.072s
+FAIL
+exit=1 (caught)
+
+## CALC-CORE-01: remove zero normalisation
+mutation in backend/internal/calc/decimal.go: replace «	if digits == "" {» with «	if false {»
+--- FAIL: TestParseNormalizesSignedZero (0.00s)
+--- FAIL: TestParseAcceptsValidNumbers (0.00s)
+FAIL
+FAIL	github.com/JerikH/FullStackCalculator/backend/internal/calc	0.027s
+FAIL
+exit=1 (caught)
+
+## API-HTTPX-01: remove the object first-byte check
+mutation in backend/internal/platform/httpx/decode.go: replace «	if len(raw) == 0 || raw[0] != '{' {» with «	if len(raw) == 0 {»
+--- FAIL: TestDecodeJSON (0.00s)
+FAIL
+FAIL	github.com/JerikH/FullStackCalculator/backend/internal/platform/httpx	0.008s
+FAIL
+exit=1 (caught)
+
+## API-HTTPX-01: Recover does not record 500 after a written status
+mutation in backend/internal/platform/httpx/middleware.go: replace «		info.Status = http.StatusInternalServerError
+		return» with «		return»
+--- FAIL: TestRecoverAfterStatusWrittenWritesNothingMoreButLogsAs500 (0.00s)
+FAIL
+FAIL	github.com/JerikH/FullStackCalculator/backend/internal/platform/httpx	0.011s
+FAIL
+exit=1 (caught)
+
+## API-HTTPX-01: no body limit
+mutation in backend/internal/platform/httpx/decode.go: replace «	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, MaxBodyBytes))» with «	body, err := io.ReadAll(r.Body)»
+--- FAIL: TestDecodeJSON (0.00s)
+FAIL
+FAIL	github.com/JerikH/FullStackCalculator/backend/internal/platform/httpx	0.020s
+FAIL
+exit=1 (caught)
+
+## CALC-OPS-01: classify power out-of-range by apd flags instead of quadrant
+mutation in backend/internal/calc/operations.go: replace «		if (cmp > 0 && !exp.Negative) || (cmp < 0 && exp.Negative) {» with «		if cmp != 0 && cond.Overflow() {»
+--- FAIL: TestCalculatePowerQuadrants (0.00s)
+FAIL
+FAIL	github.com/JerikH/FullStackCalculator/backend/internal/calc	0.032s
+FAIL
+exit=1 (caught)
+
+## API-HTTPX-01: remove the exact top-level key check
+mutation in backend/internal/platform/httpx/decode.go: replace «		if !names[key] {» with «		if !names[key] && false {»
+--- FAIL: TestDecodeJSON (0.00s)
+--- FAIL: TestDecodeJSONTopLevelKeysFollowStructTags (0.00s)
+FAIL
+FAIL	github.com/JerikH/FullStackCalculator/backend/internal/platform/httpx	0.007s
+FAIL
+exit=1 (caught)
+
+## CALC-OPS-01: remove the 1^y shortcut (diff review)
+mutation in backend/internal/calc/operations.go: replace «	case base.Cmp(one) == 0:» with «	case base.Cmp(one) == 0 && false:»
+--- FAIL: TestCalculateFractionalPowerValue (0.00s)
+FAIL
+FAIL	github.com/JerikH/FullStackCalculator/backend/internal/calc	0.056s
+FAIL
+exit=1 (caught)
+
+## CALC-OPS-01: remove the non-finite guard (diff review)
+mutation in backend/internal/calc/calculator.go: replace «	if d.Form != apd.Finite {» with «	if false {»
+--- FAIL: TestCalculateRejectsNonFiniteResults (0.00s)
+FAIL
+FAIL	github.com/JerikH/FullStackCalculator/backend/internal/calc	0.049s
+FAIL
+exit=1 (caught)
+
+## API-HTTPX-01: Recover ignores a committed response outside RequestContext (diff review)
+mutation in backend/internal/platform/httpx/middleware.go: replace «	if tracker != nil && tracker.committed {» with «	if tracker != nil && false {»
+--- FAIL: TestRecoverWithoutRequestContextAfterCommitWritesNothingMore (0.00s)
+FAIL
+FAIL	github.com/JerikH/FullStackCalculator/backend/internal/platform/httpx	0.016s
+FAIL
+exit=1 (caught)
+
+## CALC-CORE-01: Parse returns the unreduced value (security review)
+mutation in backend/internal/calc/decimal.go: replace «	d.Reduce(d)» with «	var reduced apd.Decimal
+	reduced.Reduce(d)
+	_ = reduced»
+--- FAIL: TestParseReturnsTheReducedValue (0.00s)
+FAIL
+FAIL	github.com/JerikH/FullStackCalculator/backend/internal/calc	0.100s
+FAIL
+exit=1 (caught)
+
+## CALC-OPS-01: negative-exponent exactness ignores the power-of-ten shift (security review)
+mutation in backend/internal/calc/operations.go: replace «		return product.IsInt64() && product.Int64() == 1 && leftExp+rightExp+shift == 0» with «		return product.IsInt64() && product.Int64() == 1 && leftExp+rightExp == 0»
+--- FAIL: TestIsExactFractionalPower (0.00s)
+--- FAIL: TestCalculateFractionalPowerValue (0.00s)
+FAIL
+FAIL	github.com/JerikH/FullStackCalculator/backend/internal/calc	0.091s
+FAIL
+exit=1 (caught)
+
+## API-HTTPX-01: Recover does not abort a started response (security review)
+mutation in backend/internal/platform/httpx/middleware.go: replace «		panic(http.ErrAbortHandler)
+	}
+	WriteProblem» with «		return
+	}
+	WriteProblem»
+--- FAIL: TestRecoverWithoutRequestContextAfterCommitAborts (0.00s)
+--- FAIL: TestRecoverAfterStatusWrittenAbortsAndLogsAs500 (0.00s)
+FAIL
+FAIL	github.com/JerikH/FullStackCalculator/backend/internal/platform/httpx	0.012s
+FAIL
+exit=1 (caught)
+
+## CALC-OPS-01: exactness check ignores the exponents (security review)
+mutation in backend/internal/calc/operations.go: replace «return left.Cmp(right) == 0 && leftExp == rightExp» with «return left.Cmp(right) == 0»
+--- FAIL: TestIsExactFractionalPower (0.00s)
+FAIL
+FAIL	github.com/JerikH/FullStackCalculator/backend/internal/calc	0.213s
+FAIL
+exit=1 (caught)
