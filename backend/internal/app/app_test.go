@@ -20,6 +20,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/testutil"
 
 	"github.com/JerikH/FullStackCalculator/backend/internal/buildinfo"
+	"github.com/JerikH/FullStackCalculator/backend/internal/calc"
 	"github.com/JerikH/FullStackCalculator/backend/internal/httpapi"
 	"github.com/JerikH/FullStackCalculator/backend/internal/observability"
 	"github.com/JerikH/FullStackCalculator/backend/internal/platform/httpx"
@@ -98,6 +99,29 @@ func TestAppServesDrainsAndShutsDown(t *testing.T) {
 		if !strings.Contains(logs.String(), msg) {
 			t.Errorf("logs missing %q", msg)
 		}
+	}
+	// The draining readiness 503 answered over the socket is an expected state
+	// (U19): its access line is at info, and nothing in the run is an error.
+	var drainingLine bool
+	for raw := range strings.SplitSeq(strings.TrimSpace(logs.String()), "\n") {
+		var line struct {
+			Message string `json:"msg"`
+			Level   string
+			Route   string
+			Status  int
+		}
+		if err := json.Unmarshal([]byte(raw), &line); err != nil {
+			t.Fatalf("bad log line %q: %v", raw, err)
+		}
+		if line.Level == "ERROR" {
+			t.Errorf("error line in a clean run: %s", raw)
+		}
+		if line.Message == "http request" && line.Route == "/readyz" && line.Status == http.StatusServiceUnavailable {
+			drainingLine = line.Level == "INFO"
+		}
+	}
+	if !drainingLine {
+		t.Error("no INFO access line for the draining /readyz 503")
 	}
 }
 
@@ -897,4 +921,93 @@ func client(t *testing.T, body io.ReadCloser) *http.Client {
 	return &http.Client{Transport: roundTripperFunc(func(*http.Request) (*http.Response, error) {
 		return &http.Response{StatusCode: http.StatusOK, Body: body, Header: make(http.Header)}, nil
 	})}
+}
+
+// composedAccessLines serves req through compose around h and returns every
+// log line written, decoded.
+func composedAccessLines(t *testing.T, h http.Handler, req *http.Request) (*httptest.ResponseRecorder, []map[string]any) {
+	t.Helper()
+	var logs bytes.Buffer
+	logger := observability.NewLogger(&logs, slog.LevelDebug, "json")
+	metrics := observability.NewMetrics(prometheus.NewRegistry(), buildinfo.Info{Version: "test", Commit: "abc"})
+	rec := httptest.NewRecorder()
+	compose(h, logger, metrics).ServeHTTP(rec, req)
+	var lines []map[string]any
+	dec := json.NewDecoder(&logs)
+	for {
+		var line map[string]any
+		err := dec.Decode(&line)
+		if errors.Is(err, io.EOF) {
+			return rec, lines
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		lines = append(lines, line)
+	}
+}
+
+func accessLine(t *testing.T, lines []map[string]any) map[string]any {
+	t.Helper()
+	var found []map[string]any
+	for _, l := range lines {
+		if l["msg"] == "http request" {
+			found = append(found, l)
+		}
+	}
+	if len(found) != 1 {
+		t.Fatalf("access lines = %v", lines)
+	}
+	return found[0]
+}
+
+func TestComposedDrainingReadinessIsLoggedAtInfo(t *testing.T) {
+	t.Parallel()
+	readiness := &httpapi.Readiness{}
+	readiness.Drain()
+	router := httpapi.NewRouter(httpapi.Deps{Calculator: calc.New(), Logger: slog.New(slog.DiscardHandler), Readiness: readiness})
+	rec, lines := composedAccessLines(t, router, httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/readyz", nil))
+	if rec.Code != http.StatusServiceUnavailable || statusField(t, rec.Body.String()) != "draining" {
+		t.Fatalf("response = %d %s", rec.Code, rec.Body.String())
+	}
+	if line := accessLine(t, lines); line["level"] != "INFO" || line["status"] != float64(503) || line["route"] != "/readyz" {
+		t.Fatalf("access line = %v", line)
+	}
+	for _, l := range lines {
+		if l["level"] == "ERROR" {
+			t.Fatalf("unexpected error line: %v", l)
+		}
+	}
+}
+
+func TestComposedServerErrorStaysAtErrorLevel(t *testing.T) {
+	t.Parallel()
+	mux := http.NewServeMux()
+	mux.Handle("/down", httpx.Route("/down", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusServiceUnavailable)
+	})))
+	_, lines := composedAccessLines(t, mux, httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/down", nil))
+	if line := accessLine(t, lines); line["level"] != "ERROR" || line["status"] != float64(503) || line["route"] != "/down" {
+		t.Fatalf("access line = %v", line)
+	}
+}
+
+func TestComposedAccessLogBoundsPathAndUserAgent(t *testing.T) {
+	t.Parallel()
+	router := httpapi.NewRouter(httpapi.Deps{Calculator: calc.New(), Logger: slog.New(slog.DiscardHandler), Readiness: &httpapi.Readiness{}})
+	path := "/api/v1/" + strings.Repeat("p", 292) // 300 characters
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, path, nil)
+	req.Header.Set("User-Agent", strings.Repeat("é", 300))
+	rec, lines := composedAccessLines(t, router, req)
+	var problem httpx.Problem
+	if err := json.Unmarshal(rec.Body.Bytes(), &problem); err != nil {
+		t.Fatal(err)
+	}
+	if rec.Code != http.StatusNotFound || rec.Header().Get("Content-Type") != "application/problem+json" {
+		t.Fatalf("response = %d %s", rec.Code, rec.Body.String())
+	}
+	line := accessLine(t, lines)
+	if line["path"] != path[:256] || line["user_agent"] != strings.Repeat("é", 256) || line["status"] != float64(404) {
+		t.Fatalf("access line = %v", line)
+	}
 }

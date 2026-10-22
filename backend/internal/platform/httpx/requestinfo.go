@@ -3,6 +3,7 @@ package httpx
 import (
 	"context"
 	"crypto/rand"
+	"log/slog"
 	"net/http"
 	"regexp"
 )
@@ -19,6 +20,11 @@ type RequestInfo struct {
 	Route  string
 	Status int
 	Bytes  int64
+
+	// level overrides the access line's level when levelSet; the zero value
+	// means no override.
+	level    slog.Level
+	levelSet bool
 }
 
 // StatusOrOK returns the written status, or 200 when the handler wrote nothing
@@ -28,6 +34,27 @@ func (i *RequestInfo) StatusOrOK() int {
 		return http.StatusOK
 	}
 	return i.Status
+}
+
+// accessLevel is the level of the request's access line: the handler's
+// override when it set one, else error for 5xx and info for everything else.
+func (i *RequestInfo) accessLevel() slog.Level {
+	if i.levelSet {
+		return i.level
+	}
+	if i.StatusOrOK() >= http.StatusInternalServerError {
+		return slog.LevelError
+	}
+	return slog.LevelInfo
+}
+
+// SetAccessLevel sets the level of the request's access line. The handler that
+// answers owns that level; it is used for expected states that would otherwise
+// match the 5xx rule. It does nothing outside RequestContext.
+func SetAccessLevel(ctx context.Context, level slog.Level) {
+	if info := Info(ctx); info != nil {
+		info.level, info.levelSet = level, true
+	}
 }
 
 type infoKey struct{}
