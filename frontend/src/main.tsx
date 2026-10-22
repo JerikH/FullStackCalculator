@@ -2,6 +2,7 @@ import './shared/styles/global.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from '@/app/App';
+import { ErrorBoundary } from '@/app/ErrorBoundary';
 import { CalculatorApiProvider, createCalculatorApi } from '@/shared/api';
 
 // One client for the page's lifetime, created outside rendering.
@@ -16,8 +17,10 @@ if (root === null) {
 
 createRoot(root).render(
   <StrictMode>
-    <CalculatorApiProvider api={api}>
-      <App />
-    </CalculatorApiProvider>
+    <ErrorBoundary>
+      <CalculatorApiProvider api={api}>
+        <App />
+      </CalculatorApiProvider>
+    </ErrorBoundary>
   </StrictMode>,
 );

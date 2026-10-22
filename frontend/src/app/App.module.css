@@ -34,3 +34,11 @@
     width: min(100%, calc(22.5rem + var(--space-6) + 18rem));
   }
 }
+
+.crash {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+}
