@@ -1,0 +1,5 @@
+$ go version
+go version go1.27.3 linux/amd64
+$ go test -race -count=1 -cover ./internal/calc/ ./internal/platform/httpx/
+ok  	github.com/JerikH/FullStackCalculator/backend/internal/calc	1.647s	coverage: 97.5% of statements
+ok  	github.com/JerikH/FullStackCalculator/backend/internal/platform/httpx	1.067s	coverage: 96.6% of statements

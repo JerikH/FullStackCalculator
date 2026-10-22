@@ -1,0 +1,8 @@
+$ go test ./internal/calc -run '^$' -fuzz FuzzParse -fuzztime 20s
+fuzz: elapsed: 20s, execs: 652238 (36706/sec), new interesting: 22 (total: 152)
+PASS
+ok  	github.com/JerikH/FullStackCalculator/backend/internal/calc	20.153s
+$ go test ./internal/calc -run '^$' -fuzz FuzzCalculate -fuzztime 30s
+fuzz: elapsed: 30s, execs: 919314 (16271/sec), new interesting: 99 (total: 459)
+PASS
+ok  	github.com/JerikH/FullStackCalculator/backend/internal/calc	30.208s

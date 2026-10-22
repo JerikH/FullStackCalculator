@@ -1,0 +1,24 @@
+base HEAD~1 → merge base 29aecc2 — 22 changed file(s)
+▶ [backend:packages] (cd backend) go list -e -f \{\{.Dir\}\} ./...
+✔ [backend:packages] 0.07s
+▶ [backend:golist] (cd backend) go list -e -test -f \{\{.ImportPath\}\}\ \{\{join\ .Deps\ \"\ \"\}\} ./...
+✔ [backend:golist] 0.14s
+▶ [backend:fmt] (cd backend) /home/jerik/dev/personal/FullStackCalculator.wt/RUN-M1-1/bin/.tools/golangci-lint-2.15.0/golangci-lint fmt --diff ./internal/platform/httpx
+✔ [backend:fmt] 0.65s
+▶ [backend:vet] (cd backend) go vet ./internal/platform/httpx
+✔ [backend:vet] 0.33s
+▶ [backend:lint] (cd backend) /home/jerik/dev/personal/FullStackCalculator.wt/RUN-M1-1/bin/.tools/golangci-lint-2.15.0/golangci-lint run ./internal/platform/httpx
+0 issues.
+✔ [backend:lint] 1.68s
+▶ [backend:test] (cd backend) go test -race github.com/JerikH/FullStackCalculator/backend/internal/platform/httpx
+ok  	github.com/JerikH/FullStackCalculator/backend/internal/platform/httpx	1.054s
+✔ [backend:test] 2.05s
+
+stage · command · result · seconds
+backend:packages · (cd backend) go list -e -f \{\{.Dir\}\} ./... · pass · 0.07s
+backend:golist · (cd backend) go list -e -test -f \{\{.ImportPath\}\}\ \{\{join\ .Deps\ \"\ \"\}\} ./... · pass · 0.14s
+backend:fmt · (cd backend) /home/jerik/dev/personal/FullStackCalculator.wt/RUN-M1-1/bin/.tools/golangci-lint-2.15.0/golangci-lint fmt --diff ./internal/platform/httpx · pass · 0.65s
+backend:vet · (cd backend) go vet ./internal/platform/httpx · pass · 0.33s
+backend:lint · (cd backend) /home/jerik/dev/personal/FullStackCalculator.wt/RUN-M1-1/bin/.tools/golangci-lint-2.15.0/golangci-lint run ./internal/platform/httpx · pass · 1.68s
+backend:test · (cd backend) go test -race github.com/JerikH/FullStackCalculator/backend/internal/platform/httpx · pass · 2.05s
+total 5.01s

@@ -45,7 +45,7 @@ Rules:
 - P4 significant digits counted from the validated text (coefficient digits without leading and trailing zeros) > 34 → `ErrTooManyDigits` — before apd parses the exponent, so `<35 digits>e9999999999` gets the digits reason (RF-CALC-03 order), not the range reason.
 - P5 `apd.NewFromString` error on a syntactically valid non-zero with ≤ 34 digits → `ErrOutOfRange` (exponent parse overflow); after parsing, the reduced `NumDigits()` agrees with P4.
 - P6 adjusted exponent outside [−6143, 6144] → `ErrOutOfRange`.
-- P7 return the parsed (unreduced) value.
+- P7 return the reduced value (same value; trailing zeros of the operand text no longer inflate the arithmetic — changed at step 8, see the review log).
 - F1 `Format`: zero → `"0"`; reduce; coefficient digits via `Coeff.Text(10)`; adjusted exponent `adj`; `adj < -6 || adj > 20` → `d[.ddd]e±N`; `exp >= 0` → digits + zeros; `adj >= 0` → digits with the point inside; else `0.` + `-adj-1` zeros + digits; leading `-` for negative non-zero.
 
 Tests (T0 unless noted):
@@ -159,3 +159,15 @@ Step 6 — Codex (gpt-6.1-sol, medium), static read-only review; triage by the c
 - P2 the 1xx recorder rule had no test — **confirmed** → `103 → 201 → Write` row (a lone 1xx is not recorded, so a later panic still gets the 500 problem — same rule).
 - P3 the worst-case power measurement was not scheduled — **confirmed** → controller step under the `heavy` lease, evidence and finding.
 - No finding: H6 order, token walking, repeated keys, C13, C15 placement, consumer interfaces, metrics order, ownership split, commit order.
+
+Step 8 — diff review (Codex, read-only) and security/edge-case review (independent Claude reader with scratch stress programs); triage by the controller, fixes made directly (small):
+- P2 `1^0.001` reported inexact (q = 1000 outside the bound) — **confirmed** → `1^y = 1` exact pre-check for every finite exponent; rows `1^0.001`, `1^1234.5`, `1.000^-0.5`, `1^-1e30`.
+- P3 Recover without RequestContext appended a problem to a committed response — **confirmed** → a local commit tracker; tests for a committed response and for a lone 1xx.
+- P3 P7 had no representation assertion — **confirmed**, then superseded: the security review measured that unreduced operands with trailing zeros cost up to 1.9× more (`9` + 120 zeros + `e6000`), so `Parse` now returns the reduced value and the test asserts the reduced coefficient and exponent.
+- P3 C11 non-finite guard untested — **confirmed** → a test operation returning Infinity and NaN.
+- P3 C14 verification context overflowed for large bases (`1e6144^0.984375 = 1e6048` reported inexact) — **confirmed** → the check compares integer coefficients and exponents of the reduced values (unique representation), no decimal context; the negative-exponent branch normalises the coefficient product by powers of ten; direct helper table.
+- P3 a panic after the response started was swallowed (client saw a complete-looking 200) — **confirmed** → Recover records 500 and re-panics `http.ErrAbortHandler`.
+- P3 not adopted (recorded as a note in findings): the 405 detail echoes a method of any length up to the header limit; a client that drops mid-body is logged as a 400; an `ErrAbortHandler` before any write is logged as 200.
+- P3 worst-case power cost above 1 ms — already a finding (backlog); re-measured on the final code.
+- No finding: authorization (none by design), races (`-race -count=3`), secrets in responses, injection; 90 s random search and 40 s fuzzing found no unclassified error.
+Four more mutation checks, all caught (19 in total, evidence/mutations.txt).
