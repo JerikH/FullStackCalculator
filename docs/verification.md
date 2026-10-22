@@ -1,6 +1,6 @@
 # Verification record
 
-What was run, how long it took and what it showed. Every local command stayed under ten minutes (`timeout 600`); the composed stack came up once, in the run recorded in section 2. Dates are 2026-10-22 on one machine (4 CPUs, 14 GB RAM, WSL2, Docker 29.3.1, Compose v5.1.1, Node 24.22.1, Go 1.27.3, Chromium from Playwright 1.64.1). Raw outputs are in `docs/state/archive/runs/RUN-M2-1/evidence/`.
+What was run, how long it took and what it showed. Every local command stayed under ten minutes (`timeout 600`); the composed stack came up once, in the run recorded in section 2 (and, by mistake, for about a minute while the CI definition was written, section 7). Dates are 2026-10-22 on one machine (4 CPUs, 14 GB RAM, WSL2, Docker 29.3.1, Compose v5.1.1, Node 24.22.1, Go 1.27.3, Chromium from Playwright 1.64.1). Raw outputs are in `docs/state/archive/runs/RUN-M2-1/evidence/`.
 
 **Source revision.** Every figure in sections 1 to 4 was measured at revision `5a00a5d` (the commit that added the browser suite and the all-in-one smoke). The README repeats only figures that equal the ones below. The figures stay valid while `git diff --stat 5a00a5d -- backend frontend deploy compose.yaml Dockerfile Makefile scripts tools` shows no change to product code; changes confined to the continuous-integration files under `scripts/ci/` (other than `env.sh`) and to `tools/versions.env` do not affect what was measured. A change anywhere else means the affected figure is measured again and its revision updated here.
 
@@ -80,9 +80,9 @@ The frontend run has 1,342 tests in 34 files.
 
 The reading of «the API image is under 20 MB» is the layer sum; the listing includes the containerd store's snapshot accounting.
 
-## 5. Not part of this record
+## 5. Not part of sections 1 to 4
 
-The mutation checks of the browser specs (a header removed from the edge file, `limit_conn` removed, `restart` off, the request-id header removed), the failing-assertion build of the root Dockerfile (empty app directory), `make bootstrap` twice and without `pnpm`, `make dev-backend` / `make dev-frontend`, and `make clean` were not run in this record. Once the owner enables the workflow, continuous integration runs the hosted pass of both browser projects on a clean runner, the clean-clone build and the image scan.
+The mutation checks of the browser specs (a header removed from the edge file, `limit_conn` removed, `restart` off, the request-id header removed), the failing-assertion build of the root Dockerfile (empty app directory), `make bootstrap` twice and without `pnpm`, `make dev-backend` / `make dev-frontend`, `make clean` and the image scan were not run in the pieces of sections 1 to 4. Section 7 records the ones that were run afterwards: the Dockerfile build, `make bootstrap`, the two dev servers, `make clean`, the stub-suite equivalents of the four mutations and the scan of the three images. Still open: the browser-level form of the four mutations and the `restart` override, which need the composed stack. Once the owner enables the workflow, continuous integration runs the hosted pass of both browser projects on a clean runner and the clean-clone build.
 
 ## 6. Documentation checks (README, API reference, screenshots)
 
@@ -98,4 +98,38 @@ Run on the same machine on 2026-10-22, after the figures above were copied uncha
 | Screenshots | `cd frontend && node ../docs/state/archive/runs/RUN-M2-3/evidence/take_screenshots.mjs --base http://127.0.0.1:4120 --out ../docs/assets` against the embedded binary (`CALC_HTTP_ADDR=:4120`) | 1.4 s | `calculator-desktop.png` 1280 × 800 (38,631 bytes) and `calculator-mobile.png` 1082 × 2279, the Pixel 7 descriptor at scale 2.625 (108,484 bytes); System theme on a light OS; `1 ÷ 3 =` shows `≈` with the 34-digit value and the history row `1 ÷ 3 ≈ 0.3333333333333333333333333333333333`; no console error, page error or failed request; a second run produced byte-identical files |
 | API reference | `make docs-api`; `node check_api_page.mjs ../docs/api/index.html` | 0.9 s | `docs/api/index.html` written (270 KiB), git-ignored; the page renders its title, version, description, servers and the `operations` and `system` groups with no page error |
 
+After the continuous-integration files of section 7 were merged, the checker was run again with the six paths linked from the README: the sixteen rules pass (the sixteenth no longer reports pending paths), with a list of 12 forbidden-wording terms and 0 matches; the mutation harness caught 40 of 40 (6.7 s), `check_adrs.py` reported 0 failures, the curl runner passed 20 of 20 against the service built from the merged tree on port 4101, and `make docs-api` (0.8 s) wrote the git-ignored page.
+
 How the pages render on a hosting service is not part of this record.
+
+## 7. Continuous-integration definition (OPS-CI-02)
+
+Run on the same machine on 2026-10-22, at the commits that added `.github/workflows/ci.yml.disabled`, `.github/dependabot.yml` and the scripts under `scripts/ci/`; each piece was one command under `timeout`, the `heavy` lease held for coverage, fuzz, benchmark, image, smoke and scan pieces. These pieces do not change the figures of sections 1 to 4: the diff since `5a00a5d` is confined to `scripts/ci/` (other than `env.sh`), `tools/versions.env` and the new `frontend/.node-version`, and the two measured pieces that repeat (backend coverage 98.11 %, frontend coverage lines 100 %, statements 99.77 %, functions 99.15 %, branches 100 %) gave the same values. Outputs and scripts are in `docs/state/archive/runs/RUN-M2-2/evidence/`.
+
+| Piece | Result | Duration |
+|---|---|---|
+| `scripts/ci/t3.sh --job contract` (Redocly, type drift, `make docs-api`, workflow lint and structure check, shell lint, publish-tag tests) | pass | 14.9 s |
+| `scripts/ci/t3.sh --job frontend` typecheck, lint, format, audit; then coverage and build | pass; `pnpm audit --prod --audit-level high` clean | 22.7 s; 33.6 s |
+| `scripts/ci/t3.sh --job backend` modules, static, govulncheck (both build modes), build | pass | 24.8 s |
+| backend coverage / fuzz / benchmarks (`--stage coverage-backend`, `fuzz`, `bench`) | 98.11 % (782 of 797); two fuzz targets; every case under its budget | 17.7 s / 62.9 s / 47.8 s |
+| `images`: hadolint on three Dockerfiles, `docker compose config` | pass | 0.3 s / 0.2 s |
+| `images`: build of the API, web and all-in-one images (layers cached; cold builds are in section 1) | pass | 5.5 s / 2.2 s / 3.6 s |
+| `images`: API image check (`scripts/ci/image-smoke.sh`), web image in front of the API image (`scripts/ci/edge-smoke.sh`), web image against the stub (`scripts/ci/edge-stub-smoke.sh`), all-in-one (`make smoke-aio`) | 14, 80, 599 and 58 checks, 0 failures | 8.9 s / 14.6 s / 83.3 s / 7.6 s |
+| `images`: export of the three archives (5.3, 25.8 and 5.6 MB compressed) and manifest | pass | 2.3 s |
+| `images`: Trivy 0.76.1 on the three archives, fixable high and critical findings | 0 findings, gate passes (database 129 MB, 13 s the first time) | 27 s, then 0.6–1.5 s each |
+| `images`: edge mutation subsets `M14`, `MLC MPB`, `M2 M8` (`scripts/ci/edge-mutations.sh`) | 1 of 1, 2 of 2 and 2 of 2 caught | 84 s / 167 s / 172 s |
+| Root Dockerfile built with an empty app directory (`--target go-build`) | fails at the `test -f internal/web/dist/index.html` assertion | — |
+| `make bootstrap` twice; without `pnpm` on the path | 2 s each, nothing new installed; exit 1 with the instruction to run `corepack enable pnpm` | — |
+| `make dev-backend` and `make dev-frontend` on the agent's ports | `/healthz` answers; a request through the Vite proxy returns `0.1 + 0.2 = 0.3` | 2 s to ready |
+| `make clean` | `git status` identical before and after; `backend/internal/web/dist` keeps `.gitkeep` | — |
+| Structural check of the workflow (30 rules) and its mutation script; `actionlint` | ok; 29 of 29 mutations caught; clean | 0.1 s; a few seconds; 0.1 s |
+| Action pins against their tags (`git ls-remote`) | the five pinned SHAs equal their tags | seconds |
+| Publish-tag rules (`scripts/ci/publish-tags-test.sh`), publish push stage and `e2e` job through `PATH` shims | 46, 12 and 10 cases pass; 3 and 6 mutations caught | under 10 s each |
+| `scripts/ci/t2.sh --base main`, default stage | all 21 Make targets present, nothing started | 75 s |
+| `pnpm -C frontend exec playwright test --list` | 374 tests in 11 files | 3 s |
+
+After the merge the integration check ran the same static pieces once more: `scripts/ci/t2.sh --base main` (62 s: contract, typecheck, lint, format, unit tests, build, the 21 Make targets present), `actionlint` and `shellcheck -x` over `scripts/*.sh` and `scripts/ci/*.sh` (10 s), all clean.
+
+One mistake is part of the record: `scripts/ci/t1.sh make:up make:e2e make:down` runs the targets instead of only checking that they exist, so it started the composed stack and the Playwright suite for about a minute before it was stopped and `make down` removed the containers; `scripts/ci/t2.sh` is the command that checks the targets.
+
+Not run on this machine, left to the first hosted run once the owner enables the workflow: the six jobs end to end on a clean runner, the `e2e` job against a real stack (it was proven with shims only), the behavior of the pinned actions, the vulnerability database download on a hosted runner, the `publish` job on a push to `main` and on a release tag, the registry login and package linkage, and GitHub's acceptance of the Dependabot file.
