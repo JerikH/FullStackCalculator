@@ -20,6 +20,8 @@ map $http_host $upstream_host {
 
 # Per client address and per nginx instance; API locations only.
 limit_req_zone $binary_remote_addr zone=api:10m rate=20r/s;
+# Concurrent API requests per client address, counted only at the outer hop.
+limit_conn_zone $binary_remote_addr zone=apiconn:10m;
 
 server_tokens off;
 
@@ -85,13 +87,16 @@ server {
         return 200 "ok\n";
     }
 
-    # API, outer hop: rate limit and transport limit, answered with edge
-    # problems. No proxy_intercept_errors here: nginx intercepts every upstream
+    # API, outer hop: request-rate, connection and transport limits, answered
+    # with edge problems. No proxy_intercept_errors here: nginx intercepts every upstream
     # status that has an error_page in the proxying location, which would replace
     # the service's own 413. Upstream failures are converted by the inner hop.
     location /api/ {
         limit_req zone=api burst=40 nodelay;
         limit_req_status 429;
+        limit_conn apiconn 20;
+        limit_conn_status 429;
+        limit_conn_log_level warn;
         error_page 413 = @payload_too_large;
         error_page 429 = @rate_limited;
         # Only nginx-generated: the inner hop unreachable or timed out.
@@ -125,6 +130,8 @@ server {
     # The routed path is forwarded, so an encoded path that nginx resolves to a
     # probe reaches the service as the probe.
     location = /healthz {
+        # Probes take no body; Content-Length <= 16 KiB fits nginx's in-memory body buffer.
+        client_max_body_size 16k;
         error_page 413 = @payload_too_large;
         error_page 502 504 = @service_unavailable;
         include /etc/nginx/snippets/security-headers.conf;
@@ -136,6 +143,8 @@ server {
     }
 
     location = /readyz {
+        # Probes take no body; Content-Length <= 16 KiB fits nginx's in-memory body buffer.
+        client_max_body_size 16k;
         error_page 413 = @payload_too_large;
         error_page 502 504 = @service_unavailable;
         include /etc/nginx/snippets/security-headers.conf;

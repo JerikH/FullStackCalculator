@@ -1,0 +1,56 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      args:
+        VERSION: ${VERSION:-dev}
+        COMMIT: ${COMMIT:-unknown}
+    image: calculator-api:${IMAGE_TAG:-local}
+    # The API and admin listeners stay private; only web publishes a port.
+    environment:
+      CALC_HTTP_ADDR: :8081
+      CALC_ADMIN_ADDR: :9091
+      CALC_SHUTDOWN_DRAIN: 2s
+      CALC_SHUTDOWN_TIMEOUT: 15s
+      CALC_PPROF: "false"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test: ["CMD", "/calculator", "healthcheck"]
+      interval: 5s
+      timeout: 3s
+      start_period: 5s
+      retries: 6
+    # Covers the 2s drain, 15s shutdown timeout and a safety margin.
+    stop_grace_period: 25s
+
+  web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    image: calculator-web:${IMAGE_TAG:-local}
+    ports: ["${WEB_PORT:-8080}:8080"]
+    environment:
+      API_UPSTREAM: api:8081
+      # The image sets NGINX_ENVSUBST_FILTER=^API_UPSTREAM$ already;
+      # repeating it here adds nothing and would require $$ escaping.
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    # nginx needs writable temporary files and rendered configuration.
+    # Cap temporary storage so buffered request bodies cannot exhaust memory.
+    tmpfs: ["/tmp:size=64m", "/etc/nginx/conf.d"]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "-T", "2", "http://127.0.0.1:8080/nginx-health"]
+      interval: 5s
+      timeout: 3s
+      start_period: 5s
+      retries: 6
+    stop_grace_period: 10s
+    depends_on:
+      api:
+        condition: service_healthy
+        # nginx resolves the upstream once at startup; restart web when Compose recreates api.
+        restart: true

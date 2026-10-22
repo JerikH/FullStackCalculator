@@ -11,3 +11,6 @@ frontend/playwright-report
 frontend/blob-report
 **/*.tsbuildinfo
 **/.env*
+# The browser tests run from the host against the composed stack; no image needs them.
+frontend/e2e
+frontend/playwright.config.ts

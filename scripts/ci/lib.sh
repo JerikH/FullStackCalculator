@@ -379,3 +379,67 @@ ci_selected_stages() {
   done
   if (( count == 0 )); then ci_note selection "no checks apply to the ${#CI_CHANGED[@]} changed file(s)"; fi
 }
+
+# ci_stage_make <label> <make-target…>: one bounded `make` call. A timeout (exit 124) is a ✘ row
+# and a non-zero exit like any other failure. CI_STAGE_TIMEOUT (seconds, default 600) lowers the bound.
+ci_stage_make() {
+  local label=$1
+  shift
+  ci_run "$label" -- timeout "${CI_STAGE_TIMEOUT:-600}" make "$@"
+}
+# ci_compose_env: exports what the Makefile exports for `docker compose`, so a compose command run
+# from a tier script finds the same images as `make up`. The Makefile is the reference for these
+# expressions (VERSION, COMMIT, IMAGE_TAG, COMPOSE_PROJECT_NAME/WEB_PORT defaults); keep them equal.
+ci_compose_env() {
+  local version commit
+  if [[ -z ${VERSION:-} ]]; then
+    if version=$(git describe --tags --always --dirty 2>/dev/null) && [[ -n $version ]]; then VERSION=$version; else VERSION=dev; fi
+  fi
+  if [[ -z ${COMMIT:-} ]]; then
+    if commit=$(git rev-parse HEAD 2>/dev/null) && [[ -n $commit ]]; then COMMIT=$commit; else COMMIT=unknown; fi
+  fi
+  : "${COMPOSE_PROJECT_NAME:=fullstackcalculator}"
+  : "${WEB_PORT:=8080}"
+  if [[ -z ${IMAGE_TAG:-} ]]; then
+    if [[ $COMPOSE_PROJECT_NAME == fullstackcalculator ]]; then IMAGE_TAG=local; else IMAGE_TAG=$COMPOSE_PROJECT_NAME; fi
+  fi
+  export VERSION COMMIT IMAGE_TAG COMPOSE_PROJECT_NAME WEB_PORT
+}
+# The Make targets of the developer interface; the default T2 checks that every one exists.
+ci_makefile_targets=(help bootstrap gen lint test coverage coverage-backend coverage-frontend fuzz bench
+  dev-backend dev-frontend up down logs e2e image-aio run-aio smoke-aio docs-api clean)
+CI_MAKE_DATABASE=''; CI_MAKE_LOADED=0; CI_MAKE_STATUS=0
+CI_MAKE_QUERY_GOAL=__ci_database_query_$$
+# ci_make_load: reads the make database once (CI_MAKE_STATUS: make's exit status, above 1 = unreadable).
+ci_make_load() {
+  (( CI_MAKE_LOADED )) && return 0
+  CI_MAKE_LOADED=1; CI_MAKE_STATUS=0; CI_MAKE_DATABASE=''
+  [[ -f Makefile ]] || return 0
+  # An empty query goal prevents + recipes on the default goal from running.
+  if CI_MAKE_DATABASE=$(make -pRrq --eval=".PHONY: $CI_MAKE_QUERY_GOAL" --eval="$CI_MAKE_QUERY_GOAL: ;" "$CI_MAKE_QUERY_GOAL" 2>/dev/null); then CI_MAKE_STATUS=0; else CI_MAKE_STATUS=$?; fi
+}
+# ci_make_has_target <name>: the loaded database defines the target (needs ci_make_load first).
+ci_make_has_target() {
+  local name=$1 line previous=''
+  [[ -n $name && $name != "$CI_MAKE_QUERY_GOAL" ]] || return 1
+  # Database entries preceded by "# Not a target:" are files make knows about, not targets.
+  while IFS= read -r line; do
+    if [[ $line == "$name:"* && $previous != '# Not a target:' ]]; then return 0; fi
+    previous=$line
+  done <<<"$CI_MAKE_DATABASE"
+  return 1
+}
+# ci_check_makefile: every target of ci_makefile_targets exists in the make database.
+ci_check_makefile() {
+  local target missing=0
+  ci_make_load
+  if (( CI_MAKE_STATUS > 1 )); then ci_problem integration:make 'cannot read make target database' || :; return 0; fi
+  for target in "${ci_makefile_targets[@]}"; do
+    if ! ci_make_has_target "$target"; then missing=1; ci_problem integration:make "missing Make target $target" || :; fi
+  done
+  if (( ! missing )); then
+    printf '✔ [integration:make] all %d targets present\n' "${#ci_makefile_targets[@]}"
+    ci_record integration:make "all ${#ci_makefile_targets[@]} targets present" pass 0
+  fi
+  return 0
+}

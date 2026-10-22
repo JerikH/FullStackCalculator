@@ -1,18 +1,20 @@
 #!/usr/bin/env bash
 # Installs the pinned standalone tools into <repository>/bin.
 #
-# Usage: scripts/ci/install-tools.sh [golangci-lint|actionlint|hadolint|shellcheck ...]
-#        No argument installs all four. An unknown name exits with status 2.
+# Usage: scripts/ci/install-tools.sh [golangci-lint|actionlint|hadolint|shellcheck|govulncheck ...]
+#        No argument installs all five. An unknown name exits with status 2.
 #
 # Versions and SHA-256 digests live in tools/versions.env. Each binary is
 # installed at bin/.tools/<tool>-<version>/<tool>; bin/<tool> is a relative link
 # to it. Other versions already present under bin/.tools are left untouched.
 # Downloads are verified against the pinned digest before anything is extracted.
+# govulncheck has no release binaries: it is built with `go install` (Go on PATH
+# or in $HOME/.local/go/bin) and verified by the Go module checksum database.
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 bindir="$root/bin"
-all_tools=(golangci-lint actionlint hadolint shellcheck)
+all_tools=(golangci-lint actionlint hadolint shellcheck govulncheck)
 
 # Work directory for the download in progress; global so the EXIT trap sees it.
 tmp=""
@@ -68,6 +70,16 @@ probe_ok() {
       out="$("$bin" --version 2>&1)" || return 1
       case $'\n'"$out"$'\n' in *$'\n'"version: $version"$'\n'*) return 0 ;; esac
       ;;
+    govulncheck)
+      # -version also reads the vulnerability database, so it fails offline;
+      # the module version recorded in the binary answers without the network.
+      out="$("$bin" -version 2>&1)" || out=""
+      case $'\n'"$out"$'\n' in *$'\n'"Scanner: govulncheck@v$version"$'\n'*) return 0 ;; esac
+      if command -v go >/dev/null 2>&1; then
+        out="$(go version -m "$bin" 2>&1)" || return 1
+        case "$out" in *$'\t'"golang.org/x/vuln"$'\t'"v$version"$'\t'*|*$'\t'"golang.org/x/vuln"$'\t'"v$version") return 0 ;; esac
+      fi
+      ;;
   esac
   return 1
 }
@@ -86,6 +98,39 @@ ensure_link() {
     rm -f "$tmplink"
     die "could not link $bindir/$tool"
   }
+}
+
+# install_with_go <tool> <version> <dest_dir> <dest>: builds govulncheck with
+# `go install` into a scratch GOBIN, then moves the binary into place. The module
+# checksum database verifies the source; there is no digest to pin.
+install_with_go() {
+  local tool="$1" version="$2" dest_dir="$3" dest="$4" gobin
+  if ! command -v go >/dev/null 2>&1 && [ -x "${HOME:-}/.local/go/bin/go" ]; then
+    PATH="$PATH:$HOME/.local/go/bin"
+  fi
+  command -v go >/dev/null 2>&1 ||
+    die "Go is required to build $tool $version: put go on PATH or install it in \$HOME/.local/go"
+
+  tmp="$(mktemp -d "$bindir/.install.XXXXXX")"
+  gobin="$tmp/gobin"
+  printf 'building %s %s with go install\n' "$tool" "$version"
+  GOBIN="$gobin" GOFLAGS=-mod=mod GOTOOLCHAIN=local \
+    go install "golang.org/x/vuln/cmd/$tool@v$version" ||
+    die "go install failed for $tool $version"
+  [ -f "$gobin/$tool" ] && [ ! -L "$gobin/$tool" ] || die "$tool binary not found after go install"
+
+  chmod 0755 "$gobin/$tool"
+  mkdir -p "$dest_dir"
+  mv -f "$gobin/$tool" "$dest"
+  if ! probe_ok "$tool" "$version" "$dest"; then
+    rm -f "$dest"
+    die "$tool installed at $dest does not report version $version"
+  fi
+  ensure_link "$tool" "$version"
+
+  rm -rf "$tmp"
+  tmp=""
+  printf '%s %s installed: %s\n' "$tool" "$version" "$dest"
 }
 
 install_tool() {
@@ -117,6 +162,11 @@ install_tool() {
   if [ -x "$dest" ] && probe_ok "$tool" "$version" "$dest"; then
     ensure_link "$tool" "$version"
     printf '%s %s already installed\n' "$tool" "$version"
+    return 0
+  fi
+
+  if [ "$tool" = "govulncheck" ]; then
+    install_with_go "$tool" "$version" "$dest_dir" "$dest"
     return 0
   fi
 

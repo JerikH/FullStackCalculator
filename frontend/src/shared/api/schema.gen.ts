@@ -88,7 +88,7 @@ export interface paths {
     };
     /**
      * Readiness probe
-     * @description Returns 503 while the instance drains connections during shutdown.
+     * @description Returns 503 with the Health body while the instance drains connections during shutdown, and 503 with a Problem body when the edge proxy cannot reach the service.
      */
     get: operations['getReadiness'];
     put?: never;
@@ -406,6 +406,7 @@ export interface operations {
       };
       405: components['responses']['MethodNotAllowed'];
       500: components['responses']['InternalError'];
+      503: components['responses']['ServiceUnavailable'];
     };
   };
   getReadiness: {
@@ -428,13 +429,14 @@ export interface operations {
       };
       405: components['responses']['MethodNotAllowed'];
       500: components['responses']['InternalError'];
-      /** @description Draining; remove from load balancing. */
+      /** @description Draining (Health body, emitted by the service; remove from load balancing) or unreachable (Problem body, emitted by the edge proxy). */
       503: {
         headers: {
           [name: string]: unknown;
         };
         content: {
           'application/json': components['schemas']['Health'];
+          'application/problem+json': components['schemas']['Problem'];
         };
       };
     };

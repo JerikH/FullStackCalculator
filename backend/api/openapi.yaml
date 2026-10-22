@@ -158,12 +158,16 @@ paths:
           $ref: "#/components/responses/MethodNotAllowed"
         "500":
           $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
   /readyz:
     get:
       tags: [system]
       operationId: getReadiness
       summary: Readiness probe
-      description: Returns 503 while the instance drains connections during shutdown.
+      description: >-
+        Returns 503 with the Health body while the instance drains connections during
+        shutdown, and 503 with a Problem body when the edge proxy cannot reach the service.
       responses:
         "200":
           description: Ready to receive traffic.
@@ -176,11 +180,16 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
         "503":
-          description: Draining; remove from load balancing.
+          description: >-
+            Draining (Health body, emitted by the service; remove from load balancing) or
+            unreachable (Problem body, emitted by the edge proxy).
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Health"
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
 components:
   headers:
     XRequestID:
