@@ -1,5 +1,7 @@
 # Verification record
 
+> Paths under `docs/state/` mentioned in this file point to process records that are no longer part of the working tree; they remain in the git history.
+
 What was run, how long it took and what it showed. Every local command stayed under ten minutes (`timeout 600`); the composed stack came up once, in the run recorded in section 2 (and, by mistake, for about a minute while the CI definition was written, section 7). Dates are 2026-10-22 on one machine (4 CPUs, 14 GB RAM, WSL2, Docker 29.3.1, Compose v5.1.1, Node 24.22.1, Go 1.27.3, Chromium from Playwright 1.64.1). Raw outputs are in `docs/state/archive/runs/RUN-M2-1/evidence/`.
 
 **Source revision.** Every figure in sections 1 to 4 was measured at revision `5a00a5d` (the commit that added the browser suite and the all-in-one smoke). The README repeats only figures that equal the ones below. The figures stay valid while `git diff --stat 5a00a5d -- backend frontend deploy compose.yaml Dockerfile Makefile scripts tools` shows no change to product code; changes confined to the continuous-integration files under `scripts/ci/` (other than `env.sh`) and to `tools/versions.env` do not affect what was measured. A change anywhere else means the affected figure is measured again and its revision updated here.

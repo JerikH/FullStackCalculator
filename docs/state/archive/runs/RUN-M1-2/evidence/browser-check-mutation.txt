@@ -1,6 +1,0 @@
-# mutation: theme-init.js moved to the end of <body> in dist/index.html (restored afterwards)
-10
-FAIL chromium-320 stored=light os=dark: theme set before <body> exists
-FAIL chromium-320 stored=dark os=light: theme set before <body> exists
-FAIL chromium-393 stored=light os=dark: theme set before <body> exists
-exit=1

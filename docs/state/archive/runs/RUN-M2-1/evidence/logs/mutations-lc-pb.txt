@@ -1,8 +1,0 @@
-CAUGHT MLC — 4 failing checks, including: FAIL lc20: status 429 — status 200, want 429
-CAUGHT MPB — 14 failing checks, including: FAIL healthz_16k1: status 413 — status 200, want 413
-
-2 of 2 mutations caught
-
-real	4m30.499s
-user	0m32.024s
-sys	0m23.608s

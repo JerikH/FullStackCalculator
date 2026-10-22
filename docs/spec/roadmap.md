@@ -1,6 +1,8 @@
 # Roadmap — FullStackCalculator
 
-**Date:** 2026-10-22 · Owner decisions are recorded in section 1; the live checklist is `docs/state/current.md`.
+**Date:** 2026-10-22 · Owner decisions are recorded in section 1; the live checklist was `docs/state/current.md`.
+
+> Paths under `docs/state/` mentioned in this file point to process records that are no longer part of the working tree; they remain in the git history.
 
 ## 0. Milestones
 
@@ -141,7 +143,7 @@ Run grouping: RUN-M2-0 = UI-FIX-01, UI-DEPS-01, OBS-LOG-02 (solo, first: every c
 - English everywhere in the repository; exact strings from `srs.md`.
 
 ## 3. Version 1 scope
-Version 1 is launched when: (1) every requirement of `srs.md` traces to an artifact in `docs/state/traceability.md`; (2) `docker compose up --build --wait` brings the stack up on `http://localhost:8080` with healthy containers; (3) `docker run -p 8080:8080 calculator:local` serves the same app from one container; (4) every check the CI definition runs passes when its command runs — lint and typecheck, unit tests with the coverage gates, contract checks, E2E against the composed stack, image builds, the vulnerability scan — and the workflow file is complete and actionlint-clean; (5) the README alone explains how to run the project, call the API and why it is built this way; (6) all seven operations run end to end (UI → Go service) in Playwright on desktop Chromium and Pixel 7; (7) measured coverage totals and benchmark numbers are in the README and `docs/verification.md`. Epics: OPS, API, CALC, OBS, UI, DOC — every Must requirement.
+Version 1 is launched when: (1) every requirement of `srs.md` traces to an artifact in `docs/spec/traceability.md`; (2) `docker compose up --build --wait` brings the stack up on `http://localhost:8080` with healthy containers; (3) `docker run -p 8080:8080 calculator:local` serves the same app from one container; (4) every check the CI definition runs passes when its command runs — lint and typecheck, unit tests with the coverage gates, contract checks, E2E against the composed stack, image builds, the vulnerability scan — and the workflow file is complete and actionlint-clean; (5) the README alone explains how to run the project, call the API and why it is built this way; (6) all seven operations run end to end (UI → Go service) in Playwright on desktop Chromium and Pixel 7; (7) measured coverage totals and benchmark numbers are in the README and `docs/verification.md`. Epics: OPS, API, CALC, OBS, UI, DOC — every Must requirement.
 
 ## 4. Validation metrics
 | Metric | Threshold |

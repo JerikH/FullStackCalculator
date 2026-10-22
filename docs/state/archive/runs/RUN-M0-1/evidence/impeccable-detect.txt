@@ -1,8 +1,0 @@
-# impeccable detect — 2026-10-22T19:31Z
-No UI source exists (no frontend/); the only stylesheet in the repository is the evidence fixture tokens-fixture.css, scanned with no findings.
-$ impeccable detect .
-
-1 file scanned with regex matching only (.css).
-Rules that need a parsed page (tiny-text, low-contrast and other element rules) did not run on them; findings are an undercount, not a clean bill of health.
-For the full check, scan the running dev server (npx impeccable detect http://localhost:PORT) or a static site's built .html.
-exit=0

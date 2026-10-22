@@ -1,7 +1,0 @@
-$ scripts/ci/t0.sh --base main   # 2026-10-22, after staging the ADRs
-base main → merge base 87292fe — 17 changed file(s)
-• [selection] no checks apply to the 17 changed file(s)
-
-stage · command · result · seconds
-selection · no checks apply to the 17 changed file(s) · note · 0.00s
-total 0.02s
