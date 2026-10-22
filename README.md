@@ -650,7 +650,7 @@ Licensed under the MIT license (`LICENSE`).
 - The edge keys its limits on the address nginx sees. Behind Docker's userland proxy (the default for ports published on 127.0.0.1, rootless Docker and Docker Desktop) every local client arrives as the bridge gateway, so all of them share one 20 requests-per-second budget and one 20-connection limit: a single local client holding 20 slow requests can make the edge refuse the others on `/api/` with `RATE_LIMITED`, while `/`, `/nginx-health` and the probes keep answering. Forwarded-address headers are deliberately not trusted.
 - The all-in-one image serves the app bundle uncompressed; only the nginx edge compresses text responses. Its layers sum to 18.0 MB (the API image is 16.5 MB, 5.3 MB compressed).
 - A stopped `api` is restored with `make up`, not `docker start`: nginx resolves the upstream address once, so `web` must restart when Compose recreates `api`.
-- Local verification is intentionally short: complete suites, the clean-clone build, the vulnerability scan and the hosted run of both browser projects belong to CI once the owner enables it.
+- Local verification is intentionally short: complete suites, the clean-clone build and the hosted run of the six jobs, both browser projects included, belong to CI once the owner enables it. The scan of the three images ran once locally (fixable high and critical findings: none) and runs in CI on every build.
 
 **Natural extensions**
 
