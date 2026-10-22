@@ -9,6 +9,7 @@ RF-OBS-01…RF-OBS-09, RF-API-12; UC-OBS-01. Configuration, lifecycle and drain,
 - backend/internal/buildinfo (RUN-M1-4): Version/Commit via -ldflags -X github.com/JerikH/FullStackCalculator/backend/internal/buildinfo.Version|Commit; fallback vcs.revision[:12]; else unknown.
 - backend/internal/observability (RUN-M1-4): NewLogger (request_id from httpx context), NewMetrics(reg, info), Metrics.Middleware (deferred observation), Metrics.InstrumentCalculator (consumer-defined Calculator interface).
 - backend/internal/config, backend/internal/app, backend/cmd/calculator (RUN-M1-4): config.Load(lookup); app.New/Run/Main/Probe; unexported seams compose (the RF-API-12 chain), listen, newServer, adminHandler and the drainHook used by lifecycle tests; backend/internal/web/noembed.go (Handler() nil without embedui).
+- `httpx.RequestInfo` carries an optional access level (`SetAccessLevel`, RUN-M1-7); the handler that answers owns the level of its access line, never the path; `Recover` clears it on any panic; `path` and `user_agent` are bounded to 256 characters in `logAccess` (`truncateChars`) (Findings of OBS-LOG-01 (a)).
 
 ## Invariants every task inherits
 - Metric labels are bounded: route patterns, `OTHER` methods, `unknown` operations; never raw paths, operands or request IDs (RF-OBS-06, RNF-SEC-02).

@@ -3,7 +3,7 @@
 ## Current milestone: M1 — Working calculator
 ## Current run: (none)
 ## Cycle step: (none)
-## Active waves: W3 (RUN-M1-7, RUN-M1-8) — plan in `docs/state/waves/W3.md`
+## Active waves: (none)
 
 ## Run groups (order of execution)
 
@@ -19,8 +19,8 @@ Each run chains related tasks executed by one agent, in the order listed.
 | **RUN-M1-4** | M1 | OBS-METRICS-01, API-ROUTES-01, OBS-RUNTIME-01 | done (2026-10-22, 8c51c00, 6eef481, db4ab64, e9250f8, 857b3fc; W2 merge 6a50ff7) | W2 with RUN-M1-5, RUN-M1-6 | backend track; double review on API-ROUTES-01, OBS-RUNTIME-01 |
 | **RUN-M1-5** | M1 | UI-MODEL-01 | done (2026-10-22, b338c03; W2 merge 93812a9) | W2 with RUN-M1-4, RUN-M1-6 | frontend track; double review |
 | **RUN-M1-6** | M1 | OPS-EDGE-01 | done (2026-10-22, 21b98e3; W2 merge a2a6975) | W2 with RUN-M1-4, RUN-M1-5 | edge files only; double review; Claude subagents (no Codex) |
-| **RUN-M1-7** | M1 | OPS-IMAGE-01, OBS-LOG-01 | in W3 | W3 with RUN-M1-8 | backend delivery; access-log bounds (U19, U20) |
-| **RUN-M1-8** | M1 | UI-HOOKS-01, UI-SCREEN-01 | in W3 | W3 with RUN-M1-7 | frontend track; double review on UI-HOOKS-01; real-browser check against the service from W2 |
+| **RUN-M1-7** | M1 | OPS-IMAGE-01, OBS-LOG-01 | done (2026-10-22, 5f3a088, c929706; W3 merge e345dfd) | W3 with RUN-M1-8 | backend delivery; access-log bounds (U19, U20) |
+| **RUN-M1-8** | M1 | UI-HOOKS-01, UI-SCREEN-01 | done (2026-10-22, a08c288, 569c43f, 3329e28; W3 merge 69228cb) | W3 with RUN-M1-7 | frontend track; double review on UI-HOOKS-01; real-browser check against the service from W2 |
 
 ## Milestone checklist
 
@@ -38,13 +38,13 @@ Each run chains related tasks executed by one agent, in the order listed.
 - [x] **OBS-METRICS-01** — Build info, request-aware logger and metrics [BE] 🔎 findings: «Findings of OBS-METRICS-01» (a)–(c)
 - [x] **API-ROUTES-01** — Routes, handlers and contract tests [BE] 🔎 findings: «Findings of API-ROUTES-01» (a)–(e)
 - [x] **OBS-RUNTIME-01** — Configuration, lifecycle, admin listener and entrypoint [BE] 🔎 findings: «Findings of OBS-RUNTIME-01» (a)–(g)
-- [ ] **OPS-IMAGE-01** — Embedded web handler and the API image [BE]
-- [ ] **OBS-LOG-01** — Access-log levels and field bounds [BE]
+- [x] **OPS-IMAGE-01** — Embedded web handler and the API image [BE] 🔎 findings: «Findings of OPS-IMAGE-01» (a)–(h)
+- [x] **OBS-LOG-01** — Access-log levels and field bounds [BE] 🔎 findings: «Findings of OBS-LOG-01» (a)–(c)
 - [x] **UI-SCAF-01** — Frontend scaffold, tooling, tokens and generated types [FE] 🔎 findings: «Findings of UI-SCAF-01» (a)–(g)
 - [x] **UI-CLIENT-01** — Typed, never-throwing API client [FE] 🔎 findings: «Findings of UI-CLIENT-01» (a)–(d)
 - [x] **UI-MODEL-01** — Pure calculator model [FE] 🔎 findings: «Findings of UI-MODEL-01» (a)–(f)
-- [ ] **UI-HOOKS-01** — Effects, keyboard, delayed busy, persistence and theme hooks [FE]
-- [ ] **UI-SCREEN-01** — Calculator screen, history, theme control and app shell [FE]
+- [x] **UI-HOOKS-01** — Effects, keyboard, delayed busy, persistence and theme hooks [FE] 🔎 findings: «Findings of UI-HOOKS-01» (a), (b)
+- [x] **UI-SCREEN-01** — Calculator screen, history, theme control and app shell [FE] 🔎 findings: «Findings of UI-SCREEN-01» (a)–(g)
 - [x] **OPS-EDGE-01** — Web image and nginx edge [BE] 🔎 findings: «Findings of OPS-EDGE-01» (a)–(j)
 - [x] **DOC-ADR-01** — Architecture decision records [BE] 🔎 findings: «Findings of DOC-ADR-01» (a)–(e)
 

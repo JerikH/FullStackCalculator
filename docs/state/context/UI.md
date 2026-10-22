@@ -15,12 +15,12 @@ RF-UI-01…RF-UI-14; UC-UI-01…UC-UI-04. The web app only: the API contract bel
 Playwright against the real API (M1: `go run ./cmd/calculator` + Vite on the agent's ports; M2: the composed stack), projects Chromium desktop and `mobile-chromium` (Pixel 7, touch); themes System, Light, Dark and Light under a dark OS preference, with the theme bootstrap under the real CSP; widths 320, 393, 768, 1280 px; one role (anonymous visitor); axe zero violations (vitest-axe on the App, `@axe-core/playwright` on initial and error states in both themes); `scrollWidth <= clientWidth` at 320 px; keys ≥ 48 px; visible focus; contrast ≥ 4.5:1; reduced motion; no console errors and no CSP violations.
 
 ## Reference screen
-The calculator screen (UI-SCREEN-01): display, keypad, history panel, theme control — every state of UC-UI-01…04.
+The calculator screen (UI-SCREEN-01): display, keypad, history panel, theme control — every state of UC-UI-01…04. Built by RUN-M1-8 (rule as built in «Findings of UI-SCREEN-01» (a)); DESIGN.md and `.impeccable/` were refreshed from the shipped CSS.
 
 ## Architecture as built
-- `frontend/` package calculator-web (Findings of UI-SCAF-01 (a)); `src/shared/styles/{tokens,global}.css`, `src/shared/storage/safeStorage.ts`, `src/shared/ui/cx.ts`, `public/theme-init.js`, `src/shared/api/` (client, Findings of UI-CLIENT-01 (a)), `src/test/setup.ts` (matchMedia stub; vitest-axe typing in `src/test/vitest-axe.d.ts`); `src/main.tsx` is a placeholder until UI-SCREEN-01 (RUN-M1-2).
+- `frontend/` package calculator-web (Findings of UI-SCAF-01 (a)); `src/shared/styles/{tokens,global}.css`, `src/shared/storage/safeStorage.ts`, `src/shared/ui/cx.ts`, `public/theme-init.js`, `src/shared/api/` (client, Findings of UI-CLIENT-01 (a)), `src/test/setup.ts` (matchMedia stub; vitest-axe typing in `src/test/vitest-axe.d.ts`); `src/main.tsx` is the real entry point since RUN-M1-8 (client created once).
 - frontend/src/features/calculator/model/ (RUN-M1-5, Findings of UI-MODEL-01 (a)): pure model — OPERATIONS, KEYPAD + commandForKey/actionForCommand, entry editing, calculatorReducer/createInitialState, selectDisplay/formatEntry/historyExpression, toCalculatorError, decodeHistory/encodeHistory, HISTORY_STORAGE_KEY; testing.ts is a test-only helper. boundaries.test.ts fails on any non-model import, value import of the contract types or React/DOM/IO/arithmetic identifier in the production files.
-- Planned: `frontend/src/features/calculator/{hooks,ui}`, `frontend/src/shared/theme`, `frontend/src/app/`.
+- `features/calculator/hooks/` (RUN-M1-8, Findings of UI-HOOKS-01 (a)): `useCalculator` is the only place that starts calculation IO; completions carry the captured request object; history persists only after the first change; theme radios are not «editable» for the keyboard hook; held operator keys are ignored; `newHistoryId` never throws. `features/calculator/ui/`, `shared/theme/` and `app/` hold the screen, the theme control and the shell (Findings of UI-SCREEN-01 (a)).
 
 ## Invariants every task inherits
 - The frontend never computes a numeric result (RF-UI-05).
@@ -33,6 +33,7 @@ The calculator screen (UI-SCREEN-01): display, keypad, history panel, theme cont
 - Package-wide frontend inputs re-check the whole package in the tiers (Findings of UI-SCAF-01 (b)).
 - `@playwright/test` 1.64.1 runs Chromium build 1248 (Findings of UI-SCAF-01 (e)).
 - Completions carry the captured request object; the reducer accepts only the very object in state.request (request IDs restart at 1 after AC). A binary operator after a unary result or a recall chains; only the stored operand (entryMode 'operand') has its pending operator replaced (Findings of UI-MODEL-01 (b), (d)).
+- Mouse presses on keys, history rows and Clear history never move focus; hover tones are declared only under `(hover: hover)`; the 768 px breakpoint is written in px in CSS and JS; the History summary is refocused only after keyboard activation; the accessible names of AC and xʸ follow RF-UI-01 (label-in-name deviation, Findings of UI-SCREEN-01 (b)).
 
 ## Where to look
 - Open debt: `findings/by-owner/UI.md`

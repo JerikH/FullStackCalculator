@@ -9,7 +9,8 @@ RF-OPS-01…RF-OPS-14; UC-OPS-01…UC-OPS-03. Hygiene files, per-agent environme
 - Hygiene files at the root (RUN-M0-1): `.gitignore` (every RF-OPS-01 pattern), `.gitattributes`, `.editorconfig`, `.dockerignore`, `LICENSE` (MIT); ADR index and template in `docs/adr/`.
 - Per-agent environment and local tiers (RUN-M0-2): `scripts/ci/env.sh` (sourced; ports, compose project and PATH from the agent identity), `scripts/ci/lib.sh` + `t0.sh`…`t3.sh` (tiers; each CI job calls `t3.sh --job <name>`), `scripts/ci/install-tools.sh` + `tools/versions.env` (golangci-lint, actionlint, hadolint, shellcheck pinned with per-platform SHA-256, installed in `bin/.tools/<tool>-<version>/` and linked as `bin/<tool>`; Redocly CLI version), `.github/workflows/ci.yml.disabled` (contract job).
 - Web image and nginx edge (RUN-M1-6): frontend/Dockerfile (build stage Node 24.14.1 alpine, runtime nginx-unprivileged 1.30.6 alpine as uid 101 on :8080, docroot /usr/share/nginx/calculator, template /etc/nginx/templates/default.conf.template, snippets /etc/nginx/snippets/), deploy/nginx/default.conf.template (outer server :8080 and inner API hop 127.0.0.1:8079), security-headers.conf (edge-owned headers added and upstream copies hidden), proxy-api.conf (settings of every hop to the service). Rules as built: «Findings of OPS-EDGE-01» (a).
-- Planned: `.github/dependabot.yml`, `backend/Dockerfile`, root `Dockerfile`, `compose.yaml`, `Makefile`, `scripts/bootstrap.sh`, `scripts/coverage.sh`, `scripts/smoke-aio.sh`.
+- Embedded web handler and API image (RUN-M1-7): `backend/internal/web` — `newHandler(fs.FS)` + `embed.go`/`noembed.go`, rules as built in «Findings of OPS-IMAGE-01» (a); `backend/Dockerfile` (rules as built in (b)); `scripts/ci/lib.sh` `ci_stage_backend` runs `go vet -tags embedui` and, when `internal/web` is selected, lint and tests of that package with the tag.
+- Planned: `.github/dependabot.yml`, root `Dockerfile`, `compose.yaml`, `Makefile`, `scripts/bootstrap.sh`, `scripts/coverage.sh`, `scripts/smoke-aio.sh`.
 
 ## Invariants every task inherits
 - Every Docker build uses the repository root as context (RF-OPS-01); `.dockerignore` excludes `docs`, `bin`, coverage, the Playwright report folders, every `dist` except `backend/internal/web/dist/.gitkeep`, and `.env*`, so builds copy only the sources they need and produce `dist` inside their stages.
@@ -21,6 +22,7 @@ RF-OPS-01…RF-OPS-14; UC-OPS-01…UC-OPS-03. Hygiene files, per-agent environme
 - Tier scripts call the pinned tools by their versioned path, never a copy found on `PATH`; a missing tool, a missing toolchain or any check failure is a `✘` row and a non-zero exit, never a skip; absent stages are reported «not present» only while their manifest (`backend/go.mod`, `frontend/package.json`) does not exist (Findings of OPS-CI-01 (a)).
 - Redocly runs with `REDOCLY_TELEMETRY=off` (Findings of OPS-CI-01 (i)).
 - The edge forwards the path nginx routed, never the raw request target; API problems, the service's 413 included, pass through: only the inner hop intercepts, and only 502/503/504 (Findings of OPS-EDGE-01 (a)).
+- The five RNF-SEC-03 headers are asserted equal to `deploy/nginx/security-headers.conf` by `web_test.go` — a change to one file changes the other; the API image never `EXPOSE`s `:9091` (Findings of OPS-IMAGE-01 (a), (b)).
 - A plain tmpfs over an image directory is root-owned with that directory's mode: an image that renders into a tmpfs mount makes the directory writable for its user (Findings of OPS-EDGE-01 (e)).
 
 ## Decisions
