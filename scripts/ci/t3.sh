@@ -44,7 +44,7 @@ if (( ${#stages[@]} )); then
   done
 fi
 if (( list )); then ci_t3_list; exit 0; fi
-printf 't3: CI jobs and stages — agent sessions run one stage per command\n'
+printf 't3: CI jobs and stages\n'
 jobs=(contract backend frontend images)
 if [[ -n $job ]]; then jobs=("$job"); fi
 for job in "${jobs[@]}"; do

@@ -92,31 +92,6 @@ ci_need() {
   esac
   ci_problem "$stage" "$message"
 }
-ci_agent_env_load() {
-  local exports
-  if [[ ! ${WF_INDEX+x} && -x "$CI_ROOT/.workflow/bin/wf" ]]; then
-    exports=$("$CI_ROOT/.workflow/bin/wf" env --export) || return 1
-    eval "$exports" || return 1
-  fi
-  # shellcheck disable=SC2317 # The sourced environment can return failure after validating identity or Go.
-  # shellcheck source=scripts/ci/env.sh
-  source "$CI_ROOT/scripts/ci/env.sh" || return 1
-}
-ci_agent_env() {
-  local start end status
-  printf '▶ [env:agent] agent environment\n'
-  start=${EPOCHREALTIME//[!0-9]/}
-  if ci_agent_env_load; then status=0; else status=$?; fi
-  end=${EPOCHREALTIME//[!0-9]/}
-  if (( status == 0 )); then
-    printf '✔ [env:agent] %ss\n' "$(ci_seconds "$((end - start))")"
-    ci_record env:agent 'agent environment' pass "$((end - start))"
-  else
-    printf '✘ [env:agent] exit %d after %ss\n' "$status" "$(ci_seconds "$((end - start))")"
-    ci_record env:agent 'agent environment' fail "$((end - start))"
-    if ci_finish; then exit 1; else exit 1; fi
-  fi
-}
 ci_changed_files() {
   local base=$1 mb temporary
   if ! git rev-parse --verify --quiet "$base^{commit}" >/dev/null; then printf 'unknown base %s\n' "$base" >&2; exit 2; fi

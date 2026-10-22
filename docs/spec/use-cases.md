@@ -22,32 +22,9 @@ Every case is complete: M0, M1 and M2 cases carry their full flow, extensions an
 
 ## 1. Module OPS — Repository, environments and delivery
 
-### UC-OPS-01 — Work in an isolated per-agent environment
-**Primary actor:** Developer
-**Secondary actors:** System (local toolchain, Docker)
-**Relation:** none
-**References:** RF-OPS-02, RF-OPS-03, RNF-OPS-02
-**Precondition:** the repository is cloned (main checkout or a worker worktree) and the agent has an identity and a port block.
-**Postcondition (success):** the agent's dev servers, tests and compose project use only its own ports and project name; the tier scripts report each command and its duration.
+### UC-OPS-01 — Work in an isolated per-agent environment (withdrawn)
 
-| # | Actor | System |
-|---|---|---|
-| 1 | Loads its environment with `source scripts/ci/env.sh`. | |
-| 2 | | Exports `WEB_PORT`, `CALC_HTTP_ADDR`, `CALC_ADMIN_ADDR`, `VITE_PORT`, `API_PROXY_TARGET`, `E2E_BASE_URL` and `COMPOSE_PROJECT_NAME` derived from the agent's port block, and puts the Go toolchain and the repository `bin/` on `PATH`. The main checkout gets the defaults 8080 / 8081 / 9091 / 5173. |
-| 3 | Runs `scripts/ci/t0.sh --base main`. | |
-| 4 | | Detects the changed files, runs the static checks and unit tests of the touched packages only, printing each command and its duration; exits non-zero on the first failure. |
-| 5 | Runs `scripts/ci/t1.sh <tests or targets>` before closing a run. | |
-| 6 | | Runs exactly the named targeted tests (and coverage targets) with the agent's resources. |
-
-**Extensions:**
-- E1 (step 2): the agent identity is missing (not inside a `wf` checkout) → the script falls back to the main-checkout defaults and says so.
-- E2 (step 2): Go is not on `PATH` and not installed under `$HOME/.local/go` → the script prints the install instruction and exits non-zero.
-- E3 (step 4): the Go module (`backend/go.mod`) or the frontend package (`frontend/package.json`) does not exist yet → its stage is reported as «not present» and skipped; once it exists it is never skipped. Contract files are checked by Redocly whether or not the Go module exists.
-- E4 (step 4): no file changed versus the base → the script reports «nothing to check» and exits 0.
-- E5 (step 6): an unknown target or missing test file → non-zero exit naming it.
-- E6 (any): a second agent runs the same commands at the same time → no port, compose project or report path collides.
-
-**Acceptance:** two identities (main and one worker index) produce disjoint port sets and different `COMPOSE_PROJECT_NAME`s; a Vite dev server and a Go service started by each run side by side; `t0.sh` on a change limited to one package runs only that package's checks and prints durations; a deliberately failing check makes the tier exit non-zero; the GitHub workflow file is committed disabled and passes actionlint.
+This use case described the per-agent environment (`scripts/ci/env.sh`) and the local tiers `t0.sh` to `t2.sh` of the development workflow. They are no longer part of the tree and remain in the git history. The CI entry point `scripts/ci/t3.sh` stays (RF-OPS-03).
 
 ### UC-OPS-02 — Run the split stack
 **Primary actor:** Reviewer
@@ -355,4 +332,4 @@ Every case is complete: M0, M1 and M2 cases carry their full flow, extensions an
 - E5 (any): a link points to a path that is not a committed file → defect; no link may point to an untracked or generated file or to something the repository does not build.
 - E6 (step 12): the edge rate limit and connection limit key on the address nginx sees → the trade-offs say that behind Docker's userland proxy all local clients share one budget; the all-in-one image sends the bundle uncompressed.
 
-**Acceptance:** a link checker over `README.md`, `docs/api/README.md` and `docs/verification.md` resolves every relative link to a committed file; the README sections appear in the order of RF-DOC-01; every command in the README is checked against the repository (Make targets exist, ports and defaults equal `scripts/ci/env.sh`, `compose.yaml` and `.env.example`, the configuration table equals the variables the service and the edge read); the curl examples run against a running service and their outputs equal the documented ones; the problem catalog equals the contract's `ProblemCode` enum; the Design decisions table equals the ADR index; the numbers equal `docs/verification.md`; the two screenshots are PNG files taken from the running app (checked by dimensions and by being produced by the recorded command).
+**Acceptance:** a link checker over `README.md`, `docs/api/README.md` and `docs/verification.md` resolves every relative link to a committed file; the README sections appear in the order of RF-DOC-01; every command in the README is checked against the repository (Make targets exist, ports and defaults equal `compose.yaml` and `.env.example`, the configuration table equals the variables the service and the edge read); the curl examples run against a running service and their outputs equal the documented ones; the problem catalog equals the contract's `ProblemCode` enum; the Design decisions table equals the ADR index; the numbers equal `docs/verification.md`; the two screenshots are PNG files taken from the running app (checked by dimensions and by being produced by the recorded command).
