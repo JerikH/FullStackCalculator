@@ -84,6 +84,7 @@ Run grouping: RUN-M2-1 = OPS-STACK-01, OPS-E2E-01 (solo); RUN-M2-2 = OPS-CI-02 a
 | U13 | 2026-10-22 | `typescript` 5.9.3, `jsdom` 29, `@types/node` 24 and the jsx-a11y peer override for ESLint 10 stay as recorded until OPS-CI-02; nobody changes `frontend/package.json` or the lockfile in W2; the web image build stage uses Node 24.14.1, the local and CI pin. | UI-MODEL-01, OPS-EDGE-01, OPS-CI-02 |
 | U14 | 2026-10-22 | The edge serves the source maps of the production build as hashed static files under `/assets/` with the immutable cache policy; the build configuration is unchanged. | OPS-EDGE-01 |
 | U15 | 2026-10-22 | Wave W2 = RUN-M1-4, RUN-M1-5, RUN-M1-6 as three parallel sessions, launched manually by the owner; Codex in RUN-M1-4 and RUN-M1-5, Claude subagents only in RUN-M1-6. | RUN-M1-4, RUN-M1-5, RUN-M1-6 |
+| U16 | 2026-10-22 | A binary operator pressed after a unary result or a history recall issues the pending operation and chains (`9 + 16 √ × 2 =` → add `["9","4"]`, then multiply `["13","2"]`; `9 + [recall 36] × 2 =` likewise); only a value that is itself the stored left operand — right after a binary operator or a chained result — has its pending operator replaced (`2 + × 3 =` → 6). RF-UI-04 is reworded accordingly (asked in RUN-M1-5, «Findings of UI-MODEL-01» (d)). | UI-MODEL-01, UI-HOOKS-01, UI-SCREEN-01 |
 
 ### Adopted for planning (recommended defaults; the owner can override at any task's step 1)
 | Topic | Default adopted | Why |
@@ -150,3 +151,4 @@ Version 1 is launched when: (1) every requirement of `srs.md` traces to an artif
 | 2026-10-22 | Owner decision U6 (shellcheck in the tiers; tool pins from M0) | U6 |
 | 2026-10-22 | Wave W1 planned (RUN-M1-1, RUN-M1-2, RUN-M1-3); owner decisions U7–U11 | U7–U11 |
 | 2026-10-22 | Wave W2 planned (RUN-M1-4, RUN-M1-5, RUN-M1-6); owner decisions U12–U15; worst-case benchmark budget in the adopted defaults and the validation metrics | U12–U15 |
+| 2026-10-22 | Wave W2 closed; owner decision U16 (operator chaining after a unary result or a recall, RF-UI-04) | U16 |

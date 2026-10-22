@@ -1,0 +1,15 @@
+stage · command · result · seconds
+env:agent · agent environment · pass · 0.00s
+shell:shellcheck · /home/jerik/dev/personal/FullStackCalculator/bin/.tools/shellcheck-0.11.0/shellcheck -x docs/state/archive/runs/RUN-M0-2/evidence/check-env.sh docs/state/archive/runs/RUN-M0-2/evidence/check-tiers.sh docs/state/archive/runs/RUN-M1-2/evidence/check-dist.sh docs/state/archive/runs/RUN-M1-2/evidence/check-tiers-frontend-mutations.sh docs/state/archive/runs/RUN-M1-2/evidence/check-tiers-frontend.sh docs/state/runs/RUN-M1-6/evidence/edge-smoke.sh docs/state/runs/RUN-M1-6/evidence/mutations.sh scripts/ci/env.sh scripts/ci/install-tools.sh scripts/ci/lib.sh scripts/ci/t0.sh scripts/ci/t1.sh scripts/ci/t2.sh scripts/ci/t3.sh · pass · 7.02s
+dockerfiles:hadolint · /home/jerik/dev/personal/FullStackCalculator/bin/.tools/hadolint-2.15.1/hadolint frontend/Dockerfile · pass · 0.05s
+backend:fmt · (cd backend) /home/jerik/dev/personal/FullStackCalculator/bin/.tools/golangci-lint-2.15.0/golangci-lint fmt --diff ./... · pass · 1.61s
+backend:vet · (cd backend) go vet ./... · pass · 0.39s
+backend:lint · (cd backend) /home/jerik/dev/personal/FullStackCalculator/bin/.tools/golangci-lint-2.15.0/golangci-lint run ./... · pass · 1.57s
+backend:test · (cd backend) go test -race ./... · pass · 22.21s
+frontend:typecheck · pnpm -C frontend run typecheck · pass · 4.22s
+frontend:lint · pnpm -C frontend run lint · pass · 10.08s
+frontend:format · pnpm -C frontend run format:check · pass · 1.96s
+frontend:test · pnpm -C frontend run test · pass · 15.25s
+frontend:build · pnpm -C frontend run build · pass · 4.84s
+integration:make · not present (no Makefile) · note · 0.00s
+total 69.40s

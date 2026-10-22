@@ -46,7 +46,7 @@ A worktree (it has `.wf-agent`) needs `WF_AGENT` equal to its agent and `WF_INDE
 ## Services
 | Service | Address | How to start / reset | Shared? (lease) |
 |---|---|---|---|
-| Go service (dev) | `CALC_HTTP_ADDR`, admin `CALC_ADMIN_ADDR` | `cd backend && go run ./cmd/calculator` (from OBS-RUNTIME-01; `make dev-backend` from OPS-STACK-01) | per agent |
+| Go service (dev) | `CALC_HTTP_ADDR`, admin `CALC_ADMIN_ADDR` | `cd backend && go run ./cmd/calculator` (exists since RUN-M1-4; worker: `CALC_HTTP_ADDR`/`CALC_ADMIN_ADDR` from env.sh; `make dev-backend` from OPS-STACK-01) | per agent |
 | Vite dev server | `VITE_PORT`, proxies `/api` to `API_PROXY_TARGET` | `pnpm -C frontend dev` (strict port `VITE_PORT`, proxy to `API_PROXY_TARGET`; `make dev-frontend` later) | per agent |
 | Composed stack | `WEB_PORT` → web:8080 | `make up` / `make down` with the agent's `COMPOSE_PROJECT_NAME` (from OPS-STACK-01) | per agent; image builds serialized |
 
@@ -58,9 +58,10 @@ No database, cache or external service.
 | 0 | `scripts/ci/t0.sh --base main` (uncommitted changes in the main checkout); solo runs re-check their commits with `--base <run start commit>`; the contract stage needs `pnpm -C frontend install --frozen-lockfile` first | 4.0 s over RUN-M0-2 (shellcheck ~3.9 s, actionlint 0.03 s, Redocly 0.55 s warm); 19.7 s over RUN-M1-2 (contract 2.1 s, frontend typecheck 3.0 s, lint 7.5 s, format 1.2 s, tests 4.6 s) |
 | Backend T0 | `scripts/ci/t0.sh --base main` (backend stage: golangci-lint fmt --diff, go vet, golangci-lint run, go test -race; ./... when go.mod/go.sum/.golangci.yml change) | 4.7 s full (RUN-M1-1), 5.0 s one package |
 | 1 | `scripts/ci/t1.sh backend/<pkg>[/...] \| frontend/<file>.test.ts \| frontend/e2e/<file>.spec.ts \| make:<target>` (all validated before anything runs) | — |
-| 2 | `scripts/ci/t2.sh --base <pre-merge main>` | integrator only; 4.7 s while only scripts exist; 31.7 s over W1 (contract, workflows, shell, backend, frontend with build) |
+| 2 | `scripts/ci/t2.sh --base <pre-merge main>` | integrator only; 4.7 s while only scripts exist; 31.7 s over W1 (contract, workflows, shell, backend, frontend with build); 69.4 s over W2 (shell, dockerfiles, backend with `go test -race ./...` 22.2 s, frontend with build) |
 | 3 | `scripts/ci/t3.sh [--job contract\|backend\|frontend\|images]` | CI; `--job contract` 6.6 s (8.6 s after W1, with the types drift check), `--job frontend` 18.9 s |
 | Options | `--keep-going` collects every failure; `-h` usage | — |
+| Edge image | under the heavy lease: `docker build -f frontend/Dockerfile -t calculator-web:local .` (41 s cold, seconds warm); `bash docs/state/archive/runs/RUN-M1-6/evidence/edge-smoke.sh calculator-web:local` (PREFIX, WEB_PORT; about 2 min; uses WEB_PORT and WEB_PORT+4); `mutations.sh` (about 3 min per mutation) | 520 checks, 15 mutations (RUN-M1-6); 520 checks in 80 s on the merged image (W2) |
 | Browser checks | M1: `go run ./cmd/calculator` + `pnpm -C frontend dev` on the agent's ports, Playwright ad hoc; M2: `make up` + `make e2e` | — |
 | Mutation check | break the named rule in the source, run the single test file/package, watch it fail, restore with `git checkout -- <file>` before anyone else runs tests | — |
 
@@ -82,3 +83,8 @@ No database, cache or external service.
 - Vitest 5 `related` forces passWithNoTests unless `--no-passWithNoTests`, and then reports «No affected test files found» (exit 1); `vitest list` has no `--related`; jsdom 29 `matchMedia` is not a function; vitest-axe typing needs `src/test/vitest-axe.d.ts` (Findings of UI-SCAF-01 (d)).
 - msw 3 renamed `onUnhandledRequest` to `onUnhandledFrame`; an MSW body stream left open crashes Node 24.14.1's undici on abort (inject an abort-aware fetch instead); `@playwright/test` 1.64.1 needs Chromium 1248, `npx playwright` 1.62.1 uses 1243 (Findings of UI-SCAF-01 (e)).
 - Python evidence scripts: run with python3 -B or stage evidence by name — __pycache__ is not ignored (Findings of DOC-ADR-01 (e)).
+- Coverage of one directory at 100 %: pnpm -C frontend exec vitest run --coverage --coverage.include='src/<dir>/**' --coverage.thresholds.100 --coverage.reportsDirectory="$WF_SCRATCH/coverage" src/<dir> after eval "$(.workflow/bin/wf env --export)" (heavy lease); Codex review sandboxes cannot start Vitest (Findings of UI-MODEL-01 (e)).
+- go get <module>@<version> does not record go.sum lines for packages nothing imports yet; go get the exact packages a run will import under the deps lease, go mod tidy once at the end (Findings of OBS-METRICS-01 (c)).
+- Codex's sandbox cannot bind sockets or write the Go build cache in review mode: socket lifecycle tests are run by the controller (Findings of OBS-RUNTIME-01 (f)).
+- Docker and nginx: a plain `--tmpfs` (or compose `tmpfs:`) over an image directory is root-owned with that directory's mode, and nginx-unprivileged's envsubst step then logs `not writable` and starts with no server (only the healthcheck shows it); `return <code> '<text>'` takes the MIME type from the URI extension unless the location resets `types { }`; `proxy_intercept_errors on` intercepts every status that has an `error_page` in that location; round-robin state is per worker; a failed ARP lookup is cached; `docker logs` is asynchronous; do not edit a bash script while a run of it is in progress (Findings of OPS-EDGE-01 (e)).
+- `scripts/ci/t0.sh` selects the frontend stage for any path under `frontend/`, `frontend/Dockerfile` included, and that stage needs `frontend/node_modules`; a worktree without them gets only the shell and dockerfiles stages (Findings of OPS-EDGE-01 (f)).

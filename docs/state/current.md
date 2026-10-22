@@ -3,7 +3,7 @@
 ## Current milestone: M1 — Working calculator
 ## Current run: (none)
 ## Cycle step: (none)
-## Active waves: W2 (RUN-M1-4, RUN-M1-5, RUN-M1-6) — plan in `docs/state/waves/W2.md`
+## Active waves: (none)
 
 ## Run groups (order of execution)
 
@@ -16,9 +16,9 @@ Each run chains related tasks executed by one agent, in the order listed.
 | **RUN-M1-1** | M1 | CALC-CORE-01, CALC-OPS-01, API-HTTPX-01 | done (2026-10-22, 5e3ecb5, 29aecc2, 509bc52; W1 merge eb327ca) | W1 with RUN-M1-2, RUN-M1-3 | backend track; double review on API-HTTPX-01 |
 | **RUN-M1-2** | M1 | UI-SCAF-01, UI-CLIENT-01 | done (2026-10-22, 9fc0caa, 75d84a1, 24131a9, fbb1984; W1 merge ce02a75) | W1 with RUN-M1-1, RUN-M1-3 | frontend track; consumes the M0 contract |
 | **RUN-M1-3** | M1 | DOC-ADR-01 | done (2026-10-22, 8460cea; W1 merge 0f22334) | W1 with RUN-M1-1, RUN-M1-2 | `docs/adr/` only; Claude subagents (no Codex) |
-| **RUN-M1-4** | M1 | OBS-METRICS-01, API-ROUTES-01, OBS-RUNTIME-01 | in W2 | W2 with RUN-M1-5, RUN-M1-6 | backend track; double review on API-ROUTES-01, OBS-RUNTIME-01 |
-| **RUN-M1-5** | M1 | UI-MODEL-01 | in W2 | W2 with RUN-M1-4, RUN-M1-6 | frontend track; double review |
-| **RUN-M1-6** | M1 | OPS-EDGE-01 | in W2 | W2 with RUN-M1-4, RUN-M1-5 | edge files only; double review; Claude subagents (no Codex) |
+| **RUN-M1-4** | M1 | OBS-METRICS-01, API-ROUTES-01, OBS-RUNTIME-01 | done (2026-10-22, 8c51c00, 6eef481, db4ab64, e9250f8, 857b3fc; W2 merge 6a50ff7) | W2 with RUN-M1-5, RUN-M1-6 | backend track; double review on API-ROUTES-01, OBS-RUNTIME-01 |
+| **RUN-M1-5** | M1 | UI-MODEL-01 | done (2026-10-22, b338c03; W2 merge 93812a9) | W2 with RUN-M1-4, RUN-M1-6 | frontend track; double review |
+| **RUN-M1-6** | M1 | OPS-EDGE-01 | done (2026-10-22, 21b98e3; W2 merge a2a6975) | W2 with RUN-M1-4, RUN-M1-5 | edge files only; double review; Claude subagents (no Codex) |
 | **RUN-M1-7** | M1 | OPS-IMAGE-01 | pending | W3 with RUN-M1-8 | backend delivery |
 | **RUN-M1-8** | M1 | UI-HOOKS-01, UI-SCREEN-01 | pending | W3 with RUN-M1-7 | frontend track; double review on UI-HOOKS-01; real-browser check against the service from W2 |
 
@@ -35,16 +35,16 @@ Each run chains related tasks executed by one agent, in the order listed.
 - [x] **CALC-CORE-01** — Go module, lint configuration, decimal parsing and formatting [BE] 🔎 findings: «Findings of CALC-CORE-01» (a)–(c)
 - [x] **CALC-OPS-01** — Operation catalog and calculator [BE] 🔎 findings: «Findings of CALC-OPS-01» (a)–(e)
 - [x] **API-HTTPX-01** — HTTP platform: problems, decoding, request context, middleware [BE] 🔎 findings: «Findings of API-HTTPX-01» (a)–(g)
-- [ ] **OBS-METRICS-01** — Build info, request-aware logger and metrics [BE]
-- [ ] **API-ROUTES-01** — Routes, handlers and contract tests [BE]
-- [ ] **OBS-RUNTIME-01** — Configuration, lifecycle, admin listener and entrypoint [BE]
+- [x] **OBS-METRICS-01** — Build info, request-aware logger and metrics [BE] 🔎 findings: «Findings of OBS-METRICS-01» (a)–(c)
+- [x] **API-ROUTES-01** — Routes, handlers and contract tests [BE] 🔎 findings: «Findings of API-ROUTES-01» (a)–(e)
+- [x] **OBS-RUNTIME-01** — Configuration, lifecycle, admin listener and entrypoint [BE] 🔎 findings: «Findings of OBS-RUNTIME-01» (a)–(g)
 - [ ] **OPS-IMAGE-01** — Embedded web handler and the API image [BE]
 - [x] **UI-SCAF-01** — Frontend scaffold, tooling, tokens and generated types [FE] 🔎 findings: «Findings of UI-SCAF-01» (a)–(g)
 - [x] **UI-CLIENT-01** — Typed, never-throwing API client [FE] 🔎 findings: «Findings of UI-CLIENT-01» (a)–(d)
-- [ ] **UI-MODEL-01** — Pure calculator model [FE]
+- [x] **UI-MODEL-01** — Pure calculator model [FE] 🔎 findings: «Findings of UI-MODEL-01» (a)–(f)
 - [ ] **UI-HOOKS-01** — Effects, keyboard, delayed busy, persistence and theme hooks [FE]
 - [ ] **UI-SCREEN-01** — Calculator screen, history, theme control and app shell [FE]
-- [ ] **OPS-EDGE-01** — Web image and nginx edge [BE]
+- [x] **OPS-EDGE-01** — Web image and nginx edge [BE] 🔎 findings: «Findings of OPS-EDGE-01» (a)–(j)
 - [x] **DOC-ADR-01** — Architecture decision records [BE] 🔎 findings: «Findings of DOC-ADR-01» (a)–(e)
 
 ### Later milestones

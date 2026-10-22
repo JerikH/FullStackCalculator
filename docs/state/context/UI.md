@@ -19,7 +19,8 @@ The calculator screen (UI-SCREEN-01): display, keypad, history panel, theme cont
 
 ## Architecture as built
 - `frontend/` package calculator-web (Findings of UI-SCAF-01 (a)); `src/shared/styles/{tokens,global}.css`, `src/shared/storage/safeStorage.ts`, `src/shared/ui/cx.ts`, `public/theme-init.js`, `src/shared/api/` (client, Findings of UI-CLIENT-01 (a)), `src/test/setup.ts` (matchMedia stub; vitest-axe typing in `src/test/vitest-axe.d.ts`); `src/main.tsx` is a placeholder until UI-SCREEN-01 (RUN-M1-2).
-- Planned: `frontend/src/features/calculator/{model,hooks,ui}`, `frontend/src/shared/theme`, `frontend/src/app/`.
+- frontend/src/features/calculator/model/ (RUN-M1-5, Findings of UI-MODEL-01 (a)): pure model — OPERATIONS, KEYPAD + commandForKey/actionForCommand, entry editing, calculatorReducer/createInitialState, selectDisplay/formatEntry/historyExpression, toCalculatorError, decodeHistory/encodeHistory, HISTORY_STORAGE_KEY; testing.ts is a test-only helper. boundaries.test.ts fails on any non-model import, value import of the contract types or React/DOM/IO/arithmetic identifier in the production files.
+- Planned: `frontend/src/features/calculator/{hooks,ui}`, `frontend/src/shared/theme`, `frontend/src/app/`.
 
 ## Invariants every task inherits
 - The frontend never computes a numeric result (RF-UI-05).
@@ -31,6 +32,7 @@ The calculator screen (UI-SCREEN-01): display, keypad, history panel, theme cont
 - The API client never rejects; only `CalculatorApiProvider` supplies it; hook and component tests inject a fake; only `src/shared/api` tests use MSW, in the Node environment with `onUnhandledFrame: 'error'` (Findings of UI-CLIENT-01 (a), UI-SCAF-01 (e)).
 - Package-wide frontend inputs re-check the whole package in the tiers (Findings of UI-SCAF-01 (b)).
 - `@playwright/test` 1.64.1 runs Chromium build 1248 (Findings of UI-SCAF-01 (e)).
+- Completions carry the captured request object; the reducer accepts only the very object in state.request (request IDs restart at 1 after AC). A binary operator after a unary result or a recall chains; only the stored operand (entryMode 'operand') has its pending operator replaced (Findings of UI-MODEL-01 (b), (d)).
 
 ## Where to look
 - Open debt: `findings/by-owner/UI.md`
