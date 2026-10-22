@@ -1,0 +1,396 @@
+openapi: 3.1.0
+info:
+  title: Calculator API
+  version: 1.0.0
+  summary: Arbitrary-precision decimal calculator microservice.
+  description: |
+    Performs arithmetic with 34 significant digits and half-even rounding.
+
+    **Numbers are strings.** Every operand and result is a JSON string in JSON-number
+    syntax (`"-12.5"`, `"1e-3"`), so no precision is lost in transit. A JavaScript
+    `Number` cannot represent `0.1` exactly. `inexact: true` reports that the exact
+    result had to be rounded to 34 digits.
+
+    **Errors** use RFC 9457 problem details (`application/problem+json`) with a
+    stable machine-readable `code`. 400 means the request is invalid. 422 means
+    the request is valid but the mathematics has no representable answer.
+  license:
+    name: MIT
+    identifier: MIT
+servers:
+  - url: http://localhost:8080
+    description: Full stack through the edge proxy (docker compose)
+  - url: http://localhost:8081
+    description: Backend service, direct
+tags:
+  - name: operations
+    description: Calculator operations
+  - name: system
+    description: Health and metadata
+paths:
+  /api/v1/operations:
+    get:
+      tags: [operations]
+      operationId: listOperations
+      summary: List supported operations
+      description: Returns the operation catalog in display order.
+      responses:
+        "200":
+          description: The operation catalog.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/XRequestID"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperationCatalog"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+  /api/v1/operations/{operation}:
+    post:
+      tags: [operations]
+      operationId: calculate
+      summary: Apply an operation to its operands
+      description: |
+        Binary operations (`add`, `subtract`, `multiply`, `divide`, `power`) take exactly
+        two operands. Unary operations (`sqrt`, `percentage`) take exactly one.
+      parameters:
+        - name: operation
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/OperationName"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CalculationRequest"
+            examples:
+              add:
+                summary: Exact decimal addition
+                value:
+                  operands: ["0.1", "0.2"]
+              sqrt:
+                summary: Unary operation
+                value:
+                  operands: ["2"]
+      responses:
+        "200":
+          description: The operation succeeded.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/XRequestID"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CalculationResult"
+              examples:
+                exact:
+                  value:
+                    operation: add
+                    operands: ["0.1", "0.2"]
+                    result: "0.3"
+                    inexact: false
+                rounded:
+                  value:
+                    operation: divide
+                    operands: ["1", "3"]
+                    result: "0.3333333333333333333333333333333333"
+                    inexact: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+  /api/v1/openapi.yaml:
+    get:
+      tags: [system]
+      operationId: getOpenAPIDocument
+      summary: This OpenAPI document
+      responses:
+        "200":
+          description: The contract, as YAML.
+          content:
+            application/yaml:
+              schema:
+                type: string
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+  /healthz:
+    get:
+      tags: [system]
+      operationId: getLiveness
+      summary: Liveness probe
+      responses:
+        "200":
+          description: The process is alive.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /readyz:
+    get:
+      tags: [system]
+      operationId: getReadiness
+      summary: Readiness probe
+      description: Returns 503 while the instance drains connections during shutdown.
+      responses:
+        "200":
+          description: Ready to receive traffic.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          description: Draining; remove from load balancing.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+components:
+  headers:
+    XRequestID:
+      description: Correlation id. Echoes a valid inbound `X-Request-ID`, otherwise generated.
+      schema:
+        type: string
+        pattern: "^[A-Za-z0-9._-]{1,128}$"
+  schemas:
+    Decimal:
+      type: string
+      description: A decimal number in JSON-number syntax, carried as a string to preserve precision.
+      pattern: "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?$"
+      maxLength: 128
+      examples: ["42", "-0.5", "1.5e+25"]
+    OperationName:
+      type: string
+      enum: [add, subtract, multiply, divide, power, sqrt, percentage]
+    CalculationRequest:
+      type: object
+      additionalProperties: false
+      required: [operands]
+      properties:
+        operands:
+          type: array
+          minItems: 1
+          maxItems: 2
+          items:
+            $ref: "#/components/schemas/Decimal"
+    CalculationResult:
+      type: object
+      additionalProperties: false
+      required: [operation, operands, result, inexact]
+      properties:
+        operation:
+          $ref: "#/components/schemas/OperationName"
+        operands:
+          type: array
+          items:
+            $ref: "#/components/schemas/Decimal"
+        result:
+          $ref: "#/components/schemas/Decimal"
+        inexact:
+          type: boolean
+          description: True when the exact result was rounded to 34 significant digits.
+    OperationInfo:
+      type: object
+      additionalProperties: false
+      required: [name, symbol, arity, description]
+      properties:
+        name:
+          $ref: "#/components/schemas/OperationName"
+        symbol:
+          type: string
+        arity:
+          type: integer
+          enum: [1, 2]
+        description:
+          type: string
+    OperationCatalog:
+      type: object
+      additionalProperties: false
+      required: [operations]
+      properties:
+        operations:
+          type: array
+          items:
+            $ref: "#/components/schemas/OperationInfo"
+    ProblemCode:
+      type: string
+      enum:
+        - MALFORMED_REQUEST
+        - VALIDATION_FAILED
+        - NOT_FOUND
+        - UNKNOWN_OPERATION
+        - METHOD_NOT_ALLOWED
+        - PAYLOAD_TOO_LARGE
+        - UNSUPPORTED_MEDIA_TYPE
+        - DIVISION_BY_ZERO
+        - UNDEFINED_RESULT
+        - OVERFLOW
+        - RATE_LIMITED
+        - INTERNAL_ERROR
+        - SERVICE_UNAVAILABLE
+    FieldViolation:
+      type: object
+      additionalProperties: false
+      required: [field, reason]
+      properties:
+        field:
+          type: string
+          examples: ["operands[1]"]
+        reason:
+          type: string
+    Problem:
+      type: object
+      description: RFC 9457 problem details with calculator extensions.
+      required: [type, title, status, code]
+      properties:
+        type:
+          type: string
+          format: uri-reference
+          examples: ["urn:calculator:problem:division-by-zero"]
+        title:
+          type: string
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+        detail:
+          type: string
+        instance:
+          type: string
+        code:
+          $ref: "#/components/schemas/ProblemCode"
+        requestId:
+          type: string
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldViolation"
+    Health:
+      type: object
+      additionalProperties: false
+      required: [status, version, commit]
+      properties:
+        status:
+          type: string
+          enum: [ok, ready, draining]
+        version:
+          type: string
+        commit:
+          type: string
+  responses:
+    BadRequest:
+      description: The request is malformed or fails validation.
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/XRequestID"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+          example:
+            type: urn:calculator:problem:validation-failed
+            title: Validation failed
+            status: 400
+            detail: one or more operands are invalid
+            instance: /api/v1/operations/add
+            code: VALIDATION_FAILED
+            requestId: 9f2b7c1d
+            errors:
+              - field: operands[1]
+                reason: must be a decimal number in JSON number syntax, e.g. "-12.5" or "1e-3"
+    NotFound:
+      description: Unknown operation or route.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    MethodNotAllowed:
+      description: The path exists but not for this method. See the `Allow` header.
+      headers:
+        Allow:
+          schema:
+            type: string
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    PayloadTooLarge:
+      description: The body exceeds 4096 bytes.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    UnsupportedMediaType:
+      description: Content-Type is not application/json.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    Unprocessable:
+      description: Valid request, but the result is mathematically undefined or out of range.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+          example:
+            type: urn:calculator:problem:division-by-zero
+            title: Division by zero
+            status: 422
+            detail: the divisor must not be zero
+            instance: /api/v1/operations/divide
+            code: DIVISION_BY_ZERO
+            requestId: 9f2b7c1d
+    RateLimited:
+      description: Emitted by the edge proxy when the client exceeds the rate limit.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    InternalError:
+      description: Unexpected server error. No internals are exposed; quote `requestId` to support.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    ServiceUnavailable:
+      description: Emitted by the edge proxy when the backend is unreachable.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"

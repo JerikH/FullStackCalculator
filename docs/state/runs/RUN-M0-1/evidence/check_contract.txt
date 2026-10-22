@@ -1,0 +1,53 @@
+# Contract shape check — 2026-10-22T19:30Z, Python 3.12.3, PyYAML 6.0.1
+$ python3 docs/state/runs/RUN-M0-1/evidence/check_contract.py backend/api/openapi.yaml
+ok   openapi 3.1.x
+ok   licence MIT with SPDX identifier
+ok   schemas = Decimal, OperationName, CalculationRequest, CalculationResult, OperationInfo, OperationCatalog, ProblemCode, Problem, FieldViolation, Health
+ok   OperationName enum = catalog order (RF-CALC-01)
+ok   ProblemCode enum = the 13 codes (RF-API-05)
+ok   Decimal pattern = SRS regex
+ok   Decimal maxLength 128
+ok   CalculationRequest strict, operands required, 1..2 Decimal items
+ok   CalculationResult requires operation, operands, result, inexact
+ok   OperationInfo arity enum [1, 2]
+ok   Problem requires type, title, status, code
+ok   Problem has detail, instance, requestId, errors[FieldViolation]
+ok   Problem.code refers to ProblemCode
+ok   Health.status enum ok|ready|draining
+ok   X-Request-ID header pattern (RF-API-07)
+ok   MethodNotAllowed declares Allow
+ok   response BadRequest is application/problem+json Problem
+ok   response NotFound is application/problem+json Problem
+ok   response MethodNotAllowed is application/problem+json Problem
+ok   response PayloadTooLarge is application/problem+json Problem
+ok   response UnsupportedMediaType is application/problem+json Problem
+ok   response Unprocessable is application/problem+json Problem
+ok   response RateLimited is application/problem+json Problem
+ok   response InternalError is application/problem+json Problem
+ok   response ServiceUnavailable is application/problem+json Problem
+ok   paths and methods = RF-API-01/02/03, RF-OBS-02/03
+ok   GET /api/v1/operations statuses 200/405/429/500/503 in ascending order
+ok   GET /api/v1/operations has a 4xx response
+ok   POST /api/v1/operations/{operation} statuses 200/400/404/405/413/415/422/429/500/503 in ascending order
+ok   POST /api/v1/operations/{operation} has a 4xx response
+ok   GET /api/v1/openapi.yaml statuses 200/405/429/500/503 in ascending order
+ok   GET /api/v1/openapi.yaml has a 4xx response
+ok   GET /healthz statuses 200/405/500 in ascending order
+ok   GET /healthz has a 4xx response
+ok   GET /readyz statuses 200/405/500/503 in ascending order
+ok   GET /readyz has a 4xx response
+ok   readyz 200 and 503 are Health JSON
+ok   openapi.yaml served as application/yaml
+
+38 assertion(s), 0 failure(s)
+exit=0
+
+## Mutation: RATE_LIMITED removed from ProblemCode (scratch copy) — must fail
+FAIL ProblemCode enum = the 13 codes (RF-API-05)
+38 assertion(s), 1 failure(s)
+exit=1
+
+## Mutation: Decimal maxLength 129 (scratch copy) — must fail
+FAIL Decimal maxLength 128
+38 assertion(s), 1 failure(s)
+exit=1
