@@ -102,6 +102,29 @@ Each row is one command under `timeout 600`; the lease is taken without `--wait`
 
 The composed stack and `make e2e` run once locally (OPS-E2E-01) and every piece is recorded in `docs/verification.md`; after a fix only the failing spec files re-run. Left to CI (gate G1): the hosted run of the six jobs, the Trivy gate, the clean-clone build, the `publish` job.
 
+## CI job pieces and documentation checks (RUN-M2-2, RUN-M2-3; measured 2026-10-22)
+
+`scripts/ci/t3.sh --list` prints the stages of every job; a job runs one stage per command with `--job J --stage S`. Each piece is one command under `timeout 600`; the lease is `heavy` where noted.
+
+| Piece | Result | Time |
+|---|---|---|
+| `t3.sh --job contract` (all five stages) | pass | 14.9 s |
+| `t3.sh --job frontend` typecheck, lint, format, audit | pass | 22.7 s |
+| `--stage coverage-frontend --stage build` (heavy) | pass; 100 / 99.77 / 99.15 / 100 % | 33.6 s |
+| `--job backend` modules, static, govulncheck, build | pass | 24.8 s |
+| `--stage coverage-backend` / `fuzz` / `bench` (heavy) | 98.11 % / 2 targets / all cases under budget | 17.7 s / 62.9 s / 47.8 s |
+| images: dockerfiles / compose-config | pass | 0.3 s / 0.2 s |
+| images: build-api / build-web / build-aio (heavy; layers cached, cold builds in OPS-STACK-01) | pass | 5.5 s / 2.2 s / 3.6 s |
+| images: smoke-api / smoke-edge / smoke-edge-stub / smoke-aio (heavy) | 14 / 80 / 599 / 58 checks | 8.9 s / 14.6 s / 83.3 s / 7.6 s |
+| images: export; scan-api / scan-web / scan-aio | three archives (5.3, 25.8, 5.6 MB), manifest; 0 findings | 2.3 s; 27 s first (129 MB database), then 0.6–1.5 s |
+| images: edge-mutations `M14` / `MLC MPB` / `M2 M8` (`EDGE_MUTATIONS="ID …"`, one subset per command) | caught | 84 s / 167 s / 172 s |
+| `check-workflow.py`; `checker-mutations.sh` (29) | ok; all caught | 0.1 s; seconds |
+| `publish-tags-test.sh`; `publish-push-shim-test.sh`; `e2e-shim-test.sh` | 46; 12; 10 cases | under 10 s each |
+| `t2.sh --base main`, default stage | the stages of the affected scope pass and all 21 targets are present; no container started | 62 s (integration, with the frontend stages) / 75 s (RUN-M2-2) |
+| README checker `check_docs.py --terms-file <list outside the repository>`; `check_docs_mutations.py`; `run_curl_examples.py`; `check_adrs.py`; `make docs-api` | 16 rules; 40/40; 20/20; 0 failures; written | under 1 s; 6.7 s; 0.2 s; 0.8 s; 0.8 s |
+
+Recipe of the documentation checks: build the binary with `go build -o <scratch>/calc ./cmd/calculator`, start it with `CALC_HTTP_ADDR=:<port> CALC_ADMIN_ADDR=:<port+2>` on the agent's own ports, run `python3 -B -I docs/state/archive/runs/RUN-M2-3/evidence/run_curl_examples.py --readme README.md --base http://127.0.0.1:<port>`, stop it by its PID. Screenshots only if the app or the theme changes: see the header of `take_screenshots.mjs`. Needs `pnpm -C frontend install --frozen-lockfile` under the `deps` lease in a fresh worktree (2 s with the shared store).
+
 ## Too long for a session (pipeline or integrator only)
 - Tier 3 / the complete suite; the full CI workflow; image builds of all three images in one go.
 - `make up` + `make e2e` run once locally in OPS-E2E-01 (recorded in `docs/verification.md`); afterwards only failing spec files are re-run.
@@ -132,3 +155,5 @@ The composed stack and `make e2e` run once locally (OPS-E2E-01) and every piece 
 - Playwright against the stack: `make up`, then `make e2e E2E_ARGS="--project=chromium"` and `--project=mobile-chromium` (about 4 min each), then `E2E_STACK=1 make e2e E2E_ARGS="--project=chromium e2e/stack-disruptive.spec.ts"` (1 min), `make down`. `t2.sh --stage up --stage e2e --stage down` runs them in order and always ends with `down` (`--keep-stack` keeps the stack). Never run two Playwright runs in one checkout at once: each run removes `frontend/test-results` (Findings of OPS-STACK-01 (e)); use `--output <dir>` for a concurrent proving run. `E2E_COMPOSE_OVERRIDE=<file>` layers a second compose file over the helpers' commands (mutation checks).
 - Measured in RUN-M2-1 (full table in `docs/verification.md`): web image build 41 s cold, edge smoke 599 checks 2 min 37 s, an edge mutation 1.5–4.5 min per pair, `make coverage-backend` 7 s warm, `make coverage-frontend` 53 s, `make fuzz` 65 s, `make bench` 54 s, `make lint` 47 s, `make up` 17 s, `make smoke-aio` 10 s.
 - The edge smoke and its mutations moved to `docs/state/archive/runs/RUN-M2-1/evidence/edge/` (extended; copy them to run: they are not relocatable): `WEB_PORT=4130 bash edge-smoke.sh calculator-web:local`; `mutations.sh <image> "MLC MPB"` runs a subset (one mutation takes about 2.5 min: keep each command to two or three ids).
+- `scripts/ci/t1.sh make:<target>` validates the target and then RUNS it: `t1.sh make:up make:e2e make:down` starts the composed stack and the whole Playwright suite. To prove that targets exist use the default `scripts/ci/t2.sh` («all 21 targets present»). Never pipe `source scripts/ci/env.sh | tail`: the pipeline subshell leaves `COMPOSE_PROJECT_NAME` unset and image builds fall back to the tag `:local`, which belongs to the main checkout (Findings of OPS-CI-02 (f)).
+- Codex was not available (CLI not installed): check `codex-companion.mjs status` before relying on a background Codex job (Findings of DOC-README-01 (e)). A fresh worktree has no `frontend/node_modules`; `make docs-api`, the app build and the screenshot script need one install under the `deps` lease (Findings of DOC-README-01 (f)).
