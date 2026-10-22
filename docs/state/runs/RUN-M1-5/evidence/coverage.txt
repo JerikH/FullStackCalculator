@@ -1,0 +1,11 @@
+# Coverage of frontend/src/features/calculator/model (2026-10-22)
+# pnpm exec vitest run --coverage --coverage.include='src/features/calculator/model/**' --coverage.thresholds.100 src/features/calculator/model  (heavy lease)
+ Test Files  9 passed (9)
+      Tests  860 passed (860)
+No files with missing coverage.
+9 files fully covered.
+Statements   : 100% ( 212/212 )
+Branches     : 100% ( 216/216 )
+Functions    : 100% ( 43/43 )
+Lines        : 100% ( 181/181 )
+exit=0

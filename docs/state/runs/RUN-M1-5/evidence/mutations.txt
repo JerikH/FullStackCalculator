@@ -1,0 +1,71 @@
+# Mutation checks (UI-MODEL-01), 2026-10-22
+# Each mutation applied alone to the named file, the named test file run with 'pnpm exec vitest run', the source restored; the model suite is green afterwards.
+M1 [KILLED] busy guard lets digitPressed through (reducer.ts) -> reducer.test.ts; failing tests (1):
+    src/features/calculator/model/reducer.test.ts > guards and error recovery > busy ignores digitPressed by identity
+M2 [KILLED] stale guard compares request.id instead of identity (reducer.ts) -> reducer.test.ts; failing tests (2):
+    src/features/calculator/model/reducer.test.ts > completions and history > ignores duplicate completion and stale completion with a reused id after AC
+    src/features/calculator/model/reducer.test.ts > guards and error recovery > rejects different and equal-by-value request descriptors in busy
+M3 [KILLED] stale guard removed (reducer.ts) -> reducer.test.ts; failing tests (3):
+    src/features/calculator/model/reducer.test.ts > completions and history > ignores duplicate completion and stale completion with a reused id after AC
+    src/features/calculator/model/reducer.test.ts > guards and error recovery > rejects different and equal-by-value request descriptors in busy
+    src/features/calculator/model/reducer.test.ts > guards and error recovery > rejects different and equal-by-value request descriptors in idle
+M4 [KILLED] binary after a fresh (unary/recall) entry replaces instead of chaining (reducer.ts) -> reducer.test.ts; failing tests (2):
+    src/features/calculator/model/reducer.test.ts > calculator sequences with literal service fixtures > uses a unary result as the right operand before *
+    src/features/calculator/model/reducer.test.ts > calculator sequences with literal service fixtures > uses recall as the right operand before *
+M5 [KILLED] error recovery keeps the old state (no reset) for a digit (reducer.ts) -> reducer.test.ts; failing tests (1):
+    src/features/calculator/model/reducer.test.ts > guards and error recovery > recovers from error with {"type":"digitPressed","digit":"5"}
+M6 [KILLED] = without a pending operator issues a request (reducer.ts) -> reducer.test.ts; failing tests (12):
+    src/features/calculator/model/reducer.test.ts > calculator sequences with literal service fixtures > [ '0', '+', '=' ] requests add with exact strings
+    src/features/calculator/model/reducer.test.ts > calculator sequences with literal service fixtures > [ '0', '.', '1', '+', '0', '.', …(2) ] requests add with exact strings
+    src/features/calculator/model/reducer.test.ts > calculator sequences with literal service fixtures > [ '1', '2', '*', '3', '=' ] requests multiply with exact strings
+    src/features/calculator/model/reducer.test.ts > calculator sequences with literal service fixtures > [ '1', '2', '.', '+', '3', '.', '=' ] requests add with exact strings
+    src/features/calculator/model/reducer.test.ts > calculator sequences with literal service fixtures > [ '1', '6', 'r' ] requests sqrt with exact strings
+    src/features/calculator/model/reducer.test.ts > calculator sequences with literal service fixtures > [ '2', '+', '*', '3', '=' ] requests multiply with exact strings
+M7 [KILLED] success always applies complete (reducer.ts) -> reducer.test.ts; failing tests (10):
+    src/features/calculator/model/reducer.test.ts > calculator sequences with literal service fixtures > chains sequentially, then replaces a stored pending operator
+    src/features/calculator/model/reducer.test.ts > calculator sequences with literal service fixtures > uses a unary result as the right operand before *
+    src/features/calculator/model/reducer.test.ts > calculator sequences with literal service fixtures > uses a unary result as the right operand before =
+    src/features/calculator/model/reducer.test.ts > calculator sequences with literal service fixtures > uses recall as the right operand before *
+    src/features/calculator/model/reducer.test.ts > completions and history > applies chain success, inexact false
+    src/features/calculator/model/reducer.test.ts > completions and history > applies chain success, inexact true
+M8 [KILLED] history cap 21 (reducer.ts) -> reducer.test.ts; failing tests (1):
+    src/features/calculator/model/reducer.test.ts > completions and history > retains equal calculations separately and caps the newest 20 after 21 successes
+M9 [KILLED] unchanged-state bail-out removed (reducer.ts) -> reducer.test.ts; failing tests (5):
+    src/features/calculator/model/reducer.test.ts > editing and pending operations > preserves identity for a capped digit, second point, repeated operator and empty history
+    src/features/calculator/model/reducer.test.ts > editing and pending operations > preserves identity for unchanged initial key Backspace
+    src/features/calculator/model/reducer.test.ts > editing and pending operations > preserves identity for unchanged initial key Delete
+    src/features/calculator/model/reducer.test.ts > editing and pending operations > preserves identity for unchanged initial key Escape
+    src/features/calculator/model/reducer.test.ts > editing and pending operations > preserves identity for unchanged initial key n
+M10 [KILLED] codec accepts a duplicate id (history.ts) -> history.test.ts; failing tests (2):
+    src/features/calculator/model/history.test.ts > decodeHistory output > rejects the whole list for a malformed entry or a duplicate ID beyond the first 20
+    src/features/calculator/model/history.test.ts > decodeHistory rejects the whole envelope > for duplicate IDs
+M11 [KILLED] codec accepts version "1" (history.ts) -> history.test.ts; failing tests (3):
+    src/features/calculator/model/history.test.ts > decodeHistory rejects the whole envelope > for version "1" as text
+    src/features/calculator/model/history.test.ts > decodeHistory rejects the whole envelope > for version [1]
+    src/features/calculator/model/history.test.ts > decodeHistory rejects the whole envelope > for version true
+M12 [KILLED] an empty requestId is carried (messages.ts) -> messages.test.ts; failing tests (1):
+    src/features/calculator/model/messages.test.ts > request reference > is treated as unavailable when empty: no key at all
+M13 [KILLED] grouping applied to scientific values (selectors.ts) -> selectors.test.ts; failing tests (7):
+    src/features/calculator/model/selectors.test.ts > formatEntry > keeps the exponent sign ASCII
+    src/features/calculator/model/selectors.test.ts > formatEntry > leaves the scientific value "-1234567e+8" ungrouped as "−1234567e+8"
+    src/features/calculator/model/selectors.test.ts > formatEntry > leaves the scientific value "1234.5678e-3" ungrouped as "1234.5678e-3"
+    src/features/calculator/model/selectors.test.ts > formatEntry > leaves the scientific value "123456789e3" ungrouped as "123456789e3"
+    src/features/calculator/model/selectors.test.ts > formatEntry > leaves the scientific value "1234E+5" ungrouped as "1234E+5"
+    src/features/calculator/model/selectors.test.ts > formatEntry > leaves the scientific value "1e+21" ungrouped as "1e+21"
+M14 [KILLED] toggleSign without the 128-character limit (entry.ts) -> entry.test.ts; failing tests (1):
+    src/features/calculator/model/entry.test.ts > entry editing > toggleSign(11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111)
+M15 [KILLED] invalid historyId added to history (reducer.ts) -> reducer.test.ts; failing tests (2):
+    src/features/calculator/model/reducer.test.ts > completions and history > applies result but skips invalid or duplicate history id
+    src/features/calculator/model/reducer.test.ts > completions and history > applies result but skips invalid or duplicate history id xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+M16 [KILLED] codec validates operands with holes skipped (history.ts) -> history.test.ts; failing tests (1):
+    src/features/calculator/model/history.test.ts > encodeHistory > drops an entry with holes in its operands and keeps its neighbours
+M17 [KILLED] non-Decimal success applied as a result (reducer.ts) -> reducer.test.ts; failing tests (6):
+    reports a non-Decimal result "<img>" as a failure
+    src/features/calculator/model/reducer.test.ts > completions and history > reports a non-Decimal result "" as a failure
+    src/features/calculator/model/reducer.test.ts > completions and history > reports a non-Decimal result "1,000" as a failure
+    src/features/calculator/model/reducer.test.ts > completions and history > reports a non-Decimal result "1." as a failure
+    src/features/calculator/model/reducer.test.ts > completions and history > reports a non-Decimal result "111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111" as a failure
+    src/features/calculator/model/reducer.test.ts > completions and history > reports a non-Decimal result "<img>" as a failure
+M18 [KILLED] boundary scanner without the catch-all module check (boundaries.test.ts) -> boundaries.test.ts; failing tests (2):
+    src/features/calculator/model/boundaries.test.ts > findViolations > flags export { default as 'decimal' } from 'decimal.js'; (a quoted export name)
+    src/features/calculator/model/boundaries.test.ts > findViolations > flags import { 'convert' as convert } from 'decimal.js'; (a quoted import name)
