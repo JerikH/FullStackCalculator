@@ -33,6 +33,7 @@
 | API-ROUTES-01 | [BE] | API | Routes and handlers (catalog, calculate, contract, probes), domain-error mapping, contract tests; contract served with `no-store` | OBS-METRICS-01 | any |
 | OBS-RUNTIME-01 | [BE] | OBS | Configuration, application lifecycle and drain, admin listener, handler-chain order, healthcheck subcommand, `cmd/calculator`; creates the API-only `backend/internal/web/noembed.go` that OPS-IMAGE-01 completes | API-ROUTES-01 | any |
 | OPS-IMAGE-01 | [BE] | OPS | Embedded web handler (build tag `embedui`) and the hardened API image | OBS-RUNTIME-01 | any |
+| OBS-LOG-01 | [BE] | OBS | Access-log levels and field bounds: draining readiness 503 at `info`, `path` and `user_agent` truncated to 256 characters (U19, U20) | OBS-RUNTIME-01 | any |
 | UI-SCAF-01 | [FE] | UI | Vite + React 19 strict scaffold, ESLint/Prettier, tokens and global styles, `theme-init.js`, favicon, safe storage, generated API types, Vitest setup with coverage thresholds, dev proxy | M0 | any |
 | UI-CLIENT-01 | [FE] | UI | Typed never-throwing API client with timeout, error kinds, problem guard and context injection | UI-SCAF-01 | any |
 | UI-MODEL-01 | [FE] | UI | Pure model: types, `KEYPAD` table, entry editing, reducer state machine, display/history selectors, error copy, history codec | UI-CLIENT-01 | any |
@@ -51,7 +52,7 @@ Run grouping (each run chains related tasks executed by one agent):
 | RUN-M1-4 | OBS-METRICS-01, API-ROUTES-01, OBS-RUNTIME-01 | W2 | backend chain: observability → routes and contract tests → runnable service |
 | RUN-M1-5 | UI-MODEL-01 | W2 | frontend pure model (largest frontend specification) |
 | RUN-M1-6 | OPS-EDGE-01 | W2 | edge files only (`frontend/Dockerfile`, `deploy/nginx/`) |
-| RUN-M1-7 | OPS-IMAGE-01 | W3 | backend delivery: embedded handler and API image |
+| RUN-M1-7 | OPS-IMAGE-01, OBS-LOG-01 | W3 | backend delivery: embedded handler and API image; access-log bounds of the same service |
 | RUN-M1-8 | UI-HOOKS-01, UI-SCREEN-01 | W3 | frontend chain: effects and hooks → screens, verified against the service integrated in W2 |
 
 #### M2 — Release-ready delivery
@@ -85,6 +86,11 @@ Run grouping: RUN-M2-1 = OPS-STACK-01, OPS-E2E-01 (solo); RUN-M2-2 = OPS-CI-02 a
 | U14 | 2026-10-22 | The edge serves the source maps of the production build as hashed static files under `/assets/` with the immutable cache policy; the build configuration is unchanged. | OPS-EDGE-01 |
 | U15 | 2026-10-22 | Wave W2 = RUN-M1-4, RUN-M1-5, RUN-M1-6 as three parallel sessions, launched manually by the owner; Codex in RUN-M1-4 and RUN-M1-5, Claude subagents only in RUN-M1-6. | RUN-M1-4, RUN-M1-5, RUN-M1-6 |
 | U16 | 2026-10-22 | A binary operator pressed after a unary result or a history recall issues the pending operation and chains (`9 + 16 √ × 2 =` → add `["9","4"]`, then multiply `["13","2"]`; `9 + [recall 36] × 2 =` likewise); only a value that is itself the stored left operand — right after a binary operator or a chained result — has its pending operator replaced (`2 + × 3 =` → 6). RF-UI-04 is reworded accordingly (asked in RUN-M1-5, «Findings of UI-MODEL-01» (d)). | UI-MODEL-01, UI-HOOKS-01, UI-SCREEN-01 |
+| U17 | 2026-10-22 | `instance` keeps the full request path (RF-API-05: it identifies the request; a truncated path would name a different resource). RNF-SEC-02 lists it as a reflected input: JSON-escaped, served as `application/problem+json` with `nosniff` and `default-src 'none'`, bounded by the 16 KiB header limit. No code change («Findings of API-ROUTES-01» (b)). | API-ROUTES-01, RNF-SEC-02 |
+| U18 | 2026-10-22 | The contract declares the edge's 503 `SERVICE_UNAVAILABLE` problem on `/healthz` (the `ServiceUnavailable` response) and as an `application/problem+json` `Problem` alternative to the Health JSON 503 of `/readyz`, both described as emitted by the edge proxy when the service is unreachable; the generated types are regenerated and the contract linted in the same change («Findings of OPS-EDGE-01» (b)). | OPS-STACK-01, OPS-E2E-01 |
+| U19 | 2026-10-22 | The draining readiness 503 is an expected state and its access line is logged at `info`; every other 5xx stays `error`. The readiness handler sets the level for its response; the access log never matches paths («Findings of OBS-RUNTIME-01» (c)). | OBS-LOG-01 |
+| U20 | 2026-10-22 | The access log truncates `path` and `user_agent` to their first 256 characters without splitting a UTF-8 sequence; `remote_addr` stays as RF-OBS-05 lists it — behind the edge it is the edge's address, and abuse diagnosis of a direct client needs it («Findings of OBS-RUNTIME-01» (d)). | OBS-LOG-01 |
+| U21 | 2026-10-22 | The edge adds a per-address connection limit: `limit_conn_zone $binary_remote_addr`, 20 concurrent connections on `/api/`, answered with the `RATE_LIMITED` 429 problem; the probes stay without a connection limit but their body limit drops to 16 KiB (no probe body is buffered to `/tmp`); static files stay unlimited; the compose stack caps the web `/tmp` tmpfs at 64 MiB («Findings of OPS-EDGE-01» (h)). | OPS-STACK-01, OPS-E2E-01, DOC-README-01 |
 
 ### Adopted for planning (recommended defaults; the owner can override at any task's step 1)
 | Topic | Default adopted | Why |
@@ -152,3 +158,4 @@ Version 1 is launched when: (1) every requirement of `srs.md` traces to an artif
 | 2026-10-22 | Wave W1 planned (RUN-M1-1, RUN-M1-2, RUN-M1-3); owner decisions U7–U11 | U7–U11 |
 | 2026-10-22 | Wave W2 planned (RUN-M1-4, RUN-M1-5, RUN-M1-6); owner decisions U12–U15; worst-case benchmark budget in the adopted defaults and the validation metrics | U12–U15 |
 | 2026-10-22 | Wave W2 closed; owner decision U16 (operator chaining after a unary result or a recall, RF-UI-04) | U16 |
+| 2026-10-22 | Owner decisions U17–U21 on the W2 backlog items; task OBS-LOG-01 added to RUN-M1-7 | U17–U21 |

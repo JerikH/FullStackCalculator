@@ -20,3 +20,13 @@
   **Review level:** double (process lifecycle and concurrency of shutdown).
   **Needs from the owner:** nothing.
   - Registered follow-up (from API-HTTPX-01): one end-to-end test of the composed chain: a panicking route returns the 500 problem, the panic log line carries the same request_id as the X-Request-ID header, and the access line and http_requests_total record 500. 🔎 findings: «Findings of API-HTTPX-01» (f)
+
+### OBS-LOG-01 — Access-log levels and field bounds [BE] — M1 [topic: observability, security-privacy]
+
+- [ ] Open.
+  **Scope:** RF-OBS-05 as amended by U19 and U20, in `backend/internal/platform/httpx` (`AccessLog`, `middleware.go`) and `backend/internal/httpapi/health.go`: the draining readiness 503 is logged at `info` — the readiness handler sets the level for its own response through the request info, and `AccessLog` uses it instead of the 5xx rule; it never matches paths; every other 5xx stays `error`. `path` and `user_agent` are truncated to their first 256 characters without splitting a UTF-8 sequence; `remote_addr` and every other field unchanged.
+  **UI:** none.
+  **Verification:** `go test -race -cover ./internal/platform/httpx/ ./internal/httpapi/ ./internal/app/` (coverage not below today's: httpx 96.6 %, httpapi 99.0 %, app 98.0 %); tests: draining `/readyz` 503 → access line at `INFO` and a recovered panic 500 still at `ERROR` (through the composed app); a 300-character path and User-Agent → 256 characters; a multi-byte character across the boundary → valid UTF-8; mutations: level rule by path, truncation removed, cut inside a UTF-8 sequence; live: SIGTERM on `go run ./cmd/calculator` while polling `/readyz` → no `ERROR` line.
+  **Review level:** single.
+  **Needs from the owner:** nothing (U19, U20).
+  - Registered follow-up (from OBS-RUNTIME-01, owner decisions U19, U20): draining readiness 503 at info set by the handler, path and user_agent truncated to 256 characters, remote_addr kept. 🔎 findings: «Findings of OBS-RUNTIME-01» (c), (d)

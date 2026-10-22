@@ -60,6 +60,8 @@
   - Registered follow-up (from OPS-CI-01): extend tools/versions.env (same layout), make scripts/bootstrap.sh call scripts/ci/install-tools.sh, and wire the integration targets into t2.sh (compose up with a down afterwards) and make:<target> into t1.sh in the commit that adds the Makefile. 🔎 findings: «Findings of OPS-CI-01» (e)
   - Registered follow-up (owner decision U12): make bench fails when any BenchmarkCalculate case reaches 1,000,000 ns/op or any BenchmarkCalculateWorstCase case reaches 50,000,000 ns/op. 🔎 findings: «Findings of CALC-OPS-01» (c)
   - Registered follow-up (from OPS-EDGE-01): web depends on api with condition service_healthy and restart: true, proved by recreating api in the running stack; cap the web tmpfs /tmp size; the owner decides on a per-address connection limit at the edge. 🔎 findings: «Findings of OPS-EDGE-01» (c), (h)
+  - Registered follow-up (owner decision U18, from OPS-EDGE-01): declare the edge's 503 SERVICE_UNAVAILABLE problem in the contract on /healthz (ServiceUnavailable response) and as an application/problem+json Problem alternative to the /readyz 503, described as emitted by the edge proxy; regenerate frontend/src/shared/api/schema.gen.ts, Redocly lint clean, the service contract tests unchanged and green. 🔎 findings: «Findings of OPS-EDGE-01» (b)
+  - Registered follow-up (owner decision U21, from OPS-EDGE-01): limit_conn_zone $binary_remote_addr with 20 concurrent connections on /api/ answered with the RATE_LIMITED 429 problem; client_max_body_size 16k on /healthz and /readyz; web /tmp tmpfs size=64m; extend edge-smoke.sh and its mutations with the 21st held connection refused with the 429 problem and a 16 KiB + 1 probe body refused with the 413 problem. 🔎 findings: «Findings of OPS-EDGE-01» (h)
 
 ### OPS-E2E-01 — Playwright against the composed stack [FE] — M2 [topic: live-verification, ui-accessibility, testing-environment]
 
@@ -70,6 +72,7 @@
   **Review level:** single.
   **Needs from the owner:** nothing.
   - Registered follow-up (from OPS-EDGE-01): prove the edge against the real service in the composed stack (calculation, the service's 413 for 5000-byte and 1 MiB bodies unchanged, an application problem unchanged, draining readiness 503, single-valued headers on API responses, the same X-Request-ID in header, problem body and service log, 128-character ID kept and invalid IDs replaced, 429 under a burst). 🔎 findings: «Findings of OPS-EDGE-01» (g)
+  - Registered follow-up (owner decisions U18, U21): in the composed stack, with the api container stopped, /healthz and /readyz through web answer the SERVICE_UNAVAILABLE problem valid against the amended contract; 21 held /api/ connections from one address → the 21st gets the RATE_LIMITED problem. 🔎 findings: «Findings of OPS-EDGE-01» (b), (h)
 
 ### OPS-CI-02 — Complete CI definition and Dependabot [BE] — M2 [topic: ci-supply-chain, security-privacy]
 

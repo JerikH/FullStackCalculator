@@ -20,6 +20,7 @@ RF-OBS-01…RF-OBS-09, RF-API-12; UC-OBS-01. Configuration, lifecycle and drain,
 
 ## Decisions
 - Compose sets `CALC_SHUTDOWN_DRAIN=2s`.
+- U19: the draining readiness 503 is logged at `info`, the level set by the readiness handler (never by path); U20: access-log `path` and `user_agent` truncated to 256 characters, `remote_addr` kept (OBS-LOG-01).
 
 ## Where to look
 - Open debt: `findings/by-owner/OBS.md`
