@@ -469,6 +469,34 @@ func TestTruncateCharsDoesNotAllocateWhenShort(t *testing.T) {
 	}
 }
 
+func TestAccessLogBoundsMethod(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name   string
+		method string
+		want   string
+		status int
+		level  string
+	}{
+		{"300 characters", strings.Repeat("A", 300), strings.Repeat("A", 256), http.StatusMethodNotAllowed, "INFO"},
+		{"GET", http.MethodGet, http.MethodGet, http.StatusOK, "INFO"},
+		{"256 characters", strings.Repeat("B", 256), strings.Repeat("B", 256), http.StatusNoContent, "INFO"},
+		{"257 characters", strings.Repeat("C", 256) + "D", strings.Repeat("C", 256), http.StatusInternalServerError, "ERROR"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			req := httptest.NewRequestWithContext(t.Context(), tc.method, "/", nil)
+			line := serveAccess(t, Route("/", answer(tc.status, nil)), req)
+			if got := line["method"]; got != tc.want {
+				t.Errorf("method = %q, want %q", got, tc.want)
+			}
+			if line["status"] != float64(tc.status) || line["route"] != "/" || line["level"] != tc.level {
+				t.Errorf("line = %v", line)
+			}
+		})
+	}
+}
+
 func TestAccessLogBoundsPathAndUserAgent(t *testing.T) {
 	t.Parallel()
 	longPath := "/" + strings.Repeat("a", 299)

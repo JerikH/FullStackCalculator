@@ -1,0 +1,19 @@
+OBS-LOG-02 evidence — 2026-10-22, main checkout, Go 1.27.3, golangci-lint 2.15.0
+
+$ cd backend && timeout 600 go test -race -count=1 -cover ./internal/platform/httpx/ ./internal/httpapi/ ./internal/app/        [27.0 s wall]
+ok  .../internal/platform/httpx  1.087s  coverage: 96.8% of statements
+ok  .../internal/httpapi         1.331s  coverage: 99.0% of statements
+ok  .../internal/app             4.057s  coverage: 98.0% of statements
+$ go vet ./...                                                                                          [pass]
+$ ../bin/golangci-lint run ./...                                                                        [12.7 s] 0 issues.
+
+Mutation: in logAccess, `truncateChars(r.Method, maxLoggedChars)` -> `r.Method`
+$ go test -count=1 -run TestAccessLogBoundsMethod ./internal/platform/httpx/
+--- FAIL: TestAccessLogBoundsMethod/300_characters
+--- FAIL: TestAccessLogBoundsMethod/257_characters
+Restored from a scratch copy, `cmp` identical.
+
+Live: built binary (CALC_HTTP_ADDR=:4101 CALC_ADMIN_ADDR=:4102), raw socket request with a 300-character method `BBBB… /api/v1/operations/add HTTP/1.1`:
+  response: HTTP/1.1 405 Method Not Allowed, Allow: POST, problem body (the 405 detail echoes the 300-character method: expected, see the run's findings)
+  access line: level=INFO status=405 route=/api/v1/operations/{operation} method length = 256
+Server stopped by its PID.

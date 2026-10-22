@@ -19,13 +19,13 @@ func Chain(h http.Handler, mws ...Middleware) http.Handler {
 	return h
 }
 
-// maxLoggedChars bounds the client-controlled path and user agent in the
+// maxLoggedChars bounds the client-controlled method, path and user agent in the
 // access line.
 const maxLoggedChars = 256
 
 // AccessLog writes one structured line per request; 5xx responses log at
 // error level so they surface in alerting, unless the answering handler set
-// the level with SetAccessLevel. The path and user agent are cut to their
+// the level with SetAccessLevel. The method, path and user agent are cut to their
 // first 256 characters. The line is written in a defer so a request that
 // unwinds with a panic (http.ErrAbortHandler) is still logged.
 func AccessLog(logger *slog.Logger) Middleware {
@@ -43,7 +43,7 @@ func logAccess(ctx context.Context, logger *slog.Logger, r *http.Request, start 
 		info = &RequestInfo{Route: "unmatched"}
 	}
 	logger.LogAttrs(ctx, info.accessLevel(), "http request",
-		slog.String("method", r.Method),
+		slog.String("method", truncateChars(r.Method, maxLoggedChars)),
 		slog.String("route", info.Route),
 		slog.String("path", truncateChars(r.URL.Path, maxLoggedChars)),
 		slog.Int("status", info.StatusOrOK()),
