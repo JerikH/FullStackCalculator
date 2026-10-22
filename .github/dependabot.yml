@@ -1,0 +1,78 @@
+# Dependency updates: weekly, minor and patch updates grouped in one pull request per
+# ecosystem and directory, every major update in its own pull request. Nothing merges
+# automatically: update pull requests run the same checks as any other.
+# Not covered by Dependabot, updated by hand: the standalone tools in tools/versions.env
+# (procedure in its header) and the Node version in frontend/.node-version (it must equal
+# the Node tag of the two Dockerfiles that Dependabot does update; a Node image pull
+# request stays red on the contract job until the other Dockerfile and that file are
+# changed by hand). Dependabot reads only .github/workflows/*.yml and *.yaml: while the
+# workflow is ci.yml.disabled its action pins are updated by hand (git ls-remote of the
+# tag; scripts/ci/check-workflow.py checks the pin format), and the github-actions entry
+# below starts working when the file is renamed to ci.yml.
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /backend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: build(deps)
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: build(deps)
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: build(deps)
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: docker
+    directory: /backend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: build(deps)
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: docker
+    directory: /frontend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: build(deps)
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: ci(deps)
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]

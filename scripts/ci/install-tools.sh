@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Installs the pinned standalone tools into <repository>/bin.
 #
-# Usage: scripts/ci/install-tools.sh [golangci-lint|actionlint|hadolint|shellcheck|govulncheck ...]
-#        No argument installs all five. An unknown name exits with status 2.
+# Usage: scripts/ci/install-tools.sh [golangci-lint|actionlint|hadolint|shellcheck|trivy|govulncheck ...]
+#        No argument installs all six. An unknown name exits with status 2.
 #
 # Versions and SHA-256 digests live in tools/versions.env. Each binary is
 # installed at bin/.tools/<tool>-<version>/<tool>; bin/<tool> is a relative link
@@ -14,7 +14,7 @@ set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 bindir="$root/bin"
-all_tools=(golangci-lint actionlint hadolint shellcheck govulncheck)
+all_tools=(golangci-lint actionlint hadolint shellcheck trivy govulncheck)
 
 # Work directory for the download in progress; global so the EXIT trap sees it.
 tmp=""
@@ -69,6 +69,10 @@ probe_ok() {
     shellcheck)
       out="$("$bin" --version 2>&1)" || return 1
       case $'\n'"$out"$'\n' in *$'\n'"version: $version"$'\n'*) return 0 ;; esac
+      ;;
+    trivy)
+      out="$("$bin" --version 2>&1)" || return 1
+      [ "${out%%$'\n'*}" = "Version: $version" ] && return 0
       ;;
     govulncheck)
       # -version also reads the vulnerability database, so it fails offline;
@@ -198,6 +202,16 @@ install_tool() {
       [ "$a" = "arm64" ] && harch="aarch64"
       url="https://github.com/koalaman/shellcheck/releases/download/v$version/shellcheck-v$version.$o.$harch.tar.gz"
       member="shellcheck-v$version/shellcheck"
+      ;;
+    trivy)
+      case "$o-$a" in
+        linux-amd64) harch="Linux-64bit" ;;
+        linux-arm64) harch="Linux-ARM64" ;;
+        darwin-amd64) harch="macOS-64bit" ;;
+        darwin-arm64) harch="macOS-ARM64" ;;
+      esac
+      url="https://github.com/aquasecurity/trivy/releases/download/v$version/trivy_${version}_${harch}.tar.gz"
+      member="trivy"
       ;;
   esac
 

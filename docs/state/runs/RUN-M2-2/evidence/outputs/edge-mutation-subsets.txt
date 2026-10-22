@@ -1,0 +1,22 @@
+=== mutations: M14
+CAUGHT M14 — 4 failing checks, including: FAIL noinner: status 503 — status 502, want 503
+1 of 1 mutations caught
+images:edge-mutations · timeout -k 30 600 bash scripts/ci/edge-mutations.sh calculator-web:fullstackcalculator-run-m2-2 M14 · pass · 84.32s
+wall 84.53s
+exit=0
+=== mutations: MLC MPB
+CAUGHT MLC — 4 failing checks, including: FAIL lc20: status 429 — status 200, want 429
+CAUGHT MPB — 14 failing checks, including: FAIL healthz_16k1: status 413 — status 200, want 413
+2 of 2 mutations caught
+images:edge-mutations · timeout -k 30 600 bash scripts/ci/edge-mutations.sh calculator-web:fullstackcalculator-run-m2-2 MLC\ MPB · pass · 166.86s
+wall 166.98s
+exit=0
+=== mutations: M2 M8
+CAUGHT M2 — 32 failing checks, including: FAIL api: CSP once — Content-Security-Policy: 'default-src 'none'; frame-ancestors 'none'' ×2, want 'default-src 'self'; script-src 'self'; style-src 'self';
+CAUGHT M8 — 14 failing checks, including: FAIL R6 two headers replaced — header '06a265197ad52d3503616b77c34957f3', body {"path":"/api/v1/operations","method":"GET","bodyBytes":0,"requestIdHeaders":1,
+2 of 2 mutations caught
+images:edge-mutations · timeout -k 30 600 bash scripts/ci/edge-mutations.sh calculator-web:fullstackcalculator-run-m2-2 M2\ M8 · pass · 171.65s
+wall 171.77s
+exit=0
+
+[exited with code 0]

@@ -381,11 +381,12 @@ ci_selected_stages() {
 }
 
 # ci_stage_make <label> <make-target…>: one bounded `make` call. A timeout (exit 124) is a ✘ row
-# and a non-zero exit like any other failure. CI_STAGE_TIMEOUT (seconds, default 600) lowers the bound.
+# and a non-zero exit like any other failure. CI_STAGE_TIMEOUT (seconds, default 600) lowers the bound;
+# `-k 30` kills what ignores the first signal.
 ci_stage_make() {
   local label=$1
   shift
-  ci_run "$label" -- timeout "${CI_STAGE_TIMEOUT:-600}" make "$@"
+  ci_run "$label" -- timeout -k 30 "${CI_STAGE_TIMEOUT:-600}" make "$@"
 }
 # ci_compose_env: exports what the Makefile exports for `docker compose`, so a compose command run
 # from a tier script finds the same images as `make up`. The Makefile is the reference for these
@@ -442,4 +443,571 @@ ci_check_makefile() {
     ci_record integration:make "all ${#ci_makefile_targets[@]} targets present" pass 0
   fi
   return 0
+}
+
+# ---------------------------------------------------------------------------------------------
+# T3: CI jobs and stages (scripts/ci/t3.sh). Stage functions are named ci_t3_<job>_<stage>, with
+# `-` in the stage name written as `_`; ci_t3_run <job> <stage> dispatches. Every long command runs
+# under `timeout -k 30 "${CI_STAGE_TIMEOUT:-600}"`.
+# ---------------------------------------------------------------------------------------------
+CI_T3_JOBS=(contract backend frontend e2e images publish)
+declare -A CI_T3_STAGES=(
+  [contract]='contract docs-api workflows shell publish-tags'
+  [backend]='modules static coverage-backend fuzz bench govulncheck build'
+  [frontend]='typecheck lint format coverage-frontend build audit'
+  [e2e]=''
+  [images]='dockerfiles compose-config build-api build-web build-aio smoke-api smoke-edge smoke-edge-stub smoke-aio export scan-api scan-web scan-aio'
+  [publish]='tags push'
+)
+# Stages that run only when named (they are not part of the job's default order).
+declare -A CI_T3_NAMED=([images]='edge-mutations')
+# The three images, in one fixed order: name, archive and (for the scans) report prefix.
+CI_IMAGE_NAMES=(calculator-api calculator-web calculator)
+CI_IMAGE_FILES=(coverage/images/calculator-api.tar.gz coverage/images/calculator-web.tar.gz coverage/images/calculator.tar.gz)
+CI_IMAGE_MANIFEST=coverage/images/image-ids.txt
+CI_TRIVY_PREFIX=coverage/images/trivy-
+CI_E2E_FAILED=0
+CI_E2E_STACK_DOWN=0
+
+# ci_t3_list: one line per job, `<job>: <default stages>`, then ` +<stage>` for stages selected only by name.
+ci_t3_list() {
+  local job line stage
+  for job in "${CI_T3_JOBS[@]}"; do
+    line="$job:"
+    for stage in ${CI_T3_STAGES[$job]}; do line+=" $stage"; done
+    for stage in ${CI_T3_NAMED[$job]:-}; do line+=" +$stage"; done
+    printf '%s\n' "$line"
+  done
+}
+# ci_t3_valid_job <job>, ci_t3_valid_stage <job> <stage>
+ci_t3_valid_job() { [[ " ${CI_T3_JOBS[*]} " == *" $1 "* ]]; }
+ci_t3_valid_stage() { [[ " ${CI_T3_STAGES[$1]:-} ${CI_T3_NAMED[$1]:-} " == *" $2 "* ]]; }
+# ci_t3_run <job> [<stage>]: calls ci_t3_<job>_<stage>; the e2e job has no stages and is ci_t3_e2e.
+ci_t3_run() {
+  local function=ci_t3_$1
+  if [[ -n ${2:-} ]]; then function=${function}_${2//-/_}; fi
+  if ! declare -F "$function" >/dev/null; then ci_problem "$1" "no stage function $function" || :; return 1; fi
+  "$function"
+}
+
+# ci_render <word…>: the words as one shell-quoted line (what the command rows show).
+ci_render() {
+  local word rendered=''
+  for word in "$@"; do printf -v word '%q' "$word"; rendered+="${rendered:+ }$word"; done
+  printf '%s' "$rendered"
+}
+# ci_need_cmd <stage> <command…>: one failed row per command that is missing from PATH.
+ci_need_cmd() {
+  local stage=$1 command missing=0
+  shift
+  for command in "$@"; do
+    if ! command -v "$command" >/dev/null 2>&1; then missing=1; ci_problem "$stage" "missing command $command" || :; fi
+  done
+  (( ! missing ))
+}
+# ci_retry <label> <attempts> -- <command…>: runs the command until it succeeds or the attempts are
+# used up (CI_RETRY_DELAY seconds apart, default 15). One row records the final result and the total
+# time; an attempt that is retried is not a failure.
+ci_retry() {
+  local label=$1 attempts=$2 rendered start end status=1 attempt
+  shift 2
+  [[ ${1:-} == -- ]] || { printf 'missing command separator\n' >&2; exit 2; }
+  shift
+  rendered=$(ci_render "$@")
+  printf '▶ [%s] %s (up to %d attempts)\n' "$label" "$rendered" "$attempts"
+  start=${EPOCHREALTIME//[!0-9]/}
+  for (( attempt = 1; attempt <= attempts; attempt++ )); do
+    if "$@"; then status=0; break; else status=$?; fi
+    printf '… [%s] attempt %d of %d failed with exit %d\n' "$label" "$attempt" "$attempts" "$status"
+    if (( attempt < attempts )); then sleep "${CI_RETRY_DELAY:-15}"; fi
+  done
+  end=${EPOCHREALTIME//[!0-9]/}
+  if (( status == 0 )); then
+    printf '✔ [%s] %ss (attempt %d)\n' "$label" "$(ci_seconds "$((end - start))")" "$attempt"
+    ci_record "$label" "$rendered" pass "$((end - start))"
+  else
+    printf '✘ [%s] exit %d after %d attempts, %ss\n' "$label" "$status" "$attempts" "$(ci_seconds "$((end - start))")"
+    ci_record "$label" "$rendered" fail "$((end - start))"
+    ci_failure
+  fi
+}
+# ci_summary <line…>: appends the lines to the job summary when GitHub provides one.
+ci_summary() {
+  [[ -n ${GITHUB_STEP_SUMMARY:-} ]] || return 0
+  printf '%s\n' "$@" >>"$GITHUB_STEP_SUMMARY" || :
+}
+# ci_summary_file <title> <file>: a summary section with the content of the file as a text block.
+ci_summary_file() {
+  [[ -n ${GITHUB_STEP_SUMMARY:-} ]] || return 0
+  ci_summary "### $1" '' '```text' "$(cat "$2" 2>/dev/null || :)" '```' ''
+}
+# ci_require_files <label> <path…>: a failed row naming each file that is missing or empty.
+ci_require_files() {
+  local label=$1 path missing=0
+  shift
+  for path in "$@"; do
+    if [[ ! -s $path ]]; then missing=1; ci_problem "$label" "missing or empty file: $path" || :; fi
+  done
+  if (( missing )); then return 1; fi
+  printf '✔ [%s] %d file(s) present\n' "$label" "$#"
+  ci_record "$label" "files present: $*" pass 0
+}
+# ci_docker_names: CI_API_IMAGE, CI_WEB_IMAGE and CI_AIO_IMAGE, the references of the three images
+# the Makefile and compose.yaml build (after ci_compose_env, which it runs).
+ci_docker_names() {
+  ci_compose_env
+  CI_API_IMAGE=calculator-api:$IMAGE_TAG
+  CI_WEB_IMAGE=calculator-web:$IMAGE_TAG
+  CI_AIO_IMAGE=calculator:$IMAGE_TAG
+}
+# ci_ghcr_owner: the lower-cased repository owner, as GHCR requires it; fails when it is not a valid name.
+ci_ghcr_owner() {
+  local owner=${GITHUB_REPOSITORY_OWNER:-}
+  owner=${owner,,}
+  [[ $owner =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?$ ]] || return 1
+  printf '%s' "$owner"
+}
+# ci_t3_node_ready <stage>: pnpm and the installed frontend (the workflow installs it first).
+ci_t3_node_ready() {
+  ci_need "$1" pnpm || return 1
+  if [[ ! -d frontend/node_modules ]]; then ci_problem "$1" 'run pnpm -C frontend install --frozen-lockfile' || return 1; fi
+}
+
+# --- contract ---
+ci_t3_contract_contract() { ci_stage_contract --full; }
+ci_t3_contract_docs_api() {
+  ci_t3_node_ready docs-api || return 1
+  ci_stage_make docs-api:make docs-api || return 1
+  ci_require_files docs-api docs/api/index.html
+}
+ci_t3_contract_workflows() {
+  ci_stage_workflows --full
+  ci_need_cmd workflows:structure python3 || return 1
+  if ! python3 -I -c 'import yaml' >/dev/null 2>&1; then
+    ci_problem workflows:structure 'python3 module yaml is missing: install python3-yaml' || :
+    return 1
+  fi
+  ci_run workflows:structure -- env PYTHONDONTWRITEBYTECODE=1 python3 -I scripts/ci/check-workflow.py
+}
+ci_t3_contract_shell() { ci_stage_shell --full; }
+ci_t3_contract_publish_tags() {
+  ci_run publish-tags:test -- timeout -k 30 "${CI_STAGE_TIMEOUT:-600}" bash scripts/ci/publish-tags-test.sh
+}
+
+# ci_t3_make_gate <label> <target>: `make <target>` that does not end the run when it fails, so the
+# report and its totals can still reach the job summary; returns the make status for the caller,
+# which ends the stage with ci_t3_gate_end.
+ci_t3_make_gate() {
+  local keep=$CI_KEEP_GOING status=0
+  CI_KEEP_GOING=1
+  if ! ci_stage_make "$1" "$2"; then status=1; fi
+  CI_KEEP_GOING=$keep
+  return "$status"
+}
+# ci_t3_gate_end <status>: after the summary was written, a failed gate ends the stage like any failure.
+ci_t3_gate_end() {
+  if (( $1 )); then ci_failure || :; return 1; fi
+  return 0
+}
+
+# --- backend ---
+ci_t3_backend_modules() {
+  ci_need backend go || return 1
+  ci_run backend:mod-download -C backend -- timeout -k 30 "${CI_STAGE_TIMEOUT:-600}" go mod download || return 1
+  ci_run backend:mod-verify -C backend -- timeout -k 30 "${CI_STAGE_TIMEOUT:-600}" go mod verify || return 1
+  ci_run backend:mod-tidy -C backend -- timeout -k 30 "${CI_STAGE_TIMEOUT:-600}" go mod tidy -diff
+}
+ci_t3_backend_static() {
+  ci_need backend go || return 1
+  ci_need backend golangci-lint || return 1
+  local lint
+  lint=$(ci_tool golangci-lint)
+  ci_run backend:fmt -C backend -- timeout -k 30 "${CI_STAGE_TIMEOUT:-600}" "$lint" fmt --diff ./... || return 1
+  ci_run backend:vet -C backend -- timeout -k 30 "${CI_STAGE_TIMEOUT:-600}" go vet ./... || return 1
+  ci_run backend:lint -C backend -- timeout -k 30 "${CI_STAGE_TIMEOUT:-600}" "$lint" run ./... || return 1
+  ci_run backend:vet-embedui -C backend -- timeout -k 30 "${CI_STAGE_TIMEOUT:-600}" go vet -tags embedui ./... || return 1
+  ci_run backend:lint-embedui -C backend -- timeout -k 30 "${CI_STAGE_TIMEOUT:-600}" "$lint" run --build-tags embedui ./internal/web/ || return 1
+  ci_run backend:test-embedui -C backend -- timeout -k 30 "${CI_STAGE_TIMEOUT:-600}" go test -race -tags embedui ./internal/web/
+}
+ci_t3_backend_coverage_backend() {
+  local threshold='' status=0
+  ci_need backend go || return 1
+  ci_t3_make_gate backend:coverage-backend coverage-backend || status=1
+  # The totals are summarized whether or not the gate passed; a missing report is its own failure.
+  if [[ -s coverage/backend/summary.txt ]]; then
+    if [[ -f scripts/coverage.sh ]]; then threshold=$(sed -n 's/^threshold=\([0-9][0-9]*\)$/\1/p' scripts/coverage.sh | head -n 1); fi
+    ci_summary '### Backend coverage' '' '```text' "$(cat coverage/backend/summary.txt)" '```'
+    if [[ -n $threshold ]]; then ci_summary '' "Gate: statement coverage of the unique blocks must reach $threshold %." ''; fi
+  fi
+  if (( status )); then ci_t3_gate_end 1; return 1; fi
+  ci_require_files backend:coverage-reports coverage/backend/index.html coverage/backend/coverage.out coverage/backend/summary.txt
+}
+ci_t3_backend_fuzz() {
+  ci_need backend go || return 1
+  ci_stage_make backend:fuzz fuzz
+}
+ci_t3_backend_bench() {
+  local status=0
+  ci_need backend go || return 1
+  ci_t3_make_gate backend:bench bench || status=1
+  if [[ -s coverage/bench/bench.txt ]]; then
+    ci_summary '### Backend benchmarks' '' '```text' "$(grep '^Benchmark' coverage/bench/bench.txt || :)" '```' ''
+  fi
+  if (( status )); then ci_t3_gate_end 1; return 1; fi
+  ci_require_files backend:bench-output coverage/bench/bench.txt
+}
+ci_t3_backend_govulncheck() {
+  local tool
+  ci_need backend go || return 1
+  ci_need backend govulncheck || return 1
+  tool=$(ci_tool govulncheck)
+  ci_run backend:govulncheck -C backend -- timeout -k 30 "${CI_STAGE_TIMEOUT:-600}" "$tool" ./... || return 1
+  ci_run backend:govulncheck-embedui -C backend -- timeout -k 30 "${CI_STAGE_TIMEOUT:-600}" "$tool" -tags embedui ./...
+}
+ci_t3_backend_build() {
+  ci_need backend go || return 1
+  ci_run backend:build -C backend -- timeout -k 30 "${CI_STAGE_TIMEOUT:-600}" go build ./... || return 1
+  ci_run backend:build-embedui -C backend -- timeout -k 30 "${CI_STAGE_TIMEOUT:-600}" go build -tags embedui ./...
+}
+
+# --- frontend ---
+ci_t3_frontend_script() { # ci_t3_frontend_script <stage> <package script>
+  ci_t3_node_ready "$1" || return 1
+  ci_run "frontend:$1" -- timeout -k 30 "${CI_STAGE_TIMEOUT:-600}" pnpm -C frontend run "$2"
+}
+ci_t3_frontend_typecheck() { ci_t3_frontend_script typecheck typecheck; }
+ci_t3_frontend_lint() { ci_t3_frontend_script lint lint; }
+ci_t3_frontend_format() { ci_t3_frontend_script format format:check; }
+ci_t3_frontend_build() { ci_t3_frontend_script build build; }
+ci_t3_frontend_coverage_frontend() {
+  local file=coverage/frontend/coverage-summary.json table='' status=0
+  ci_t3_node_ready coverage-frontend || return 1
+  ci_t3_make_gate frontend:coverage-frontend coverage-frontend || status=1
+  # The totals come from the report with jq, else python3 (the scripts never need node), gate or not.
+  if [[ -s $file ]]; then
+    if command -v jq >/dev/null 2>&1; then
+      table=$(jq -r '.total | ["lines", "statements", "functions", "branches"][] as $k | "| \($k) | \(.[$k].pct)% |"' "$file") || table=''
+    elif command -v python3 >/dev/null 2>&1; then
+      table=$(python3 -I -c 'import json, sys
+total = json.load(open(sys.argv[1]))["total"]
+for key in ("lines", "statements", "functions", "branches"):
+    print("| %s | %s%% |" % (key, total[key]["pct"]))' "$file") || table=''
+    fi
+    if [[ -n $table ]]; then
+      ci_summary '### Frontend coverage' '' '| metric | covered |' '|---|---|' "$table" ''
+    else
+      ci_note frontend:coverage-frontend 'cannot read the totals of coverage-summary.json (no jq or python3)'
+    fi
+  fi
+  if (( status )); then ci_t3_gate_end 1; return 1; fi
+  ci_require_files frontend:coverage-reports coverage/frontend/index.html coverage/frontend/lcov.info "$file"
+}
+ci_t3_frontend_audit() {
+  ci_t3_node_ready audit || return 1
+  ci_run frontend:audit -- timeout -k 30 "${CI_STAGE_TIMEOUT:-600}" pnpm -C frontend audit --prod --audit-level high
+}
+
+# --- e2e ---
+# ci_e2e_save <run>: moves the Playwright report and results of the run that just ended into
+# coverage/e2e/<run>/ (the next run would erase them). A source that does not exist is fine: the
+# run may have failed before Playwright started.
+ci_e2e_save() {
+  local run=$1 destination=coverage/e2e/$1 source
+  rm -rf "$destination"
+  mkdir -p "$destination"
+  for source in frontend/playwright-report frontend/test-results; do
+    if [[ -e $source ]] && ! mv "$source" "$destination/${source##*/}"; then
+      CI_E2E_FAILED=1
+      ci_problem "e2e:$run" "cannot move $source to $destination" || :
+    fi
+  done
+}
+# ci_e2e_logs: the state and the logs of the composed stack, written once before it is removed.
+# A failure to collect is noted and never changes the result.
+ci_e2e_logs() {
+  local directory=coverage/e2e/logs status
+  mkdir -p "$directory"
+  if timeout -k 30 120 docker compose ps -a >"$directory/ps.txt" 2>&1; then
+    ci_note e2e:logs "docker compose ps -a written to $directory/ps.txt"
+    cat "$directory/ps.txt"
+  else
+    status=$?
+    ci_note e2e:logs "docker compose ps -a failed (exit $status); see $directory/ps.txt"
+  fi
+  if timeout -k 30 120 docker compose logs --no-color --timestamps >"$directory/compose.log" 2>&1; then
+    ci_note e2e:logs "docker compose logs written to $directory/compose.log"
+  else
+    status=$?
+    ci_note e2e:logs "docker compose logs failed (exit $status); see $directory/compose.log"
+  fi
+}
+# ci_e2e_playwright <run> <always|clean> <command…>: one Playwright run; its report is kept under
+# coverage/e2e/<run>/ whatever the result. «clean» runs (the disruptive specs, which stop and recreate
+# services) are skipped after any earlier failure, because the stack state is then unknown; «always»
+# runs are skipped only when the stack never came up.
+ci_e2e_playwright() {
+  local run=$1 gate=$2
+  shift 2
+  if (( CI_E2E_STACK_DOWN )); then ci_note "e2e:$run" 'skipped: the stack did not start'; return 0; fi
+  if [[ $gate == clean ]] && (( CI_E2E_FAILED )); then ci_note "e2e:$run" 'skipped: an earlier e2e step failed'; return 0; fi
+  rm -rf frontend/playwright-report frontend/test-results
+  if ! ci_run "e2e:$run" -- "$@"; then CI_E2E_FAILED=1; fi
+  ci_e2e_save "$run"
+}
+# ci_t3_e2e: up, the Playwright runs, down. Failures do not end the sequence early: the logs are
+# collected once and `down` runs whenever `up` was attempted; a failed `down` is a failure.
+ci_t3_e2e() {
+  local saved=$CI_KEEP_GOING up_attempted=0 limit=${CI_STAGE_TIMEOUT:-600}
+  CI_KEEP_GOING=1
+  CI_E2E_FAILED=0 CI_E2E_STACK_DOWN=0
+  ci_compose_env
+  if ci_need_cmd e2e make docker; then
+    up_attempted=1
+    if ! ci_run e2e:up -- timeout -k 30 "$limit" make up; then CI_E2E_FAILED=1 CI_E2E_STACK_DOWN=1; fi
+    ci_e2e_playwright chromium always timeout -k 30 "$limit" make e2e E2E_ARGS=--project=chromium
+    ci_e2e_playwright mobile-chromium always timeout -k 30 "$limit" make e2e E2E_ARGS=--project=mobile-chromium
+    ci_e2e_playwright disruptive clean env E2E_STACK=1 timeout -k 30 "$limit" make e2e 'E2E_ARGS=--project=chromium e2e/stack-disruptive.spec.ts'
+    if (( CI_E2E_FAILED )); then ci_e2e_logs; fi
+    if (( up_attempted )); then
+      if ! ci_run e2e:down -- timeout -k 30 "$limit" make down; then CI_E2E_FAILED=1; fi
+    fi
+  else
+    CI_E2E_FAILED=1
+  fi
+  CI_KEEP_GOING=$saved
+  if (( CI_E2E_FAILED )); then
+    ci_failure || :
+    return 1
+  fi
+}
+
+# --- images ---
+ci_t3_images_dockerfiles() { ci_stage_dockerfiles --full; }
+ci_t3_images_compose_config() {
+  ci_need_cmd compose-config docker || return 1
+  ci_compose_env
+  ci_run images:compose-config -- timeout -k 30 "${CI_STAGE_TIMEOUT:-600}" docker compose config --quiet
+}
+# ci_t3_build_guard <stage>: a hosted build must come from a clean checkout (its version is the image's label).
+ci_t3_build_guard() {
+  ci_need_cmd "$1" docker || return 1
+  ci_compose_env
+  if [[ ${GITHUB_ACTIONS:-} == true && $VERSION == *-dirty ]]; then
+    ci_problem "images:$1" "VERSION $VERSION is dirty: build from a clean checkout" || :
+    return 1
+  fi
+}
+ci_t3_images_build_api() {
+  ci_t3_build_guard build-api || return 1
+  ci_run images:build-api -- timeout -k 30 "${CI_STAGE_TIMEOUT:-600}" docker compose build api
+}
+ci_t3_images_build_web() {
+  ci_t3_build_guard build-web || return 1
+  ci_run images:build-web -- timeout -k 30 "${CI_STAGE_TIMEOUT:-600}" docker compose build web
+}
+ci_t3_images_build_aio() {
+  ci_t3_build_guard build-aio || return 1
+  ci_stage_make images:build-aio image-aio
+}
+# ci_t3_smoke_ready <stage> [edge]: the commands the smoke scripts use, and for the edge suites their Python modules.
+ci_t3_smoke_ready() {
+  ci_need_cmd "$1" docker curl jq python3 || return 1
+  if [[ ${2:-} == edge ]] && ! python3 -I -c 'import yaml, jsonschema' >/dev/null 2>&1; then
+    ci_problem "images:$1" 'python3 modules yaml and jsonschema are missing: install python3-yaml python3-jsonschema' || :
+    return 1
+  fi
+  ci_docker_names
+}
+ci_t3_images_smoke_api() {
+  ci_t3_smoke_ready smoke-api || return 1
+  ci_run images:smoke-api -- timeout -k 30 "${CI_STAGE_TIMEOUT:-600}" bash scripts/ci/image-smoke.sh "$CI_API_IMAGE" "$VERSION" "$COMMIT" "$((WEB_PORT + 1))"
+}
+ci_t3_images_smoke_edge() {
+  ci_t3_smoke_ready smoke-edge edge || return 1
+  ci_run images:smoke-edge -- timeout -k 30 "${CI_STAGE_TIMEOUT:-600}" bash scripts/ci/edge-smoke.sh "$CI_WEB_IMAGE" "$CI_API_IMAGE"
+}
+ci_t3_images_smoke_edge_stub() {
+  ci_t3_smoke_ready smoke-edge-stub edge || return 1
+  ci_run images:smoke-edge-stub -- timeout -k 30 "${CI_STAGE_TIMEOUT:-600}" bash scripts/ci/edge-stub-smoke.sh "$CI_WEB_IMAGE"
+}
+ci_t3_images_smoke_aio() {
+  ci_t3_smoke_ready smoke-aio || return 1
+  ci_stage_make images:smoke-aio smoke-aio
+}
+# edge-mutations: only by name. EDGE_MUTATIONS (space-separated ids) selects a subset; unset runs the script's whole list.
+ci_t3_images_edge_mutations() {
+  ci_t3_smoke_ready edge-mutations edge || return 1
+  ci_run images:edge-mutations -- timeout -k 30 "${CI_STAGE_TIMEOUT:-600}" bash scripts/ci/edge-mutations.sh "$CI_WEB_IMAGE" ${EDGE_MUTATIONS:+"$EDGE_MUTATIONS"}
+}
+# export: the three images as gzip archives plus the manifest `<name> <ref> <image id> <commit> <version>`
+# that the publish job checks. Nothing stale survives, and a failed `docker save` leaves no archive.
+ci_t3_images_export() {
+  local i name ref archive temporary
+  ci_need_cmd images:export docker gzip || return 1
+  ci_docker_names
+  local -a refs=("$CI_API_IMAGE" "$CI_WEB_IMAGE" "$CI_AIO_IMAGE")
+  mkdir -p coverage/images
+  rm -f "${CI_IMAGE_FILES[@]}" "$CI_IMAGE_MANIFEST"
+  rm -f coverage/images/*.tar.gz.tmp "$CI_IMAGE_MANIFEST.tmp"
+  : >"$CI_IMAGE_MANIFEST.tmp"
+  for i in "${!CI_IMAGE_NAMES[@]}"; do
+    name=${CI_IMAGE_NAMES[i]} ref=${refs[i]} archive=${CI_IMAGE_FILES[i]} temporary=${CI_IMAGE_FILES[i]}.tmp
+    # shellcheck disable=SC2016 # the bash -c body is single-quoted on purpose: its values arrive as arguments.
+    if ! ci_run "images:export-$name" -- timeout -k 30 "${CI_STAGE_TIMEOUT:-600}" \
+      bash -c 'set -o pipefail; docker save "$1" | gzip -n >"$3" && mv "$3" "$2"' _ "$ref" "$archive" "$temporary"; then
+      rm -f "$temporary"
+      return 1
+    fi
+    ci_run_capture "images:export-id-$name" CI_IMAGE_ID -- docker image inspect --format '{{.Id}}' "$ref" || return 1
+    if [[ ! $CI_IMAGE_ID =~ ^sha256:[0-9a-f]{64}$ ]]; then
+      ci_problem "images:export-id-$name" "unexpected image id '$CI_IMAGE_ID'" || :
+      return 1
+    fi
+    printf '%s %s %s %s %s\n' "$name" "$ref" "$CI_IMAGE_ID" "$COMMIT" "$VERSION" >>"$CI_IMAGE_MANIFEST.tmp"
+  done
+  mv "$CI_IMAGE_MANIFEST.tmp" "$CI_IMAGE_MANIFEST"
+  printf '✔ [images:export-manifest] %s\n' "$CI_IMAGE_MANIFEST"
+  ci_record images:export-manifest "$CI_IMAGE_MANIFEST" pass 0
+  ci_summary '### Exported images' '' '```text' "$(cat "$CI_IMAGE_MANIFEST")" '```' ''
+}
+# ci_t3_scan_image <api|web|aio>: Trivy on the exported archive. Row 1 loads the database and writes the
+# JSON report (retried); row 2 is an informational table with the unfixed findings; row 3, last, is the
+# gate: fixable HIGH and CRITICAL findings fail (exit 5, distinct from Trivy's own error code 1).
+ci_t3_scan_image() {
+  local short=$1 label=images:scan-$1 index name archive json all gate trivy keep status
+  case $short in api) index=0 ;; web) index=1 ;; *) index=2 ;; esac
+  name=${CI_IMAGE_NAMES[index]} archive=${CI_IMAGE_FILES[index]}
+  json=$CI_TRIVY_PREFIX$name.json all=$CI_TRIVY_PREFIX$name-all.txt gate=$CI_TRIVY_PREFIX$name-gate.txt
+  if [[ ! -s $archive ]]; then ci_problem "$label" "$archive is missing: run the export stage first" || :; return 1; fi
+  ci_need "$label" trivy || return 1
+  trivy=$(ci_tool trivy)
+  rm -f "$json" "$all" "$all.body" "$gate"
+  ci_retry "$label:db" 3 -- timeout -k 30 "${CI_STAGE_TIMEOUT:-600}" "$trivy" image --input "$archive" \
+    --scanners vuln --no-progress --skip-version-check --format json --exit-code 0 --output "$json" || return 1
+  if timeout -k 30 "${CI_STAGE_TIMEOUT:-600}" "$trivy" convert --scanners vuln --quiet --format table \
+    --severity HIGH,CRITICAL --exit-code 0 --output "$all.body" "$json"; then
+    {
+      printf 'Informational: every HIGH and CRITICAL finding of %s, including those without a fix. Not a gate;\n' "$name"
+      printf 'the gate (findings with a fix) is the next row.\n\n'
+      cat "$all.body"
+    } >"$all"
+    ci_note "$label:all" "informational table in $all (findings without a fix included; not part of the gate)"
+  else
+    ci_note "$label:all" 'informational table could not be produced (not part of the gate)'
+  fi
+  rm -f "$all.body"
+  keep=$CI_KEEP_GOING
+  CI_KEEP_GOING=1
+  if ci_run "$label:gate" -- timeout -k 30 "${CI_STAGE_TIMEOUT:-600}" "$trivy" image --input "$archive" \
+    --scanners vuln --skip-db-update --skip-version-check --quiet --severity HIGH,CRITICAL --ignore-unfixed \
+    --exit-code 5 --format table --output "$gate"; then status=0; else status=1; fi
+  CI_KEEP_GOING=$keep
+  if [[ -s $gate ]]; then
+    cat "$gate"
+    ci_summary_file "Trivy $name: fixable HIGH/CRITICAL" "$gate"
+  else
+    ci_summary "### Trivy $name: fixable HIGH/CRITICAL" '' 'No fixable HIGH or CRITICAL findings.' ''
+  fi
+  if (( status )); then ci_failure || :; return 1; fi
+}
+ci_t3_images_scan_api() { ci_t3_scan_image api; }
+ci_t3_images_scan_web() { ci_t3_scan_image web; }
+ci_t3_images_scan_aio() { ci_t3_scan_image aio; }
+
+# --- publish ---
+# ci_t3_publish_tags_compute <label>: the tags for EVENT_NAME, REF and SHA (GITHUB_EVENT_NAME, GITHUB_REF and
+# GITHUB_SHA when unset), in CI_PUB_TAGS and CI_PUB_TAG_LIST. The ref is only matched, never evaluated.
+ci_t3_publish_tags_compute() {
+  local event=${EVENT_NAME:-${GITHUB_EVENT_NAME:-}} ref=${REF:-${GITHUB_REF:-}} sha=${SHA:-${GITHUB_SHA:-}}
+  CI_PUB_SHA=$sha
+  # shellcheck source=scripts/ci/publish-tags.sh
+  source "$CI_ROOT/scripts/ci/publish-tags.sh" || { ci_problem "$1" 'cannot load scripts/ci/publish-tags.sh' || :; return 1; }
+  ci_run_capture "$1" CI_PUB_TAGS -- publish_tags "$event" "$ref" "$sha" || return 1
+  CI_PUB_TAG_LIST=()
+  mapfile -t CI_PUB_TAG_LIST <<<"$CI_PUB_TAGS"
+  if (( ${#CI_PUB_TAG_LIST[@]} == 0 )) || [[ -z ${CI_PUB_TAG_LIST[0]} ]]; then
+    ci_problem "$1" 'no tags for this ref' || :
+    return 1
+  fi
+}
+ci_t3_publish_tags() {
+  ci_t3_publish_tags_compute publish:tags || return 1
+  printf '%s\n' "${CI_PUB_TAG_LIST[@]}"
+}
+# ci_ghcr_login: the token goes in on stdin, never as an argument and never to the output.
+ci_ghcr_login() { printf '%s' "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin; }
+ci_ghcr_logout() { docker logout ghcr.io >/dev/null 2>&1 || :; }
+# ci_ghcr_tag_state <remote>: prints «exists» or «absent»; any other answer (network, authorization) is a
+# failure, so a release tag is never overwritten because the registry could not be asked.
+ci_ghcr_tag_state() {
+  local out status=0
+  out=$(timeout -k 10 120 docker manifest inspect "$1" 2>&1) || status=$?
+  if (( status == 0 )); then printf 'exists'; return 0; fi
+  if [[ $out == *'no such manifest'* || $out == *'manifest unknown'* || $out == *'not found'* ]]; then printf 'absent'; return 0; fi
+  printf 'cannot tell whether %s exists: %s\n' "$1" "${out%%$'\n'*}" >&2
+  return 1
+}
+# push: only inside GitHub Actions with a token; recomputes the tags itself; pushes the exact images the
+# images job tested (their archives, checked against the manifest before the login).
+ci_t3_publish_push() {
+  local label=publish:push directory=${PUBLISH_IMAGES_DIR:-coverage/images} manifest owner name tag remote digest failed=0 pushed sha
+  local -A ref_of=() id_of=()
+  local -a rows=() names=("${CI_IMAGE_NAMES[@]}")
+  local mname mref mid mcommit state
+  if [[ ${GITHUB_ACTIONS:-} != true ]]; then ci_problem "$label" 'refusing to push outside GitHub Actions (GITHUB_ACTIONS is not true)' || :; return 1; fi
+  if [[ -z ${GITHUB_TOKEN:-} ]]; then ci_problem "$label" 'refusing to push without GITHUB_TOKEN' || :; return 1; fi
+  if [[ -z ${GITHUB_ACTOR:-} ]]; then ci_problem "$label" 'refusing to push without GITHUB_ACTOR' || :; return 1; fi
+  ci_t3_publish_tags_compute publish:push-tags || return 1
+  for tag in "${CI_PUB_TAG_LIST[@]}"; do
+    if [[ ! $tag =~ ^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$ ]]; then ci_problem "$label" "invalid image tag '$tag'" || :; return 1; fi
+  done
+  if ! owner=$(ci_ghcr_owner); then ci_problem "$label" 'GITHUB_REPOSITORY_OWNER is not a valid registry owner' || :; return 1; fi
+  ci_need_cmd "$label" docker || return 1
+  manifest=$directory/image-ids.txt
+  local -a files=("$manifest")
+  for name in "${names[@]}"; do files+=("$directory/$name.tar.gz"); done
+  ci_require_files publish:images "${files[@]}" || return 1
+  while read -r mname mref mid mcommit _; do
+    [[ -n $mname ]] || continue
+    if [[ ! $mref =~ ^calculator(-api|-web)?:[A-Za-z0-9_][A-Za-z0-9_.-]*$ || ! $mid =~ ^sha256:[0-9a-f]{64}$ ]]; then
+      ci_problem publish:verify "malformed manifest line for $mname" || :; return 1
+    fi
+    if [[ $mcommit != "$CI_PUB_SHA" ]]; then ci_problem publish:verify "image $mname was built from $mcommit, not from $CI_PUB_SHA" || :; return 1; fi
+    ref_of[$mname]=$mref id_of[$mname]=$mid
+  done <"$manifest"
+  for name in "${names[@]}"; do
+    if [[ -z ${ref_of[$name]:-} || -z ${id_of[$name]:-} ]]; then ci_problem publish:verify "image $name is not in $manifest" || :; return 1; fi
+  done
+  for name in "${names[@]}"; do
+    ci_run "publish:load-$name" -- timeout -k 30 "${CI_STAGE_TIMEOUT:-600}" docker load -i "$directory/$name.tar.gz" || return 1
+  done
+  for name in "${names[@]}"; do
+    ci_run_capture "publish:inspect-$name" CI_LOADED_ID -- docker image inspect --format '{{.Id}}' "${ref_of[$name]}" || return 1
+    if [[ $CI_LOADED_ID != "${id_of[$name]}" ]]; then ci_problem publish:verify "image $name differs from the tested image" || failed=1; fi
+  done
+  if (( failed )); then return 1; fi
+  trap ci_ghcr_logout EXIT
+  ci_run publish:login -- ci_ghcr_login || return 1
+  # A release version (X.Y.Z) is published once: an existing tag is never moved. sha-<sha> and main move by design.
+  for name in "${names[@]}"; do
+    for tag in "${CI_PUB_TAG_LIST[@]}"; do
+      [[ $tag =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || continue
+      ci_run_capture "publish:exists-$name:$tag" state -- ci_ghcr_tag_state "ghcr.io/$owner/$name:$tag" || return 1
+      if [[ $state == exists ]]; then ci_problem publish:exists "ghcr.io/$owner/$name:$tag already exists: a release version is never overwritten" || :; return 1; fi
+    done
+  done
+  for name in "${names[@]}"; do
+    for tag in "${CI_PUB_TAG_LIST[@]}"; do
+      remote=ghcr.io/$owner/$name:$tag
+      if ! ci_run "publish:tag-$name:$tag" -- docker tag "${ref_of[$name]}" "$remote"; then failed=1; continue; fi
+      if ci_run_capture "publish:push-$name:$tag" CI_PUSH_OUT -- timeout -k 30 "${CI_STAGE_TIMEOUT:-600}" docker push "$remote"; then pushed=1; else pushed=0; fi
+      printf '%s\n' "$CI_PUSH_OUT"
+      if (( ! pushed )); then failed=1; continue; fi
+      digest='(not reported)'
+      if [[ $CI_PUSH_OUT =~ digest:\ (sha256:[0-9a-f]{64}) ]]; then digest=${BASH_REMATCH[1]}; fi
+      rows+=("| $name | $tag | \`$digest\` |")
+    done
+  done
+  if (( ${#rows[@]} )); then ci_summary '### Published images' '' '| image | tag | digest |' '|---|---|---|' "${rows[@]}" ''; fi
+  (( ! failed ))
 }
