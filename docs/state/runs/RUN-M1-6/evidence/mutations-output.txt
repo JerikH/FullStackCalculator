@@ -1,0 +1,19 @@
+# mutations.sh calculator-web:local, 2026-10-22 (each mutated copy mounted over the image's file; the run must stay healthy and pass nginx -t)
+
+CAUGHT M1 — 1 failing checks, including: FAIL R6 129 characters replaced — header 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+CAUGHT M2 — 32 failing checks, including: FAIL api: CSP once — Content-Security-Policy: 'default-src 'none'; frame-ancestors 'none'' ×2, want 'default-src 'self'; script-src 'self'; style-src 'self';
+CAUGHT M3 — 2 failing checks, including: FAIL R7 5000-byte body: service problem unchanged — {"type":"urn:calculator:problem:payload-too-large","title":"Payload too large","status":413,"detail":"requ
+CAUGHT M4 — 2 failing checks, including: FAIL extmime413: problem+json — Content-Type: 'application/javascript' ×1, want 'application/problem+json' once
+CAUGHT M5 — 1 failing checks, including: FAIL R11 probes never limited (all 200) —      28 200      92 503
+CAUGHT M6 — 1 failing checks, including: FAIL R3 missing asset not cached — Cache-Control present
+CAUGHT M8 — 14 failing checks, including: FAIL R6 two headers replaced — header '30f97fcacdba7c6f9673d1dfa2d0a2e8', body {"path":"/api/v1/operations","method":"GET","bodyBytes":0,"requestIdHeaders":1,
+CAUGHT M9 — 36 failing checks, including: FAIL trace: CSP once — Content-Security-Policy: '' ×0, want 'default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self
+CAUGHT M10 — 2 failing checks, including: FAIL R4 raw encoded target never forwarded — raw target reached the service
+CAUGHT M11 — 1 failing checks, including: FAIL service cannot redirect nginx internally (X-Accel-Redirect ignored) — stub admin surface
+CAUGHT M12 — 1 failing checks, including: FAIL R4 encoded path resolved to /readyz reaches the service as /readyz — {"path":"/api/v1/operations/x%2f..%2f..%2f..%2f..%2freadyz","method":"GET","bodyByte
+CAUGHT M13 — 3 failing checks, including: FAIL R4 API gets the routed path, query unchanged — {"path":"/api/v1/x%2fy?q=%2f","method":"GET","bodyBytes":0,"requestIdHeaders":1,"requestId":"affce8d981831
+CAUGHT M14 — 4 failing checks, including: FAIL noinner: status 503 — status 502, want 503
+CAUGHT M15 — 1 failing checks, including: FAIL D7b stalled body dropped after the 10 s body timeout — connection held 20s
+CAUGHT M7 — 1 failing checks, including: FAIL R8 failed POSTs never retried on another instance — the service instances saw 9 POSTs for 12 requests
+
+15 of 15 mutations caught

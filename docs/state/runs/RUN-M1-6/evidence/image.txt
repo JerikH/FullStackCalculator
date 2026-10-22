@@ -1,0 +1,37 @@
+# Image build and contents (OPS-EDGE-01), 2026-10-22, builds under the heavy lease
+
+$ docker build -f frontend/Dockerfile -t calculator-web:local .   (first build, cold cache: 41 s; the build stage output)
+#17 [build 7/7] RUN pnpm run build     && test -f dist/index.html     && test -f dist/theme-init.js     && ls dist/assets/*.js dist/assets/*.js.map > /dev/null
+dist/index.html                   0.78 kB │ gzip:  0.44 kB
+dist/assets/index-OrkEBt9d.css    3.30 kB │ gzip:  1.03 kB
+dist/assets/index-B0f8R1P-.js   219.64 kB │ gzip: 68.65 kB │ map: 1,046.11 kB
+✓ built in 715ms
+#18 [stage-1 4/4] COPY --from=build /src/frontend/dist/ /usr/share/nginx/calculator/
+
+$ docker image ls calculator-web:local   (final image)
+calculator-web:local id=9a1d183a4c27 disk=91.8MB
+
+$ docker image inspect (user, env, healthcheck, exposed ports)
+User=101 Env=[PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin NGINX_VERSION=1.30.6 PKG_RELEASE=1 DYNPKG_RELEASE=1 NJS_VERSION=1.0.2 NJS_RELEASE=1 API_UPSTREAM=api:8081 NGINX_ENVSUBST_FILTER=^API_UPSTREAM$] Healthcheck=[CMD wget -q --spider -T 2 http://127.0.0.1:8080/nginx-health] interval=10s timeout=3s start=5s retries=3 ExposedPorts=map[8080/tcp:{}]
+
+$ docker run --rm --entrypoint sh calculator-web:local -c "find /usr/share/nginx/calculator -type f; ls -ld /etc/nginx/conf.d; ls -A /etc/nginx/conf.d /etc/nginx/snippets /etc/nginx/templates; ls /usr/share/nginx; command -v node || echo no-node"
+/usr/share/nginx/calculator/assets/index-B0f8R1P-.js
+/usr/share/nginx/calculator/assets/index-B0f8R1P-.js.map
+/usr/share/nginx/calculator/assets/index-OrkEBt9d.css
+/usr/share/nginx/calculator/favicon.svg
+/usr/share/nginx/calculator/index.html
+/usr/share/nginx/calculator/theme-init.js
+drwxrwxrwt    1 nginx    root          4096 Oct 22 20:48 /etc/nginx/conf.d
+/etc/nginx/conf.d:
+
+/etc/nginx/snippets:
+proxy-api.conf
+security-headers.conf
+
+/etc/nginx/templates:
+default.conf.template
+calculator
+no-node
+
+$ hadolint frontend/Dockerfile
+clean (exit 0)
