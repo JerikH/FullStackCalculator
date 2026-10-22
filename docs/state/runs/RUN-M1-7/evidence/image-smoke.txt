@@ -1,0 +1,20 @@
+ok   health status is healthy (got healthy)
+healthz: {"status":"ok","version":"1.0 beta","commit":"cbc341e2b3cb"}
+ok   healthz carries the injected version
+ok   healthz carries the injected commit
+ok   GET /api/v1/operations is 200 (got 200)
+ok   0.1 + 0.2 = 0.3 (got {"operation":"add","operands":["0.1","0.2"],"result":"0.3","inexact":false})
+ok   GET / is a 404 (API-only image)
+ok   GET / is the NOT_FOUND problem
+ok   /metrics is not served on the API port (got 404)
+ok   image user is 65532:65532 (got 65532:65532)
+ok   only 8081/tcp is exposed (got 8081/tcp )
+hardening: true [ALL] [no-new-privileges]
+ok   read-only root, all capabilities dropped, no-new-privileges
+ok   healthcheck is ["/calculator","healthcheck"] (got ["CMD","/calculator","healthcheck"])
+docker run -P publishes: 8081/tcp
+ok   docker run -P publishes only 8081/tcp
+docker images reports calculator-api:fullstackcalculator-run-m1-7 21.8MB (containerd disk usage, snapshot accounting included)
+layers sum to 16490496 bytes (16490 kB); compressed content 5264097 bytes
+ok   layers sum to under 20 MB
+exit=0

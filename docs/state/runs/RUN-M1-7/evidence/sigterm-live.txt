@@ -1,0 +1,5 @@
+log lines: 14
+ERROR lines: 0
+draining /readyz 503 access lines: 10 levels: ['INFO']
+messages: ['server started', 'shutdown started', 'shutdown complete']
+readyz codes polled after SIGTERM: 503 503 503 503 503 503 503 503 503 503 000 000

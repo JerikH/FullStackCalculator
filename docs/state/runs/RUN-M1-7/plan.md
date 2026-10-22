@@ -92,7 +92,7 @@ Nothing else in `lib.sh` changes; `shellcheck` and `scripts/ci/t0.sh --base HEAD
 3. Embedded binary smoke with a hand-made `dist`, on the worker's ports (`curl -i`), then `dist` cleaned.
 4. API image: hadolint, one `docker build` (background, `heavy` lease), hardened run (`--read-only --cap-drop ALL --security-opt no-new-privileges`) reaching `healthy`, `/healthz` with the injected version and commit, `GET /` the NOT_FOUND problem (API-only), size, `.Config.User` `65532:65532`, `.Config.ExposedPorts` only `8081/tcp`, `docker run -P` maps only 8081, admin port reachable only inside; container named `fullstackcalculator-run-m1-7-api` removed by name through a `trap`.
 5. Live SIGTERM check of the access log: built binary, `CALC_SHUTDOWN_DRAIN=4s`, at least one draining 503 line, all `INFO`, zero `ERROR` lines.
-6. `scripts/ci/t0.sh --base 2c7b4c1` (spec commit) over the code diff, shellcheck included.
+6. `scripts/ci/t0.sh --base f97e19f` (spec commit) over the code diff, shellcheck included.
 
 ## Not touched
 
