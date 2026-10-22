@@ -1,0 +1,100 @@
+.panel {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-card);
+}
+
+.summary {
+  min-height: 3rem;
+  /* The focus ring follows the panel's corners. */
+  border-radius: calc(var(--radius-lg) - 1px);
+  padding: var(--space-3) var(--space-4);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.body {
+  min-width: 0;
+  padding: 0 var(--space-4) var(--space-4);
+}
+
+.empty {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  min-width: 0;
+}
+
+.row {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 3rem;
+  margin: 0;
+  padding: var(--space-3);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background-color: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+@media (hover: hover) {
+  .row:hover {
+    background-color: var(--color-surface-raised);
+  }
+}
+
+.clear {
+  min-width: 3rem;
+  min-height: 3rem;
+  margin: var(--space-3) 0 0;
+  padding: 0 var(--space-4);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-key-function);
+  color: var(--color-key-function-text);
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+@media (hover: hover) {
+  .clear:hover {
+    background-color: color-mix(in srgb, var(--color-key-function), var(--color-text) 8%);
+  }
+}
+
+.clear:active {
+  background-color: color-mix(in srgb, var(--color-key-function), var(--color-text) 16%);
+}

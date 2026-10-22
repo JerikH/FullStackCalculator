@@ -1,0 +1,36 @@
+/* One column in reading order (display, keypad, history); two centred columns from the tablet breakpoint. */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+  width: min(100%, 22.5rem);
+  min-width: 0;
+  margin-inline: auto;
+}
+
+.layout > * {
+  min-width: 0;
+}
+
+/* Keypad budget: card padding plus hairline add 17px per side (limit 20px); the keypad has no padding. */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+/* A px query, not rem: the history panel reads the same breakpoint in JavaScript. */
+@media (min-width: 768px) {
+  .layout {
+    grid-template-columns: 22.5rem 18rem;
+    gap: var(--space-6);
+    justify-content: center;
+    width: auto;
+  }
+}

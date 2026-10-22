@@ -89,6 +89,11 @@ typography:
     fontSize: "1.25rem"
     fontWeight: 500
     lineHeight: 1
+  summary:
+    fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
+    fontSize: "1rem"
+    fontWeight: 600
+    lineHeight: 1.5
   label:
     fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
     fontSize: "0.875rem"
@@ -143,23 +148,38 @@ components:
     rounded: "{rounded.lg}"
     padding: "1rem"
   theme-segment:
-    backgroundColor: "{colors.surface}"
+    backgroundColor: "transparent"
     textColor: "{colors.text-muted}"
     typography: "{typography.label}"
     rounded: "{rounded.sm}"
+    padding: "0 0.75rem"
     height: "3rem"
+    width: "3rem"
   theme-segment-checked:
     backgroundColor: "{colors.key-operator}"
     textColor: "{colors.key-operator-text}"
     typography: "{typography.label}"
     rounded: "{rounded.sm}"
     height: "3rem"
-  history-row:
+  history-summary:
     backgroundColor: "{colors.surface}"
+    textColor: "{colors.text}"
+    typography: "{typography.summary}"
+    padding: "0.75rem 1rem"
+    height: "3rem"
+  history-row:
+    backgroundColor: "transparent"
     textColor: "{colors.text}"
     typography: "{typography.label}"
     rounded: "{rounded.sm}"
     padding: "0.75rem"
+    height: "3rem"
+  history-clear:
+    backgroundColor: "{colors.key-function}"
+    textColor: "{colors.key-function-text}"
+    typography: "{typography.label}"
+    rounded: "{rounded.sm}"
+    padding: "0 1rem"
     height: "3rem"
 ---
 
@@ -171,7 +191,7 @@ components:
 
 The calculator is a measuring instrument, not a toy. A dark readout panel holds the number in both themes, the way an instrument's display stays the same whatever the room's lighting; everything around it is quiet, tonal and familiar. Colour carries intent only: blue marks an operation, a deeper blue marks the act of evaluating, amber marks where the keyboard is. Nothing decorative competes with the digits.
 
-Density is moderate and touch-first: a 4 × 6 keypad of generous keys, a readout that never truncates a digit and steps its size down rather than cutting, and a history that is one tap away. The system uses the platform's own UI font and native controls, CSS Modules over custom-property tokens, and no UI library, icon system or runtime styling. The palette, the four key variants, the dark-override selectors and the favicon are fixed; token values change only when a measured contrast check fails, and every value below has been measured.
+Density is moderate and touch-first: a 4 × 6 keypad of generous keys, a readout that never truncates a digit and steps its size down rather than cutting, and a history that is one tap away. The system uses the platform's own UI font and native controls, CSS Modules over custom-property tokens, and no UI library, icon system or runtime styling. The palette, the four key variants, the dark-override selectors and the favicon are fixed; token values change only when a measured contrast check fails.
 
 **Key Characteristics:**
 - A dark readout in both themes, with tabular numerals and every digit visible.
@@ -192,8 +212,8 @@ Every colour token is a CSS custom property `--color-<name>` in `frontend/src/sh
 
 ### Neutral
 - **Bench Grey** (`bg`): the page behind the instrument.
-- **Panel White / Panel Slate** (`surface`): the calculator card, the history panel and the theme track; the colour every focus ring and key sits on.
-- **Raised Panel** (`surface-raised`): hover and grouping tints on the surface (history rows on hover).
+- **Panel White / Panel Slate** (`surface`): the calculator card, the history panel and the theme track; the colour every focus ring and key sits on. History rows and unchecked theme segments are transparent over it.
+- **Raised Panel** (`surface-raised`): the hover tint on the surface, applied only where a hover exists (history rows and unchecked theme segments).
 - **Hairline** (`border`): decorative dividers and card outlines only; never the sole boundary of a control.
 - **Ink** (`text`) and **Graphite** (`text-muted`): primary and secondary text on the frame.
 - **Key Neutral** (`key-digit`) and **Key Muted** (`key-function`) with their label colours.
@@ -205,8 +225,8 @@ Every colour token is a CSS custom property `--color-<name>` in `frontend/src/sh
 - **Readout Coral** (`display-danger`): error copy and its marker inside the display.
 
 ### State
-- **Alarm Red** (`danger`) on **Alarm Wash** (`danger-bg`): errors shown on the frame surfaces (reserved; the calculator screen reports errors in the readout).
-- **Signal Amber** (`focus`): the focus ring. Light uses a burnt amber, dark the bright amber.
+- **Alarm Red** (`danger`) on **Alarm Wash** (`danger-bg`): errors shown on the frame surfaces. Reserved: no shipped surface uses them, because the calculator screen reports every error inside the readout.
+- **Signal Amber** (`focus`): the focus ring, drawn by one global `:focus-visible` rule. Light uses a burnt amber, dark the bright amber.
 
 ### Token table
 
@@ -236,7 +256,7 @@ Two values differ from the original palette because a measurement failed: the li
 
 ### Measured contrast
 
-Computed with the WCAG 2.x relative-luminance formula; the full table (light, dark and system-dark, every pair below plus informational pairs) is produced by the contrast check of the design baseline. Minimum per theme:
+Computed with the WCAG 2.x relative-luminance formula by the contrast check of the design baseline (every pair below plus informational pairs, in light, dark and system-dark). Minimum per theme:
 
 | Pair group | Light | Dark / system-dark | Minimum |
 |---|---|---|---|
@@ -251,6 +271,8 @@ Computed with the WCAG 2.x relative-luminance formula; the full table (light, da
 | Checked segment fill vs track | 5.72:1 | 4.49:1 | 3:1 |
 | Spinner vs readout | 7.20:1 | 6.62:1 | 3:1 |
 
+Re-measured in the browser on the built screen (computed colours, real service), light / dark: checked theme segment label 5.72 / 4.98; operator key at rest 5.72 / 4.98, hover 6.34 / 5.51, active 7.02 / 6.11; equals key at rest 9.50 / 8.98; busy digits 6.67 / 6.88 (the static check above rounds the blend to 6.86 in dark); error copy 7.96 / 8.79; `Ref:` line 7.20 / 6.62. Axe reports zero violations.
+
 ### Named Rules
 **The Intent Rule.** Accent colour appears only on things that act: operators, equals, the checked theme segment, the focus ring. Never on text, borders or decoration.
 
@@ -262,7 +284,7 @@ Computed with the WCAG 2.x relative-luminance formula; the full table (light, da
 
 **Display Font:** the system UI stack (`--font-sans`: `system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif`)
 **Body Font:** the same stack
-**Label/Mono Font:** `--font-mono` (`ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', monospace`), reserved for the request reference if it needs fixed width
+**Label/Mono Font:** `--font-mono` (`ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', monospace`) is declared but reserved: no shipped surface uses it, the `Ref:` line is set in the sans label style
 
 **Character:** the platform's own face, set with tabular numerals wherever numbers align, so the instrument feels native on every device and digits never shift as they change.
 
@@ -270,11 +292,12 @@ Computed with the WCAG 2.x relative-luminance formula; the full table (light, da
 - **Display xl** (500, `clamp(1.75rem, 9vw, 2.5rem)`, 1.15, tabular): the value when it has at most 10 characters.
 - **Display lg** (500, `clamp(1.25rem, 6vw, 1.75rem)`, 1.2, tabular): 11 to 16 characters.
 - **Display md** (500, 1.125rem, 1.35, tabular, wraps with `overflow-wrap: anywhere`): longer values; never truncated or ellipsised.
-- **Display secondary** (400, 1rem, 1.4, tabular): the pending expression line (`12 ×`).
-- **Display error** (500, 1.25rem, 1.3): the error sentence in the readout.
+- **Display secondary** (400, 1rem, 1.4, tabular, right-aligned, wraps with `overflow-wrap: anywhere`): the pending expression line (`12 ×`).
+- **Display error** (500, 1.25rem, 1.3, wraps anywhere): the error sentence in the readout.
 - **Title** (600, 1.125rem, 1.3): the single `h1` `Calculator` in the header.
-- **Key label** (500, 1.25rem, 1): keypad glyphs.
-- **Label** (500, 0.875rem, 1.4, tabular): theme segments, history rows, the `Ref:` line.
+- **Summary** (600, 1rem, 1.5): the `History` disclosure label.
+- **Key label** (500, 1.25rem, 1, tabular): keypad glyphs.
+- **Label** (500, 0.875rem, 1.4, tabular): theme segments, history rows, `Clear history`, the `Ref:` line.
 - **Body** (400, 1rem, 1.5): everything else, including the empty-history sentence.
 
 ### Named Rules
@@ -284,7 +307,9 @@ Computed with the WCAG 2.x relative-luminance formula; the full table (light, da
 
 ## Layout
 
-Mobile-first. Below 768 px one column in reading order: display, keypad, then the history as a collapsible `<details>` (collapsed by default). The calculator column is fluid up to 22.5rem and centred; the page gutter is `--space-4`; cards have a 1 px `--color-border` hairline. At 768 px and wider, two centred columns of 22.5rem (calculator) and 18rem (history, open by default) with a `--space-6` gap. The page uses `min-height: 100dvh` and scrolls vertically; it never scrolls horizontally, down to 320 px.
+Mobile-first. Below 768 px one column in reading order: header, display, keypad, then the history as a collapsible `<details>` (collapsed by default) `--space-4` below the card. The column is `min(100%, 22.5rem)` and centred; the page gutter is `--space-4`. The header (`h1` left, theme control right, `--space-3` gap, `--space-6` below) shares the column width and wraps (`flex-wrap`), so at 320 px the theme control may drop under the title. The calculator card is a flex column (display, then keypad, `--space-4` apart) with `--space-4` padding and a 1 px `--color-border` hairline.
+
+At 768 px and wider the layout becomes a grid of two fixed columns, 22.5rem (calculator) and 18rem (history, open by default), `--space-6` apart and centred, top-aligned; the header widens to the same total width (22.5rem + `--space-6` + 18rem) and the page gains `--space-6` top padding. The breakpoint is written in px (`min-width: 768px`), not rem, because the history panel reads the same query in JavaScript to decide whether it is open by default; a visitor's open or closed choice resets when the viewport crosses it. The page is `min-height: 100dvh`, scrolls vertically only, and never scrolls horizontally down to 320 px.
 
 The keypad is a 4 × 6 grid (`repeat(4, minmax(0, 1fr))`, gap `--space-2`), row-major:
 
@@ -301,9 +326,9 @@ AC   C    ⌫    ÷
 
 **The Keypad Budget Rule.** The containers around the keypad add at most 20 px of horizontal padding plus border per side (card padding `--space-4` plus a 1 px hairline; the keypad itself has no padding). More than that pushes four 56 px keys past a 320 px viewport.
 
-Spacing scale (`--space-*`): 1 = 0.25rem, 2 = 0.5rem, 3 = 0.75rem, 4 = 1rem, 6 = 1.5rem, 8 = 2rem. Card and display padding `--space-4`; header to card `--space-6`.
+Spacing scale (`--space-*`): 1 = 0.25rem, 2 = 0.5rem, 3 = 0.75rem, 4 = 1rem, 6 = 1.5rem, 8 = 2rem (declared; no shipped surface uses it yet). Card and display padding `--space-4`; header to card `--space-6`; display line gap `--space-1`; keypad gap `--space-2`.
 
-Size budget (an estimate: tabular digits taken as about 0.6 em; the calculator screen verifies it in the browser at 320 px and at the 22.5rem column). At 320 px the readout's text box is 320 − 32 gutter − 2 border − 32 card padding − 32 display padding = 222 px. Display xl at that width is 28.8 px (9vw), so ten characters take about 173 px; display lg is 20 px (its 1.25rem floor is above 6vw = 19.2 px) and sixteen characters take about 192 px; the `≈` marker (0.75 em, outside the character count) fits in the remainder. At the 22.5rem column the box is 294 px: ten xl characters at the 2.5rem cap take about 240 px plus the marker, and sixteen lg characters at the 1.75rem cap about 269 px plus the marker (about 4 px to spare, the tightest case).
+Size budget (tabular digits taken as about 0.6 em, verified in the browser). At 320 px the readout's text box is 222 px (320 − 32 gutter − 2 border − 32 card padding − 32 display padding): ten display xl characters (28.8 px at 9vw) take about 173 px and sixteen display lg characters (20 px floor) about 192 px, each with room for the `≈` marker (0.75 em, outside the character count). In the 22.5rem column the box is 294 px: ten xl characters at the 2.5rem cap take about 240 px and sixteen lg characters at the 1.75rem cap about 269 px (the tightest case). Measured at both widths: a 10-character xl value and a 16-character lg value, each with `≈`, sit on one line; a 34-digit value wraps at display md without losing a digit. The readout's minimum height (two paddings, one 1.4rem secondary line, one 2.875rem xl line) keeps the layout from jumping.
 
 ## Elevation & Depth
 
@@ -317,34 +342,44 @@ Mostly flat and tonal. The calculator card and the history panel sit on the page
 
 ## Shapes
 
-Softly rounded rectangles in three steps: keys, segments and history rows `--radius-sm` (0.5rem); the readout `--radius-md` (0.875rem); cards `--radius-lg` (1.25rem). No circles, pills or irregular silhouettes. The favicon repeats the form: a 32 × 32 rounded square in Instrument Blue (`#2f5fd0`) with a white `=` of two rectangles (white on that blue measures 5.72:1).
+Softly rounded rectangles in three steps: keys, the theme track, history rows and `Clear history` `--radius-sm` (0.5rem); the readout `--radius-md` (0.875rem); cards and the history panel `--radius-lg` (1.25rem). Inner shapes subtract the 1 px hairline so they follow their container: theme segments `calc(--radius-sm − 1px)`, the history summary `calc(--radius-lg − 1px)` (its focus ring follows the panel corners). No pills or irregular silhouettes; the only circle is the 1rem busy spinner ring. The favicon repeats the form: a 32 × 32 rounded square in Instrument Blue (`#2f5fd0`) with a white `=` of two rectangles (white on that blue measures 5.72:1).
 
 ## Components
 
 ### Keys
-Tactile and confident, like an instrument's buttons.
-- **Shape:** gently rounded (`--radius-sm`), min height `--key-size`, label in the key-label style, centred.
-- **Variants:** digit (`0`–`9`, `.`) Key Neutral; function (AC, C, ⌫, ±, √, %) Key Muted; operator (÷, ×, −, +, xʸ) Instrument Blue; equals (=) Evaluate Blue, two rows tall.
-- **Hover:** fill mixed 8% toward `--color-text` (`color-mix(in srgb, var(--color-key-<variant>), var(--color-text) 8%)`); **Active:** 16%. Labels keep their colour; every hover and active fill was measured (≥ 5.51:1).
-- **Transition:** background only, `--transition-fast` (120 ms ease-out); removed under `prefers-reduced-motion: reduce`.
-- **Focus:** see Focus ring. A mouse press never moves focus (the key prevents default on mousedown).
-- **Names:** native `<button type="button">` with the accessible names of the keypad table (`all clear`, `clear entry`, `backspace`, `divide`, `square root`, `power`, `percentage`, `multiply`, `subtract`, `add`, `equals`, `toggle sign`, `decimal point`, digits by their digit); the keypad is a `role="group"` named `Keypad`.
+Tactile and confident.
+- **Shape:** gently rounded (`--radius-sm`), min height `--key-size`, filling its grid cell (`width: 100%`, `min-width: 0`), key-label style, centred, no border.
+- **Variants:** digit (`0`–`9`, `.`) Key Neutral; function (AC, C, ⌫, ±, √, %) Key Muted; operator (÷, ×, −, +, xʸ) Instrument Blue; equals (=) Evaluate Blue, two rows tall (7.5rem: two keys plus one gap).
+- **Hover:** fill mixed 8% toward `--color-text` (`color-mix(in srgb, <fill>, var(--color-text) 8%)`), declared inside `@media (hover: hover)` so a touch device never keeps a sticky hover tone. **Active:** 16%, always. Labels keep their colour; every hover and active fill was measured (≥ 5.51:1).
+- **Touch:** `-webkit-tap-highlight-color: transparent` on buttons, summaries and labels, so the browser's tap overlay never covers the active tone.
+- **Transition:** background only, `--transition-fast` (120 ms ease-out); under `prefers-reduced-motion: reduce` a global rule shrinks every transition and animation to 0.01 ms.
+- **Focus:** see Focus ring. A mouse press never moves focus (the key prevents default on mousedown), so a following Enter evaluates instead of pressing the key again.
+- **Names:** native `<button type="button">` with the accessible names of the keypad table (`all clear`, `clear entry`, `backspace`, `divide`, `square root`, `power`, `percentage`, `multiply`, `subtract`, `add`, `equals`, `toggle sign`, `decimal point`, digits); the keypad is a `role="group"` named `Keypad`.
 
 ### Focus ring
-- `:focus-visible` only: 3px solid `--color-focus`, `outline-offset: 2px`, so the ring always sits on the surface around the control, separated from the key by a 2px band of surface. Measured against the surfaces it sits on (≥ 4.60:1 light, ≥ 7.45:1 dark).
+- One global `:focus-visible` rule for every control: 3px solid `--color-focus`, `outline-offset: 2px`, so the ring always sits on the surface around the control, leaving a 2px band of surface between ring and key. Measured ≥ 4.60:1 light, ≥ 7.45:1 dark.
+- The native theme radios are visually hidden, so the ring is drawn on the visible segment through `input:focus-visible + span`.
 
 ### Display (readout)
-- **Container:** Readout Black, `--radius-md` (0.875rem), padding `--space-4`, enough minimum height for the expression line plus one xl line so the layout does not jump.
-- **Lines:** secondary expression line (Readout Grey, display secondary), then the value in an `<output aria-live="polite" aria-atomic="true">` (Readout White, size by length, right-aligned, tabular). Negatives use `−` (U+2212); the integer part is grouped with `,`; scientific values are ungrouped.
-- **Rounded:** a `≈` marker (Readout Grey, 0.75 em) before an inexact value, with the title and accessible explanation `Rounded to 34 significant digits`.
-- **Busy:** the value digits dim immediately to opacity 0.6 (measured 6.67:1 light, 6.86:1 dark); the `≈` marker and the expression line stay at full opacity (Readout Grey dimmed to 0.6 would fall to 3.37:1 light and 3.01:1 dark). The display region carries `aria-busy`; a 1rem spinner ring in Readout Grey appears after 150 ms, is hidden from assistive technology, and does not rotate under reduced motion.
-- **Error:** the value is replaced by the error sentence (display error style, Readout Coral) in a `role="alert"` region, with a `Ref: <requestId>` line in the label style (Readout Grey) when available. No icon.
+- **Container:** Readout Black, `--radius-md` (0.875rem), padding `--space-4`, a flex column bottom-aligned with `--space-1` between lines, `aria-busy` while a request is pending; tabular numerals throughout.
+- **Top row:** the expression line (Readout Grey, display secondary, right-aligned, wraps) with the busy spinner at its left, `--space-2` apart.
+- **Alert region:** a `role="alert"` container that is always in the document and empty until an error arrives, so the error is announced when it is inserted. It holds the error sentence and the `Ref: <requestId>` line, both right-aligned.
+- **Value:** below, an `<output aria-live="polite" aria-atomic="true" aria-label="Result">` (Readout White, size by length, right-aligned, tabular, wraps). Negatives use `−` (U+2212); the integer part is grouped with `,`; scientific values are ungrouped. The output is empty while an error shows.
+- **Rounded:** inside the output, before the digits, a `≈` marker (Readout Grey, 0.75 em, `--space-1` after it) with the title `Rounded to 34 significant digits`. The glyph is hidden from assistive technology; a visually hidden copy of the explanation precedes the value.
+- **Busy:** only the value digits dim, to opacity 0.6, immediately (measured 6.67:1 light, 6.88:1 dark); the `≈` marker and the expression line stay at full opacity (Readout Grey dimmed to 0.6 would fall to 3.37:1 light and 3.01:1 dark). After 150 ms a 1rem spinner ring appears: a 2px Readout Grey border with a transparent top segment, rotating once per 800 ms linear, hidden from assistive technology and paired with a visually hidden `Calculating`. Under reduced motion it is a static full ring.
+- **Error:** the error sentence (display error style, Readout Coral, 7.96:1 light, 8.79:1 dark) replaces the value, with the `Ref:` line in the label style (Readout Grey) when a reference exists. No icon.
 
 ### Theme control
-- Native radio group named `Theme` (`System`, `Light`, `Dark`) in the header, drawn as a segmented control: track `--color-surface` with a `--color-border` hairline and `--radius-sm`; segments at least 3rem (48 px) high and 48 px wide; unchecked labels Graphite; the checked segment takes the Instrument Blue fill with its label colour and weight 600. The checked fill contrasts with the track (5.72:1 light, 4.49:1 dark), so the state does not depend on hue. Focus ring as above on the focused radio's segment.
+- Native radio group named `Theme` (`System`, `Light`, `Dark`; a `<fieldset role="radiogroup">` with a visually hidden legend) at the right of the header, drawn as a segmented control: a track of `--color-surface` with a `--color-border` hairline and `--radius-sm`, no inner padding; each segment is a label at least 3rem (48 px) high and 48 px wide with a `--space-3` horizontal padding, its label in the label style, unchecked in Graphite on a transparent fill.
+- **Hover:** an unchecked segment takes the `--color-surface-raised` tint, inside `@media (hover: hover)`.
+- **Checked:** the Instrument Blue fill with its label colour and weight 600 (5.72:1 light, 4.98:1 dark). The fill contrasts with the track (5.72:1 light, 4.49:1 dark), so the state is carried by fill and weight together and never by hue alone.
+- **Focus:** the native radio stays focusable but clipped; the segment shows the ring.
 
 ### History panel
-- Card surface with `--shadow-card`; a `<details>` whose `<summary>` reads `History` (at least 48 px tall); an ordered list newest first; each row a full-width native button in the label style (`12 × 3 = 36`, `√16 = 4`, `50% = 0.5`, `≈` when inexact) named `Use result <formatted result>`, at least 48 px tall, hover tint `--color-surface-raised`; a `Clear history` button (function-key styling, at least 48 px tall); the empty state `No calculations yet` in Graphite body text.
+- Card surface (`--radius-lg`, 1 px hairline, `--shadow-card`); a `<details>` that is open by default from 768 px and collapsed below it. Its `<summary>` reads `History` in the summary style, at least 48 px tall, padded `--space-3` by `--space-4`.
+- **Body:** padding `0 --space-4 --space-4`. An ordered list newest first, `--space-1` between rows; each row a full-width native button on a transparent fill in the label style (`12 × 3 = 36`, `√16 = 4`, `50% = 0.5`, `≈` when inexact), wrapping anywhere, at least 48 px tall, named `Use result <formatted result>`. Hover tint `--color-surface-raised` inside `@media (hover: hover)`, with the 120 ms background transition.
+- **Clear history:** function-key styling (Key Muted fill, label style, at least 48 px tall, `--space-4` side padding, `--space-3` above); hover 8% inside `@media (hover: hover)`, active 16%. A mouse press on a row or on it never moves focus; activating it returns focus to the summary.
+- **Empty:** `No calculations yet` in Graphite body text.
 
 ## Do's and Don'ts
 
@@ -354,6 +389,7 @@ Tactile and confident, like an instrument's buttons.
 - **Do** use tabular numerals for every number and let long values wrap rather than shrink below display md.
 - **Do** mark the checked theme segment with fill and weight, not hue alone.
 - **Do** disable transitions and spinner rotation under `prefers-reduced-motion: reduce`.
+- **Do** declare hover tones inside `@media (hover: hover)` and keep the active tone unconditional.
 - **Do** re-measure contrast with the design-baseline check whenever a colour token changes.
 
 ### Don't:

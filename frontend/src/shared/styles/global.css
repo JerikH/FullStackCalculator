@@ -32,6 +32,13 @@ button {
   font: inherit;
 }
 
+/* The pressed tone of each control is its own :active rule; the browser's translucent tap overlay would sit on top. */
+button,
+summary,
+label {
+  -webkit-tap-highlight-color: transparent;
+}
+
 :focus-visible {
   outline: 3px solid var(--color-focus);
   outline-offset: 2px;

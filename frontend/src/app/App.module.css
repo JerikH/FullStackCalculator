@@ -1,0 +1,36 @@
+.app {
+  min-height: 100dvh;
+  padding: var(--space-4);
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: min(100%, 22.5rem);
+  margin: 0 auto var(--space-6);
+}
+
+.title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.main {
+  min-width: 0;
+}
+
+@media (min-width: 768px) {
+  .app {
+    padding-top: var(--space-6);
+  }
+
+  /* The content width of the two-column layout: calculator, gap, history. */
+  .header {
+    width: min(100%, calc(22.5rem + var(--space-6) + 18rem));
+  }
+}

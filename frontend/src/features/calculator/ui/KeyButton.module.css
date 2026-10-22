@@ -1,0 +1,122 @@
+.key {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--key-size);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 1.25rem;
+  font-weight: 500;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.digit {
+  background-color: var(--color-key-digit);
+  color: var(--color-key-digit-text);
+}
+
+@media (hover: hover) {
+  .digit:hover {
+    background-color: color-mix(in srgb, var(--color-key-digit), var(--color-text) 8%);
+  }
+}
+
+.digit:active {
+  background-color: color-mix(in srgb, var(--color-key-digit), var(--color-text) 16%);
+}
+
+.function {
+  background-color: var(--color-key-function);
+  color: var(--color-key-function-text);
+}
+
+@media (hover: hover) {
+  .function:hover {
+    background-color: color-mix(in srgb, var(--color-key-function), var(--color-text) 8%);
+  }
+}
+
+.function:active {
+  background-color: color-mix(in srgb, var(--color-key-function), var(--color-text) 16%);
+}
+
+.operator {
+  background-color: var(--color-key-operator);
+  color: var(--color-key-operator-text);
+}
+
+@media (hover: hover) {
+  .operator:hover {
+    background-color: color-mix(in srgb, var(--color-key-operator), var(--color-text) 8%);
+  }
+}
+
+.operator:active {
+  background-color: color-mix(in srgb, var(--color-key-operator), var(--color-text) 16%);
+}
+
+.equals {
+  background-color: var(--color-key-equals);
+  color: var(--color-key-equals-text);
+}
+
+@media (hover: hover) {
+  .equals:hover {
+    background-color: color-mix(in srgb, var(--color-key-equals), var(--color-text) 8%);
+  }
+}
+
+.equals:active {
+  background-color: color-mix(in srgb, var(--color-key-equals), var(--color-text) 16%);
+}
+
+/* Placement: finite classes chosen by lookup tables in KeyButton.tsx; no inline styles. */
+.row1 {
+  grid-row-start: 1;
+}
+
+.row2 {
+  grid-row-start: 2;
+}
+
+.row3 {
+  grid-row-start: 3;
+}
+
+.row4 {
+  grid-row-start: 4;
+}
+
+.row5 {
+  grid-row-start: 5;
+}
+
+.row6 {
+  grid-row-start: 6;
+}
+
+.col1 {
+  grid-column-start: 1;
+}
+
+.col2 {
+  grid-column-start: 2;
+}
+
+.col3 {
+  grid-column-start: 3;
+}
+
+.col4 {
+  grid-column-start: 4;
+}
+
+.span2 {
+  grid-row-end: span 2;
+}
