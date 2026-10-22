@@ -481,6 +481,10 @@ func TestInflightRequestSurvivesShutdown(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// Shutdown closes the listeners before it waits for active connections, so
+	// a closed listener proves graceful shutdown has started.
+	listenerClosed := make(chan struct{})
+	a.apiLn = &closeSignalListener{Listener: a.apiLn, closed: listenerClosed}
 	draining, releaseDrain := drainGate(t, a)
 	defer releaseDrain()
 	running := startApp(t, a)
@@ -505,6 +509,14 @@ func TestInflightRequestSurvivesShutdown(t *testing.T) {
 	running.cancel()
 	await(t, draining, "shutdown start")
 	releaseDrain()
+	await(t, listenerClosed, "listener closed by Shutdown")
+	select {
+	case <-running.done:
+		t.Fatal("Run returned while a request was still in flight")
+	case err := <-clientDone:
+		t.Fatalf("client finished before the handler was released: %v", err)
+	default:
+	}
 	unblock()
 	select {
 	case err := <-clientDone:
@@ -780,6 +792,11 @@ func TestProbeDrainsBodyAndReportsFailures(t *testing.T) {
 			}
 		})
 	}
+	bodyErr := errors.New("connection reset mid-body")
+	failingBody := client(t, &erroringBody{err: bodyErr})
+	if err := Probe(t.Context(), ":80", failingBody); !errors.Is(err, bodyErr) {
+		t.Fatalf("Probe with a failing body = %v", err)
+	}
 	transportErr := errors.New("transport failed")
 	client := &http.Client{Transport: roundTripperFunc(func(*http.Request) (*http.Response, error) { return nil, transportErr })}
 	if err := Probe(t.Context(), ":80", client); !errors.Is(err, transportErr) {
@@ -854,4 +871,30 @@ func TestServerClosedDuringDrainIsNotAnError(t *testing.T) {
 	if err := running.wait(t); err != nil {
 		t.Fatal(err)
 	}
+}
+
+// closeSignalListener reports when the server closes it.
+type closeSignalListener struct {
+	net.Listener
+	once   sync.Once
+	closed chan struct{}
+}
+
+func (l *closeSignalListener) Close() error {
+	l.once.Do(func() { close(l.closed) })
+	return l.Listener.Close()
+}
+
+// erroringBody fails while the response body is being read, as a stalled or
+// truncated 200 does.
+type erroringBody struct{ err error }
+
+func (b *erroringBody) Read([]byte) (int, error) { return 0, b.err }
+func (*erroringBody) Close() error               { return nil }
+
+func client(t *testing.T, body io.ReadCloser) *http.Client {
+	t.Helper()
+	return &http.Client{Transport: roundTripperFunc(func(*http.Request) (*http.Response, error) {
+		return &http.Response{StatusCode: http.StatusOK, Body: body, Header: make(http.Header)}, nil
+	})}
 }

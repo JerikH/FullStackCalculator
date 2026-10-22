@@ -26,9 +26,14 @@ func Probe(ctx context.Context, addr string, client *http.Client) error {
 		return fmt.Errorf("healthcheck: %w", err)
 	}
 	defer resp.Body.Close()
-	_, _ = io.Copy(io.Discard, resp.Body)
+	_, readErr := io.Copy(io.Discard, resp.Body)
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("healthcheck: unexpected status %d", resp.StatusCode)
+	}
+	// A 200 whose body stalls past the client timeout or ends early is not
+	// a healthy answer.
+	if readErr != nil {
+		return fmt.Errorf("healthcheck: reading the response: %w", readErr)
 	}
 	return nil
 }
