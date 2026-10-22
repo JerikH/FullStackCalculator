@@ -58,12 +58,15 @@ Run grouping (each run chains related tasks executed by one agent):
 #### M2 — Release-ready delivery
 | Task | Track | Epic | Summary | Depends on | Parallel |
 |---|---|---|---|---|---|
-| OPS-STACK-01 | [BE] | OPS | `compose.yaml`, root all-in-one `Dockerfile`, `Makefile`, `.env.example`, `tools/versions.env`, `scripts/bootstrap.sh`, `scripts/coverage.sh`; tier scripts switched to Makefile targets | M1 | solo |
+| UI-FIX-01 | [FE] | UI | Accessible names `AC, all clear` and `xʸ, power` (U28) with the label-in-name axe rule enabled; the API client's combined signal inside its `try` with a fallback for engines without `AbortSignal.any` (U29) | M1 | solo |
+| UI-DEPS-01 | [FE] | UI | Dependency pins revisited once (U32): TypeScript 6.x, the jsx-a11y override, jsdom 30 with the Node pin, everything else at latest stable | M1 | solo |
+| OBS-LOG-02 | [BE] | OBS | Access-log `method` truncated to 256 characters (U30) | M1 | any |
+| OPS-STACK-01 | [BE] | OPS | `compose.yaml`, root all-in-one `Dockerfile`, `Makefile`, `.env.example`, `tools/versions.env`, `scripts/bootstrap.sh`, `scripts/coverage.sh`; tier scripts switched to Makefile targets and `t2.sh --stage` (U27); the edge connection limit (U21) and the probe 503 in the contract (U18) | UI-FIX-01, UI-DEPS-01, OBS-LOG-02 | solo |
 | OPS-E2E-01 | [FE] | OPS | Playwright configuration, E2E specs and helpers, `scripts/smoke-aio.sh`; the one recorded local composed-stack run | OPS-STACK-01 | solo |
 | OPS-CI-02 | [BE] | OPS | Complete `.github/workflows/ci.yml.disabled` (six jobs, publish gating) and `.github/dependabot.yml` | OPS-E2E-01 | any |
 | DOC-README-01 | [BE] | DOC | README in the fixed section order, `docs/verification.md`, screenshots, `docs/api/README.md` | OPS-E2E-01 | any |
 
-Run grouping: RUN-M2-1 = OPS-STACK-01, OPS-E2E-01 (solo); RUN-M2-2 = OPS-CI-02 and RUN-M2-3 = DOC-README-01 (W4, or back to back in solo mode).
+Run grouping: RUN-M2-0 = UI-FIX-01, UI-DEPS-01, OBS-LOG-02 (solo, first: every code and dependency change lands before the recorded run); RUN-M2-1 = OPS-STACK-01, OPS-E2E-01 (solo); RUN-M2-2 = OPS-CI-02 and RUN-M2-3 = DOC-README-01 (W4, or back to back in solo mode).
 
 ## 1. Decisions
 
@@ -96,6 +99,13 @@ Run grouping: RUN-M2-1 = OPS-STACK-01, OPS-E2E-01 (solo); RUN-M2-2 = OPS-CI-02 a
 | U24 | 2026-10-22 | The theme bootstrap and the screen under the real browser policy (RNF-SEC-03) are verified in W3 by RUN-M1-8 on the web image built from its own branch (`frontend/Dockerfile`, `heavy` lease) with `API_UPSTREAM` pointing at the service of its worktree: Chromium desktop, System, Light and Dark, initial and error states, zero CSP violations and a clean console. The Vite dev server stays the main real-browser target. | UI-SCREEN-01 |
 | U25 | 2026-10-22 | The calculator screen is shaped and built from the approved design baseline (U5) without an owner stop after the shape step; Codex may produce desktop and mobile comps; the owner reviews the screenshots in the run evidence at integration. | UI-SCREEN-01 |
 | U26 | 2026-10-22 | In W3, RUN-M1-8 may add frontend devDependencies its tests need, at their latest stable release, under the `deps` lease, with `frontend/pnpm-lock.yaml` committed; the U13 pins (`typescript` 5.9.3, `jsdom` 29, `@types/node` 24, the jsx-a11y peer override) and the `packageManager`/`engines` pins (U10) stay unchanged. | UI-HOOKS-01, UI-SCREEN-01 |
+| U27 | 2026-10-22 | Tier 2 of RF-OPS-03 runs the checks of the affected stages in full by default; lint, tests with coverage, images, the composed stack, E2E and the all-in-one smoke are stages selected by name with `t2.sh --stage <name>`, each under 10 minutes, so the default T2 never starts the composed stack (the one local `make up` + `make e2e` run stays in OPS-E2E-01). | OPS-STACK-01, OPS-E2E-01 |
+| U28 | 2026-10-22 | The accessible names of the two keys whose visible label is not in their name are amended (RF-UI-01): `AC, all clear` and `xʸ, power`; the experimental axe rule `label-content-name-mismatch` is enabled in the component and browser checks and passes on all 23 keys; the pinned deviation test goes away («Findings of UI-SCREEN-01» (b)). | UI-FIX-01, OPS-E2E-01 |
+| U29 | 2026-10-22 | The API client builds its combined abort signal inside its `try` with a fallback for engines without `AbortSignal.any` or `AbortSignal.timeout`, so an older engine never leaves the display busy; no minimum-browser caveat is documented instead («Findings of UI-SCREEN-01» (c)). | UI-FIX-01 |
+| U30 | 2026-10-22 | The access log truncates `method` to its first 256 characters like `path` and `user_agent` (RF-OBS-05 amended); `remote_addr` stays («Findings of OBS-LOG-01» (b)). | OBS-LOG-02 |
+| U31 | 2026-10-22 | The reading of «API image under 20 MB» (RF-OPS-05) is the sum of the image layers (16.5 MB measured); the README and `docs/verification.md` publish also the compressed content (5.3 MB) and the `docker images` listing under the containerd store (21.8 MB), each named. | OPS-CI-02, DOC-README-01 |
+| U32 | 2026-10-22 | The U13 pins are revisited once, before the recorded run, in UI-DEPS-01: `typescript` 6.x if `openapi-typescript` and `typescript-eslint` accept it, the jsx-a11y peer override dropped if the plugin declares ESLint 10, `jsdom` 30 together with the Node pin if Node 24.15 or later is stable and installable (the Node pin then moves everywhere at once: `frontend/Dockerfile`, the root Dockerfile, the workflow literal, the local installation), every other dependency at its latest stable release (U10); a package that cannot move keeps its pin with the reason recorded. | UI-DEPS-01 |
+| U33 | 2026-10-22 | M2 runs as RUN-M2-0 (UI-FIX-01, UI-DEPS-01, OBS-LOG-02; solo, first), RUN-M2-1 (OPS-STACK-01, OPS-E2E-01; solo) and wave W4 = RUN-M2-2 ∥ RUN-M2-3, launched manually by the owner; screenshots are taken at 1280 × 800 and Pixel 7 in the System theme on a light OS showing `1 ÷ 3 =` with the history open, from the embedded binary; Trivy is pinned and run once locally on the API image when it fits in 10 minutes. U27–U33 were decided by the controller under the owner's standing delegation of 2026-10-22 («take the decisions that give the project the most complete result; fix what is cheap instead of accepting debt»). | M2 |
 
 ### Adopted for planning (recommended defaults; the owner can override at any task's step 1)
 | Topic | Default adopted | Why |
@@ -137,7 +147,7 @@ Version 1 is launched when: (1) every requirement of `srs.md` traces to an artif
 | `BenchmarkCalculateWorstCase` per case (fractional powers with range-edge operands) | < 50,000,000 ns/op |
 | axe violations | 0 |
 | Trivy fixable HIGH/CRITICAL | 0 |
-| API image size | expected < 20 MB |
+| API image size (layer sum, U31) | expected < 20 MB |
 
 ## 5. Risks
 | Risk | Likelihood | Impact | Mitigation | Owner task |
@@ -166,3 +176,4 @@ Version 1 is launched when: (1) every requirement of `srs.md` traces to an artif
 | 2026-10-22 | Owner decisions U17–U21 on the W2 backlog items; task OBS-LOG-01 added to RUN-M1-7 | U17–U21 |
 | 2026-10-22 | Wave W3 planned (RUN-M1-7, RUN-M1-8); standing 10-minute limit on local verification; owner decisions U22–U26 | U22–U26 |
 | 2026-10-22 | Milestone M1 completed (exit criterion checked against the records, `docs/state/history.md`); M2 expanded into `docs/state/current.md` and `docs/state/tasks/` with the pieces of every local command (U22); use cases UC-OPS-02, UC-OPS-03 and UC-DOC-01 completed; backlog items of W3 re-pointed to M2 tasks pending the owner's answers | milestone transition |
+| 2026-10-22 | Owner delegation: the controller decides the open M2 items for the most complete result; owner decisions U27–U33; tasks UI-FIX-01, UI-DEPS-01 and OBS-LOG-02 and run RUN-M2-0 added; RF-OPS-03, RF-UI-01 and RF-OBS-05 amended | U27–U33 |

@@ -30,3 +30,13 @@
   **Review level:** single.
   **Needs from the owner:** nothing (U19, U20).
   - Registered follow-up (from OBS-RUNTIME-01, owner decisions U19, U20): draining readiness 503 at info set by the handler, path and user_agent truncated to 256 characters, remote_addr kept. 🔎 findings: «Findings of OBS-RUNTIME-01» (c), (d)
+
+### OBS-LOG-02 — Bound the method field of the access log [BE] — M2 [topic: observability, security-privacy]
+
+- [ ] Open.
+  **Scope:** RF-OBS-05 as amended by U30, RNF-SEC-02. In `backend/internal/platform/httpx` (`AccessLog`, `middleware.go`) `method` is cut to its first 256 characters with the same `truncateChars` that bounds `path` and `user_agent`; `remote_addr` and every other field are unchanged. Files: `middleware.go` and its test file only.
+  **UI:** none.
+  **Verification (U22):** `go test -race -count=1 -cover ./internal/platform/httpx/ ./internal/httpapi/ ./internal/app/` (about 25 s; coverage not below httpx 96.8 %, httpapi 99.0 %, app 98.0 %); tests: a 300-character method token → 256 characters in the access line, a standard method unchanged, the metrics label still `OTHER` for an unknown method; mutation: truncation removed; `go vet ./...`, `golangci-lint run ./...` (about 5 s); live (built binary, curl with a 300-character method over a socket, about 10 s): the logged `method` has 256 characters and the response is the 405 problem.
+  **Review level:** single.
+  **Needs from the owner:** nothing.
+  - Registered follow-up (from OBS-LOG-01, owner decision U30): truncate `method` to 256 characters like `path` and `user_agent`. 🔎 findings: «Findings of OBS-LOG-01» (b)

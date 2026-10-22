@@ -25,7 +25,7 @@ RF-OPS-01…RF-OPS-14; UC-OPS-01…UC-OPS-03. Hygiene files, per-agent environme
 - The five RNF-SEC-03 headers are asserted equal to `deploy/nginx/security-headers.conf` by `web_test.go` — a change to one file changes the other; the API image never `EXPOSE`s `:9091` (Findings of OPS-IMAGE-01 (a), (b)).
 - A plain tmpfs over an image directory is root-owned with that directory's mode: an image that renders into a tmpfs mount makes the directory writable for its user (Findings of OPS-EDGE-01 (e)).
 
-- The composed stack comes up once per delivery, in the recorded run of OPS-E2E-01, cut into pieces (images, `make up`, one `make e2e` per project, the disruptive specs last, `make down`); the default T2 never runs `make up` or `make e2e`, and `t2.sh` reports a problem while a Makefile exists and no integration targets are wired (OPS-STACK-01 wires them as stages selected by `--stage`; the split of RF-OPS-03's tier 2 is an owner decision of the M2 question batch).
+- The composed stack comes up once per delivery, in the recorded run of OPS-E2E-01, cut into pieces (images, `make up`, one `make e2e` per project, the disruptive specs last, `make down`); the default T2 never runs `make up` or `make e2e`, and `t2.sh` reports a problem while a Makefile exists and no integration targets are wired (OPS-STACK-01 wires them as stages selected by `--stage`; U27 amended RF-OPS-03's tier 2).
 - Every M2 task names its local commands as pieces under `timeout 600` with the lease each takes and what is left to CI (U22); the full list of pieces and measured durations is in `test-environment.md`.
 - The Trivy gate, the hosted run of the six jobs and the clean-clone build wait for gate G1.
 
