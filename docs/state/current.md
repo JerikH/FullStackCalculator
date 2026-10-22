@@ -2,7 +2,7 @@
 
 ## Current milestone: M0 — Foundation
 ## Current run: RUN-M0-2 (OPS-ENV-01, OPS-CI-01)
-## Cycle step: 4 — spec review
+## Cycle step: 7 — implementation
 ## Active waves: (none)
 
 ## Run groups (order of execution)
