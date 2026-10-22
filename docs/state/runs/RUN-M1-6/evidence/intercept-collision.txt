@@ -1,0 +1,17 @@
+Experiment (step 2, 2026-10-22): one nginx location that both answers the edge
+413 (error_page 413) and intercepts upstream errors (proxy_intercept_errors on).
+
+Config (scratch, not committed):
+  location /api/ { client_max_body_size 1m; proxy_intercept_errors on;
+                   error_page 413 = @too_large; error_page 502 503 504 = @unavailable;
+                   proxy_pass http://api:8081; }
+Stub upstream: evidence/stub-upstream.mjs (returns its own 413 problem with
+`instance` for POST bodies over 4096 bytes).
+
+$ curl -X POST --data-binary @5000-bytes -H 'Content-Type: application/json' http://127.0.0.1:4130/api/v1/operations/add
+{"edge":"413"}
+
+Result: nginx intercepts every upstream status that has an error_page in the
+proxying location, so the service's own 413 problem (instance, service
+precedence) is replaced. The edge's 413/429 pages and the 502/503/504
+interception therefore cannot share one location.

@@ -1,0 +1,98 @@
+# RUN-M1-6 — spec (OPS-EDGE-01)
+
+Wave W2, agent index 3, branch `wf/RUN-M1-6`. Owner answers that apply: U13 (Node 24.14.1 in the image build stage, frontend manifest and lockfile unchanged), U14 (source maps served as hashed `/assets/` files with the immutable policy), U15 (Claude subagents only, no Codex), U9 (leases: every `docker build` under `heavy`).
+
+## Scope (literal)
+
+**OPS-EDGE-01** — RF-OPS-04, RNF-SEC-03, RNF-SEC-04 (web image), RNF-SEC-02 (edge-built JSON). Files: `frontend/Dockerfile`, `deploy/nginx/default.conf.template`, `deploy/nginx/security-headers.conf` (and `deploy/nginx/proxy-api.conf` if needed). Non-root, read-only-compatible (writable only `/tmp` and `/etc/nginx/conf.d`, `NGINX_ENVSUBST_FILTER=^API_UPSTREAM$`), healthcheck on `/nginx-health`; validated `X-Request-ID` map; `limit_req` 20 r/s burst 40 on API locations only; edge problems 429/503/413 built from constants and the validated ID; `proxy_intercept_errors` only for 502/503/504 on the API proxy; probes pass through untouched.
+
+Registered follow-ups:
+- F1 (Findings of API-CONTRACT-01 (b)): edge problems (429, 503, 413) carry `detail` and the validated `requestId` and validate against the `Problem` schema.
+- F2 (U13, U14; Findings of UI-SCAF-01 (c), UI-CLIENT-01 (d)): the build stage uses Node 24.14.1 and the frozen lockfile as committed; the source maps of the build are served as hashed `/assets/` files with the immutable cache policy.
+
+Requirement text used (from `docs/spec/srs.md`):
+- RF-OPS-04: the web image (`calculator-web`, nginx-unprivileged alpine, `:8080`, non-root) serves the built app (`index.html`, `/theme-init.js`, static files `no-cache`; hashed `/assets/*` `public, max-age=31536000, immutable`; missing files 404), proxies `/api/*`, `/healthz`, `/readyz` to `API_UPSTREAM` (default `api:8081`) unchanged, answers `/nginx-health` itself, never routes metrics or pprof, owns the security headers (browser policy of RNF-SEC-03 on every response, upstream copies hidden so each header has exactly one value), gzips text types, rate-limits API locations only at 20 r/s burst 40 per client address, propagates a validated `X-Request-ID` (exactly one on every response), and emits edge problems: 429 `RATE_LIMITED` (`slow down and retry shortly`), 503 `SERVICE_UNAVAILABLE` on upstream 502/503/504 (`the calculator service is temporarily unavailable`), 413 `PAYLOAD_TOO_LARGE` above the 1 MiB transport limit; proxy connect 2 s, read/send 10 s, no retried POSTs; application problems and a draining 503 pass through unchanged.
+- RNF-SEC-03: `Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'none'`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `Permissions-Policy: camera=(), microphone=(), geolocation=()`, `Cross-Origin-Opener-Policy: same-origin`; no inline scripts or styles, nonces, `unsafe-inline` or CORS; no HSTS on plain HTTP.
+- RNF-SEC-04: non-root, read-only root filesystem, all capabilities dropped, `no-new-privileges`; the admin port is never published.
+- RNF-SEC-02: no raw client input in edge-built JSON.
+- RF-API-05 (consumed): problem shape and codes; edge problems may omit `instance`. RF-API-07 (consumed): `^[A-Za-z0-9._-]{1,128}$`, a problem's `requestId` equals the header.
+
+Out of this run: `compose.yaml` and the Make targets (OPS-STACK-01), Playwright specs (OPS-E2E-01), the CI `images` job (OPS-CI-02), the service itself (RUN-M1-4 in this wave).
+
+## What exists
+
+- `frontend/` scaffold (UI-SCAF-01): `package.json` (`packageManager: pnpm@10.33.0+sha512.…`, `build` = `tsc -b && vite build`), `pnpm-lock.yaml` with musl bindings for rolldown and lightningcss (alpine build works), `vite.config.ts` (`build.sourcemap: true`), `index.html` loading `/theme-init.js` (classic, blocking) and the module entry, `public/theme-init.js`, `public/favicon.svg`.
+- `.dockerignore` excludes `.git`, `**/node_modules`, `**/dist`, `docs`, `bin`, coverage, Playwright reports, `.env*`: the web build context needs no new entry.
+- `backend/api/openapi.yaml`: `Problem.required` = `type, title, status, detail, code, requestId`; `ProblemCode` includes `RATE_LIMITED`, `SERVICE_UNAVAILABLE`, `PAYLOAD_TOO_LARGE`; `RateLimited`/`ServiceUnavailable` responses are declared on the API operations («emitted by the edge proxy»); `/healthz` declares no 503 and `/readyz` declares 503 as Health JSON.
+- `backend/internal/platform/httpx`: `validRequestID = ^[A-Za-z0-9._-]{1,128}$` (Go RE2, `r.Header.Get` = first value), `SecureHeaders` sets `nosniff`, `Referrer-Policy`, `CSP default-src 'none'; frame-ancestors 'none'`, `Cross-Origin-Resource-Policy: same-origin`; the service's 413 detail is `request body must not exceed 4096 bytes` (decode.go:40).
+- `scripts/ci/lib.sh` already runs hadolint on any `Dockerfile` (`ci_stage_dockerfiles`; t0 targeted, `t3.sh --job images` full): no tier change needed.
+- Base images (Docker Hub, 2026-10-22): `nginxinc/nginx-unprivileged:1.30.6-alpine3.24` (stable line; index digest `sha256:f5116ed4…cdf03`), `node:24.14.1-alpine3.23` (index digest `sha256:8510330d…d4d5`). The nginx image runs as uid/gid 101, `pid /tmp/nginx.pid`, every temp path under `/tmp`, `include /etc/nginx/conf.d/*.conf` inside `http`, entrypoint renders `/etc/nginx/templates/*.template` into `/etc/nginx/conf.d`, ships `/usr/bin/wget` (busybox) and a default `/usr/share/nginx/html` (`index.html`, `50x.html`). `mime.types` maps `js` → `application/javascript`, has no `map` entry.
+
+## Design decisions
+
+D1 — **Images and pins.** Build stage `node:24.14.1-alpine3.23@sha256:…` with `--platform=$BUILDPLATFORM` (the output is static files); runtime `nginxinc/nginx-unprivileged:1.30.6-alpine3.24@sha256:…`. Tag plus index digest, so Dependabot (docker ecosystem) can bump both. pnpm through corepack from `packageManager` (version and sha512 verified by corepack), `COREPACK_ENABLE_DOWNLOAD_PROMPT=0`.
+
+D2 — **Build stage.** `WORKDIR /src/frontend`; copy `package.json` + `pnpm-lock.yaml`; `pnpm install --frozen-lockfile` with a BuildKit cache mount for the store; copy `frontend/`; `pnpm build`; then assert the layout the edge relies on: `dist/index.html`, `dist/theme-init.js`, at least one `dist/assets/*.js` and its `.map`. No `VITE_API_BASE_URL` (the client uses the page origin; same-origin, no CORS).
+
+D3 — **Runtime stage.** Keeps the image's non-root user (101) and entrypoint. Built files go to a fresh docroot `/usr/share/nginx/calculator` (root-owned, read-only to nginx), so the image's default `index.html`/`50x.html` are never served. Template at `/etc/nginx/templates/default.conf.template`; snippets at `/etc/nginx/snippets/` (outside the runtime mounts). `ENV API_UPSTREAM=api:8081 NGINX_ENVSUBST_FILTER=^API_UPSTREAM$` (nginx variables such as `$request_id` survive rendering). Writable at run time only `/tmp` (pid, temp files, the internal socket of D5) and `/etc/nginx/conf.d` (rendered config). `EXPOSE 8080`. `HEALTHCHECK` = busybox `wget -q --spider -T 2 http://127.0.0.1:8080/nginx-health` with bounded interval/timeout/retries/start period. `API_UPSTREAM` is trusted operator configuration (`host:port`), never reaches browser code; it is resolved when nginx starts (an unresolvable name stops the container with an error).
+
+D4 — **Routes.**
+
+| Location | Behavior |
+|---|---|
+| `= /` | `index.html`, `Cache-Control: no-cache` |
+| `/` | static file or 404 (`try_files $uri =404`, no HTML fallback, no directory index), `no-cache` on hits (`/index.html`, `/theme-init.js`, `/favicon.svg`) |
+| `/assets/` | static file or 404, `public, max-age=31536000, immutable` on hits only (a 404 is never cached for a year); `.map` served as `application/json` (U14) |
+| `= /nginx-health` | 200 `ok` from nginx, no upstream, no access log |
+| `/api/` | rate-limited, 1 MiB transport limit, proxied (D5) |
+| `= /healthz`, `= /readyz` | proxied directly to `API_UPSTREAM`, no rate limit, no interception (D7) |
+
+`/metrics`, `/debug/pprof/*` and every other path fall into the static location (404): nothing proxies them, and `API_UPSTREAM` names the public listener, never the admin one. nginx normalises dot segments (also percent-encoded) before matching, so `/api/../metrics` is the static `/metrics`. `server_tokens off`.
+
+D5 — **Two-hop API proxy (the non-trivial decision).** nginx intercepts *every* upstream status that has an `error_page` in the proxying location when `proxy_intercept_errors` is on; the edge's own 413 (body over 1 MiB, Content-Length or chunked) and 429 need `error_page` entries in that same location, so one location would also replace the service's own 413 problem (bodies of 4097 bytes … 1 MiB) — proven in `evidence/intercept-collision.txt`. RF-OPS-04 requires both: edge 413 problems above 1 MiB and application problems (the service's 413 included) unchanged. Hence two hops inside the same nginx:
+- **Outer** `location /api/` (public): `limit_req`, `client_max_body_size 1m`, `error_page 413` → edge 413 problem, `error_page 429` → edge 429 problem, `error_page 502 504` → edge 503 problem (only nginx-generated: the inner hop unreachable), `proxy_intercept_errors` **off**, `proxy_pass` to the internal socket `unix:/tmp/nginx-api.sock` with the original URI. Everything the inner hop returns passes through; the edge headers are applied here (D6).
+- **Inner** `server` on `unix:/tmp/nginx-api.sock` (not reachable from the network): one location proxying to `http://${API_UPSTREAM}` with `proxy_intercept_errors on` and `error_page 502 503 504` → the edge 503 problem; no other `error_page`, so 400/404/405 (with `Allow`)/413/415/422/500 bodies and headers pass through. No access log (the outer logs the request once).
+- Timeouts: inner→service connect 2 s, send/read 10 s (RF-OPS-04); outer→inner connect 2 s, send/read 15 s so the inner hop always answers first (its 504 becomes the 503 problem). `proxy_next_upstream off` on both hops (no retried POSTs). HTTP/1.1 to the upstream, no upstream keepalive (`Connection: close`), so no stale-connection race with the service's idle timeout. `proxy_request_buffering` stays on: the outer hop reads and bounds the whole body before anything reaches the service.
+- `proxy-api.conf` holds the settings shared by the three proxying places that talk to the service (inner API location, `/healthz`, `/readyz`): HTTP/1.1, `Connection ""`→ close, timeouts 2/10/10, `proxy_next_upstream off`, `proxy_set_header Host $host`, `proxy_set_header X-Request-ID $correlation_id`.
+
+D6 — **Header ownership** (`security-headers.conf`). The five RNF-SEC-03 headers and `X-Request-ID $correlation_id` are added with `always` (error responses too) and the upstream copies of exactly those six are hidden (`proxy_hide_header`), so each has one value on static, proxied and edge-built responses. The snippet is included in every location and named location (nginx drops inherited `add_header` in any location that defines its own). Headers the edge does not own pass through from the service unchanged and single-valued: `Cache-Control` (`no-store` on API and probes), `Cross-Origin-Resource-Policy`, `Allow`. Static `Cache-Control` is added without `always` (successful and 304 responses only). No HSTS, no CORS headers.
+
+D7 — **Probes.** `/healthz` and `/readyz` proxy straight to the service (one hop, `proxy-api.conf`), not rate-limited, `proxy_intercept_errors` off, so the draining readiness 503 (Health JSON) passes unchanged. Only nginx-generated 502/504 (service unreachable or timed out) become the `SERVICE_UNAVAILABLE` problem instead of nginx's HTML page; the contract declares no such 503 on `/healthz` (finding (b)).
+
+D8 — **Request ID** (RF-API-07). `map $http_x_request_id $correlation_id { default $request_id; "~^[A-Za-z0-9._-]{1,128}$" $http_x_request_id; }` in the template (it is included inside `http`), the same literal pattern as the contract and `httpx` (PCRE `$` could also match before a final newline, but nginx rejects header values containing CR or LF, so the accepted sets are equal). Several inbound `X-Request-ID` lines are joined with `", "` by nginx (≥ 1.23) and fail the pattern, so they are replaced. `$request_id` is 32 hex characters (valid). `proxy_set_header X-Request-ID` replaces every inbound copy, so the service receives exactly one, the validated one, and echoes it; the response carries one (D6), and the edge problem's `requestId` is the same variable.
+
+D9 — **Edge problems** (RNF-SEC-02, F1). Named locations `return <status> '<json>'` built only from constants and `$correlation_id` (validated or generated, JSON-safe characters only); no `instance`, no `errors`, no `$uri`, `$request_uri` or other headers. Each sets `types {}` + `default_type application/problem+json` (otherwise `return` picks the MIME type from the request URI's extension, e.g. `/api/x.js`), `Cache-Control: no-store` and the D6 headers.
+
+| Code | Status | title | detail |
+|---|---|---|---|
+| `RATE_LIMITED` | 429 | Too many requests | `slow down and retry shortly` |
+| `SERVICE_UNAVAILABLE` | 503 | Service unavailable | `the calculator service is temporarily unavailable` |
+| `PAYLOAD_TOO_LARGE` | 413 | Payload too large | `request body must not exceed 4096 bytes` |
+
+`type` = `urn:calculator:problem:<kebab-code>`. The 413 detail is the catalog's (and the service's) single detail for that code: the request violates the API's 4096-byte limit whichever layer rejects it; the 1 MiB outer limit only keeps large transfers away from the service so the service decides ordinary oversize requests with its own validation order. The 503 problem exists once in the outer server (outer-hop and probe failures) and once in the inner server (service failures), same text.
+
+D10 — **Rate limit.** `limit_req_zone $binary_remote_addr zone=api:10m rate=20r/s;` `limit_req zone=api burst=40 nodelay; limit_req_status 429;` only in the outer `/api/` location; static files, `/nginx-health` and the probes are never limited. Per nginx instance and client address (no forwarded-address trust).
+
+D11 — **Compression and types.** `gzip on; gzip_vary on; gzip_min_length 1024; gzip_types` text/css, application/javascript, text/javascript, application/json, application/problem+json, application/yaml, image/svg+xml, text/plain (text/html is always included). JS keeps `application/javascript` under `nosniff`; `.map` → `application/json` via a `types` block in a nested `\.map$` location under `/assets/` (same cache and security headers).
+
+D12 — **Body limit.** `client_max_body_size 1m` in the outer API location (exactly 1,048,576 bytes is accepted and reaches the service, which answers its own 413); larger Content-Length or chunked bodies → edge 413 problem before anything reaches the service.
+
+## Files
+
+- Create `frontend/Dockerfile`, `deploy/nginx/default.conf.template`, `deploy/nginx/security-headers.conf`, `deploy/nginx/proxy-api.conf`.
+- Run folder: `spec.md`, `plan.md`, `findings.md`, `closure.md`, `evidence/` (stub upstream, smoke script, outputs).
+- Not touched: `.dockerignore` (sufficient), `frontend/**` sources and manifests (U13), `scripts/ci/**` (hadolint stage already covers the Dockerfile; the image build in CI is OPS-CI-02), `backend/**`.
+
+## Verification
+
+- T0: `scripts/ci/t0.sh --base main` (dockerfiles stage: hadolint clean on `frontend/Dockerfile`).
+- T1 (worker resources from `wf env`: web port 4130, Docker names prefixed `fullstackcalculator-run-m1-6`), under the `heavy` lease for the build:
+  - `docker build -f frontend/Dockerfile -t calculator-web:local .` from the scaffolded app; runtime image contains only the nginx base, the config and `dist` (no Node, sources, lockfile); size recorded.
+  - Run read-only, `--cap-drop ALL`, `--security-opt no-new-privileges`, tmpfs `/tmp` and `/etc/nginx/conf.d`, on a private network with the stub upstream (`evidence/stub-upstream.mjs`, node image, alias `api`): container `healthy`; `nginx -t` passes inside it after rendering; rendered config contains the substituted upstream and the untouched nginx variables.
+  - `evidence/edge-smoke.sh` (curl + python jsonschema against the contract's `Problem`): static routes and cache headers, single-valued security headers on every class of response, MIME types, gzip, 404s (missing asset, `/metrics`, `/debug/pprof/`, `/api/../metrics`), request ID cases (valid, 128, 129, forbidden characters, two headers, empty; the stub sees exactly one), API pass-through (400, 404, 405 + `Allow`, 413 of a 5000-byte and of a 1 MiB body with `instance`, 415, 422, 500; byte-identical bodies), interception (stub 502/503/504 → edge 503), timeout (11 s stub → 503 after ~10 s), service down (API → 503 problem, probes → 503 problem, `/nginx-health` 200), draining readiness 503 passes through, 413 for > 1 MiB with Content-Length and chunked, 429 under a burst on `/api/` and none on static/probes, every edge problem valid against `Problem`.
+  - Mutation checks (template mounted over the image's copy, no rebuild): widen the request-ID pattern to 129, drop the `proxy_hide_header` lines, turn on interception in the outer hop, remove the `types {}` reset — each must fail the smoke script.
+  - Browser: the app through the edge in Chromium (`@playwright/test` from the frontend install): page loads, theme bootstrap runs under the real CSP, zero CSP violations, zero console errors.
+
+## Review log
+
+(filled at step 4)
