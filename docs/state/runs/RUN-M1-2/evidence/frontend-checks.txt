@@ -1,0 +1,52 @@
+$ pnpm test
+ RUN  v5.0.5 /home/jerik/dev/personal/FullStackCalculator.wt/RUN-M1-2/frontend
+
+
+ Test Files  6 passed (6)
+      Tests  97 passed (97)
+   Start at  15:17:49
+   Duration  4.09s (environment 64%, setup 18%, tests 13%, import 2%, transform 1%, worker 1%)
+
+Environment  jsdom was created 6 times · 5.46s total, 64% of tracked time
+             create it once per worker with pool: 'vmThreads' (keeps per-file isolation) or isolate: false (shares it across files)
+             learn more: https://vitest.dev/guide/improving-performance#test-environments
+
+exit=0
+
+$ pnpm typecheck
+
+> calculator-web@0.0.0 typecheck /home/jerik/dev/personal/FullStackCalculator.wt/RUN-M1-2/frontend
+> tsc -b
+
+exit=0
+
+$ pnpm lint
+
+> calculator-web@0.0.0 lint /home/jerik/dev/personal/FullStackCalculator.wt/RUN-M1-2/frontend
+> eslint . --max-warnings=0
+
+exit=0
+
+$ pnpm format:check
+
+> calculator-web@0.0.0 format:check /home/jerik/dev/personal/FullStackCalculator.wt/RUN-M1-2/frontend
+> prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+exit=0
+
+$ pnpm build
+> tsc -b && vite build
+
+vite v8.3.5 building client environment for production...
+transforming...
+✓ 15 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.78 kB │ gzip:  0.44 kB
+dist/assets/index-OrkEBt9d.css    3.30 kB │ gzip:  1.03 kB
+dist/assets/index-B0f8R1P-.js   219.64 kB │ gzip: 68.65 kB │ map: 1,046.11 kB
+
+✓ built in 261ms
+exit=0

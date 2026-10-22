@@ -1,0 +1,7 @@
+caught     contract-input-predicate — FAIL redocly through the frontend script (missing: ▶ [contract:redocly] pnpm -C frontend run lint:api) FAIL redocly passed (missing: ✔ [contract:redocly])
+caught     no-pipefail — FAIL failing generator detected (exit 0, want non-zero) FAIL types check failed (missing: ✘ [contract:types])
+caught     any-exit-1-is-no-tests — FAIL failing related test (exit 0, want non-zero) FAIL vitest failed (missing: ✘ [frontend:vitest])
+caught     no-package-wide-run — FAIL lockfile is a package-wide frontend input (missing: package-wide input touched) FAIL noted (missing: package-wide input touched)
+caught     no-install-check — FAIL install message (missing: ✘ [contract] run pnpm -C frontend install --frozen-lockfile) FAIL Redocly not attempted (unexpected: ▶ [contract:redocly])
+
+0 uncaught mutation(s)

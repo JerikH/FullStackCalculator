@@ -1,0 +1,17 @@
+# jsx-a11y under ESLint 10.13.0: fixture <img> without alt
+  2:10  error  img elements must have an alt prop, either with meaningful text, or an empty string for decorative images  jsx-a11y/alt-text
+✖ 1 problem (1 error, 0 warnings)
+exit=1
+
+# vitest-axe matcher typing (src/test/vitest-axe.d.ts) and run
+tsc exit=0
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+
+# without the declaration file
+error TS2339: Property 'toHaveNoViolations' does not exist on type 'Assertion<void, AxeResults>'
+
+# rerun with the final declaration (type parameters of Vitest 5's Assertion)
+tsc exit=0
+      Tests  1 passed (1)
+note: TS2428 between vitest's own two Assertion declarations and jest-dom's appears only with --skipLibCheck false; the project keeps skipLibCheck.
