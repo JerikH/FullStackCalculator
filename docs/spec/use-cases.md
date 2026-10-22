@@ -32,7 +32,7 @@ Every case is complete: M0, M1 and M2 cases carry their full flow, extensions an
 
 | # | Actor | System |
 |---|---|---|
-| 1 | Loads its environment: `eval "$(.workflow/bin/wf env --export)"` then `source scripts/ci/env.sh`. | |
+| 1 | Loads its environment with `source scripts/ci/env.sh`. | |
 | 2 | | Exports `WEB_PORT`, `CALC_HTTP_ADDR`, `CALC_ADMIN_ADDR`, `VITE_PORT`, `API_PROXY_TARGET`, `E2E_BASE_URL` and `COMPOSE_PROJECT_NAME` derived from the agent's port block, and puts the Go toolchain and the repository `bin/` on `PATH`. The main checkout gets the defaults 8080 / 8081 / 9091 / 5173. |
 | 3 | Runs `scripts/ci/t0.sh --base main`. | |
 | 4 | | Detects the changed files, runs the static checks and unit tests of the touched packages only, printing each command and its duration; exits non-zero on the first failure. |

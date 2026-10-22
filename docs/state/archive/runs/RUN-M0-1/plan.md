@@ -20,7 +20,7 @@ Do not touch: `README.md` (stays `# FullStackCalculator`), `docs/spec/` except t
 
 **Checks (T0, targeted):**
 - `git check-ignore -v bin/x coverage/x frontend/node_modules/x docs/api/index.html .env .env.local backend/internal/web/dist/index.html frontend/dist/x frontend/playwright-report/x x.tsbuildinfo` → each ignored; `git check-ignore .env.example backend/internal/web/dist/.gitkeep` → exit 1 (not ignored).
-- `git status --porcelain --untracked-files=all` lists only the run's new files (no `.workflow/`, `CLAUDE.md`, `AGENTS.md`, `.claude/`, `pre_plan/`, `PROJECT-BRIEF.md`).
+- `git status --porcelain --untracked-files=all` lists only the run's new files (no agent-tooling files and no untracked planning files).
 - LICENSE body diff against the standard MIT text as shipped by a package of the local Node installation (the OSI/SPDX MIT wording), copyright lines removed from both → identical.
 - `.dockerignore` sanity: a scratch `docker build` is not run here (no Dockerfile yet; OPS-IMAGE-01/OPS-EDGE-01 prove it). Recorded as their verification, not a gap: `.dockerignore` excluding `docs` and `**/dist` is safe because no image build reads `docs/` and every `dist` is produced inside the build stages.
 
