@@ -51,7 +51,25 @@ def main(path):
           sorted(schemas["CalculationResult"].get("required", [])) == sorted(["operation", "operands", "result", "inexact"]))
     check("OperationInfo arity enum [1, 2]", schemas["OperationInfo"]["properties"]["arity"].get("enum") == [1, 2])
     problem = schemas["Problem"]
-    check("Problem requires type, title, status, code", set(["type", "title", "status", "code"]) <= set(problem.get("required", [])))
+    check("Problem requires type, title, status, detail, code, requestId (RF-API-05; instance optional for edge problems)",
+          sorted(problem.get("required", [])) == sorted(["type", "title", "status", "detail", "code", "requestId"]))
+    check("Decimal is a string (numbers travel as strings)", schemas["Decimal"].get("type") == "string")
+    res = schemas["CalculationResult"]["properties"]
+    check("CalculationResult: operation OperationName, operands Decimal[], result Decimal, inexact boolean",
+          res["operation"] == {"$ref": "#/components/schemas/OperationName"}
+          and res["operands"] == {"type": "array", "items": {"$ref": "#/components/schemas/Decimal"}}
+          and res["result"] == {"$ref": "#/components/schemas/Decimal"} and res["inexact"].get("type") == "boolean")
+    info = schemas["OperationInfo"]["properties"]
+    check("OperationInfo: name OperationName, symbol and description strings",
+          info["name"] == {"$ref": "#/components/schemas/OperationName"}
+          and info["symbol"].get("type") == "string" and info["description"].get("type") == "string")
+    check("OperationCatalog.operations is OperationInfo[]",
+          schemas["OperationCatalog"]["properties"]["operations"] == {"type": "array", "items": {"$ref": "#/components/schemas/OperationInfo"}})
+    check("Problem field types (status integer 400-599, strings elsewhere)",
+          problem["properties"]["status"] == {"type": "integer", "minimum": 400, "maximum": 599}
+          and all(problem["properties"][f].get("type") == "string" for f in ("type", "title", "detail", "instance", "requestId")))
+    check("FieldViolation requires string field and reason", schemas["FieldViolation"].get("required") == ["field", "reason"]
+          and all(schemas["FieldViolation"]["properties"][f].get("type") == "string" for f in ("field", "reason")))
     check("Problem has detail, instance, requestId, errors[FieldViolation]",
           {"detail", "instance", "requestId", "errors"} <= set(problem["properties"])
           and problem["properties"]["errors"]["items"] == {"$ref": "#/components/schemas/FieldViolation"})
@@ -62,6 +80,26 @@ def main(path):
     for name, response in responses.items():
         check(f"response {name} is application/problem+json Problem",
               response["content"].get("application/problem+json", {}).get("schema") == {"$ref": "#/components/schemas/Problem"})
+    mapping = {"400": "BadRequest", "404": "NotFound", "405": "MethodNotAllowed", "413": "PayloadTooLarge",
+               "415": "UnsupportedMediaType", "422": "Unprocessable", "429": "RateLimited", "500": "InternalError",
+               "503": "ServiceUnavailable"}
+    success = {("/api/v1/operations", "get"): "OperationCatalog", ("/api/v1/operations/{operation}", "post"): "CalculationResult",
+               ("/healthz", "get"): "Health", ("/readyz", "get"): "Health"}
+    for (p, m), name in success.items():
+        body = doc["paths"][p][m]["responses"]["200"]["content"]["application/json"]["schema"]
+        check(f"{m.upper()} {p} 200 is {name}", body == {"$ref": f"#/components/schemas/{name}"})
+    calc = doc["paths"]["/api/v1/operations/{operation}"]["post"]
+    check("calculate path parameter is OperationName",
+          calc["parameters"][0]["schema"] == {"$ref": "#/components/schemas/OperationName"})
+    check("calculate request body is a required CalculationRequest",
+          calc["requestBody"].get("required") is True
+          and calc["requestBody"]["content"]["application/json"]["schema"] == {"$ref": "#/components/schemas/CalculationRequest"})
+    for (p, m) in STATUSES:
+        for code, response in doc["paths"][p][m]["responses"].items():
+            if code in mapping and "$ref" in response:
+                check(f"{m.upper()} {p} {code} -> {mapping[code]}", response == {"$ref": f"#/components/responses/{mapping[code]}"})
+            elif code in mapping:
+                check(f"{m.upper()} {p} {code} is Health JSON (readiness draining)", (p, code) == ("/readyz", "503"))
     found = {(p, m) for p, item in doc["paths"].items() for m in item if m in METHODS}
     check("paths and methods = RF-API-01/02/03, RF-OBS-02/03", found == set(STATUSES))
     for (p, m), expected in STATUSES.items():

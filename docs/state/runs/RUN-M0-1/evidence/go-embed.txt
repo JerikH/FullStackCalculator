@@ -1,9 +1,9 @@
-# Go embed check — 2026-10-22T19:30Z, go version go1.27.3 linux/amd64
+# Go embed check — 2026-10-22T19:33Z, go version go1.27.3 linux/amd64
 Scratch module 'github.com/JerikH/FullStackCalculator/backend' holding a copy of backend/api/{spec.go,openapi.yaml} and a main that prints len(api.Spec).
 $ go vet ./... && go run .
-12430
+12597
 exit=0
 $ wc -c < backend/api/openapi.yaml
-12430
+12597
 $ cmp backend/api/spec.go <scratch>/api/spec.go
 identical

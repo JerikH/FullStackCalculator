@@ -276,8 +276,11 @@ components:
           type: string
     Problem:
       type: object
-      description: RFC 9457 problem details with calculator extensions.
-      required: [type, title, status, code]
+      description: |
+        RFC 9457 problem details with calculator extensions. `instance` (the request
+        path) is present on every problem from the service; problems built by the
+        edge proxy may omit it.
+      required: [type, title, status, detail, code, requestId]
       properties:
         type:
           type: string

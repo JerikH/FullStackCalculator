@@ -1,4 +1,4 @@
-# Contract shape check — 2026-10-22T19:30Z, Python 3.12.3, PyYAML 6.0.1
+# Contract shape check — 2026-10-22T19:33Z, Python 3.12.3, PyYAML 6.0.1
 $ python3 docs/state/runs/RUN-M0-1/evidence/check_contract.py backend/api/openapi.yaml
 ok   openapi 3.1.x
 ok   licence MIT with SPDX identifier
@@ -10,7 +10,13 @@ ok   Decimal maxLength 128
 ok   CalculationRequest strict, operands required, 1..2 Decimal items
 ok   CalculationResult requires operation, operands, result, inexact
 ok   OperationInfo arity enum [1, 2]
-ok   Problem requires type, title, status, code
+ok   Problem requires type, title, status, detail, code, requestId (RF-API-05; instance optional for edge problems)
+ok   Decimal is a string (numbers travel as strings)
+ok   CalculationResult: operation OperationName, operands Decimal[], result Decimal, inexact boolean
+ok   OperationInfo: name OperationName, symbol and description strings
+ok   OperationCatalog.operations is OperationInfo[]
+ok   Problem field types (status integer 400-599, strings elsewhere)
+ok   FieldViolation requires string field and reason
 ok   Problem has detail, instance, requestId, errors[FieldViolation]
 ok   Problem.code refers to ProblemCode
 ok   Health.status enum ok|ready|draining
@@ -25,6 +31,34 @@ ok   response Unprocessable is application/problem+json Problem
 ok   response RateLimited is application/problem+json Problem
 ok   response InternalError is application/problem+json Problem
 ok   response ServiceUnavailable is application/problem+json Problem
+ok   GET /api/v1/operations 200 is OperationCatalog
+ok   POST /api/v1/operations/{operation} 200 is CalculationResult
+ok   GET /healthz 200 is Health
+ok   GET /readyz 200 is Health
+ok   calculate path parameter is OperationName
+ok   calculate request body is a required CalculationRequest
+ok   GET /api/v1/operations 405 -> MethodNotAllowed
+ok   GET /api/v1/operations 429 -> RateLimited
+ok   GET /api/v1/operations 500 -> InternalError
+ok   GET /api/v1/operations 503 -> ServiceUnavailable
+ok   POST /api/v1/operations/{operation} 400 -> BadRequest
+ok   POST /api/v1/operations/{operation} 404 -> NotFound
+ok   POST /api/v1/operations/{operation} 405 -> MethodNotAllowed
+ok   POST /api/v1/operations/{operation} 413 -> PayloadTooLarge
+ok   POST /api/v1/operations/{operation} 415 -> UnsupportedMediaType
+ok   POST /api/v1/operations/{operation} 422 -> Unprocessable
+ok   POST /api/v1/operations/{operation} 429 -> RateLimited
+ok   POST /api/v1/operations/{operation} 500 -> InternalError
+ok   POST /api/v1/operations/{operation} 503 -> ServiceUnavailable
+ok   GET /api/v1/openapi.yaml 405 -> MethodNotAllowed
+ok   GET /api/v1/openapi.yaml 429 -> RateLimited
+ok   GET /api/v1/openapi.yaml 500 -> InternalError
+ok   GET /api/v1/openapi.yaml 503 -> ServiceUnavailable
+ok   GET /healthz 405 -> MethodNotAllowed
+ok   GET /healthz 500 -> InternalError
+ok   GET /readyz 405 -> MethodNotAllowed
+ok   GET /readyz 500 -> InternalError
+ok   GET /readyz 503 is Health JSON (readiness draining)
 ok   paths and methods = RF-API-01/02/03, RF-OBS-02/03
 ok   GET /api/v1/operations statuses 200/405/429/500/503 in ascending order
 ok   GET /api/v1/operations has a 4xx response
@@ -39,15 +73,35 @@ ok   GET /readyz has a 4xx response
 ok   readyz 200 and 503 are Health JSON
 ok   openapi.yaml served as application/yaml
 
-38 assertion(s), 0 failure(s)
+72 assertion(s), 0 failure(s)
 exit=0
 
-## Mutation: RATE_LIMITED removed from ProblemCode (scratch copy) — must fail
+## Mutation (scratch copy): RATE_LIMITED removed from ProblemCode — must fail
 FAIL ProblemCode enum = the 13 codes (RF-API-05)
-38 assertion(s), 1 failure(s)
+72 assertion(s), 1 failure(s)
 exit=1
 
-## Mutation: Decimal maxLength 129 (scratch copy) — must fail
+## Mutation (scratch copy): Decimal maxLength 129 — must fail
 FAIL Decimal maxLength 128
-38 assertion(s), 1 failure(s)
+72 assertion(s), 1 failure(s)
+exit=1
+
+## Mutation (scratch copy): Decimal type number — must fail
+FAIL Decimal is a string (numbers travel as strings)
+72 assertion(s), 1 failure(s)
+exit=1
+
+## Mutation (scratch copy): CalculationResult.result type number — must fail
+FAIL CalculationResult: operation OperationName, operands Decimal[], result Decimal, inexact boolean
+72 assertion(s), 1 failure(s)
+exit=1
+
+## Mutation (scratch copy): calculate 422 references BadRequest — must fail
+FAIL POST /api/v1/operations/{operation} 422 -> Unprocessable
+72 assertion(s), 1 failure(s)
+exit=1
+
+## Mutation (scratch copy): Problem.required without detail and requestId — must fail
+FAIL Problem requires type, title, status, detail, code, requestId (RF-API-05; instance optional for edge problems)
+72 assertion(s), 1 failure(s)
 exit=1
