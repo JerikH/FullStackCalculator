@@ -2,7 +2,7 @@
 # Build from the repository root: docker build -f frontend/Dockerfile -t calculator-web:local .
 
 # Build stage: Node and pnpm as pinned for the project (package.json packageManager).
-FROM --platform=$BUILDPLATFORM node:24.14.1-alpine3.23@sha256:8510330d3eb72c804231a834b1a8ebb55cb3796c3e4431297a24d246b8add4d5 AS build
+FROM --platform=$BUILDPLATFORM node:24.22.1-alpine3.24@sha256:06d7adf3e0ef61a13f1d28682726366f97a15aa1888c934d3ecec86c33918b53 AS build
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
     CI=true
 WORKDIR /src/frontend
