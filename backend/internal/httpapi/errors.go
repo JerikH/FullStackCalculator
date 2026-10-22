@@ -1,7 +1,6 @@
 package httpapi
 
 import (
-	"context"
 	"errors"
 	"fmt"
 
@@ -31,8 +30,6 @@ func problemFor(err error, operation string) httpx.Problem {
 		return httpx.NewProblem(httpx.CodeUndefinedResult, err.Error())
 	case errors.Is(err, calc.ErrOverflow):
 		return httpx.NewProblem(httpx.CodeOverflow, err.Error())
-	case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
-		return httpx.NewProblem(httpx.CodeInternal, "an unexpected error occurred")
 	default:
 		return httpx.NewProblem(httpx.CodeInternal, "an unexpected error occurred")
 	}

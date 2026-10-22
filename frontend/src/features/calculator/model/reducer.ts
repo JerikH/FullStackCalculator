@@ -170,8 +170,6 @@ export function calculatorReducer(state: CalculatorState, action: CalculatorActi
       case 'digitPressed':
       case 'decimalPointPressed':
       case 'historyRecalled':
-        base = reset(state);
-        break;
       case 'entryCleared':
       case 'allCleared':
         base = reset(state);
