@@ -1,0 +1,30 @@
+$ python3 docs/state/runs/RUN-M1-3/evidence/run_mutations.py   # 2026-10-22
+baseline: exit 0, 0 failure(s) (ok)
+caught [C1] delete 0008: exit 1; ✘ C1 0008-observability-and-drain-aware-readiness.md: missing or not tracked
+caught [C2] change 0002 title: exit 1; ✘ C2 0002-decimal-arithmetic-and-string-numbers.md: first line must be '# ADR-0002: Decimal arithmetic and decimal strings on the wire', got '# ADR-0002: Binary arithmetic and decimal strings on the wire'
+caught [C3] add an author line to 0003: exit 1; ✘ C3 0003-provider-owned-openapi-contract.md: front matter must be exactly status and date lines, got ['- **Status:** Accepted', '- **Date:** 2026-10-22', '- **Author:** x']
+caught [C3] status Proposed in 0001: exit 1; ✘ C3 0001-monorepo-and-independent-services.md: front matter must be exactly status and date lines, got ['- **Status:** Proposed', '- **Date:** 2026-10-22']
+caught [C3] change 0004 date: exit 1; ✘ C3 0004-problem-details-and-status-semantics.md: front matter must be exactly status and date lines, got ['- **Status:** Accepted', '- **Date:** 2026-10-21']
+caught [C4] delete Decision from 0003: exit 1; ✘ C4 0003-provider-owned-openapi-contract.md: sections must be ['Context', 'Decision', 'Consequences', 'Alternatives considered'], got ['Context', 'Consequences', 'Alternatives considered']
+caught [C4] swap Context and Decision in 0005: exit 1; ✘ C4 0005-stdlib-http-and-consumer-interfaces.md: sections must be ['Context', 'Decision', 'Consequences', 'Alternatives considered'], got ['Decision', 'Context', 'Consequences', 'Alternatives considered']
+caught [C4] empty Context of 0006: exit 1; ✘ C4 0006-server-arithmetic-and-pure-reducer.md: empty section(s) ['Context']
+caught [C5] delete Negative from 0006: exit 1; ✘ C5 0006-server-arithmetic-and-pure-reducer.md: Consequences must hold '### Positive' then '### Negative', got ['Positive']
+caught [C5] one Positive bullet in 0007: exit 1; ✘ C5 0007-split-and-embedded-delivery.md: fewer than two bullets under ['Positive']
+caught [C6] short reasons in 0002: exit 1; ✘ C6 0002-decimal-arithmetic-and-string-numbers.md: need two or more '- **name** — reason' bullets with reasons of 40+ chars; bad ['- **IEEE-754 binary floats** — too short.', '- **Integer fixed-scale** — too short.', '- **Unbounded precision** — too short.', '- **JSON numbers on the wire** — too short.'], good 0
+caught [C7] external link in 0001: exit 1; ✘ C7 0001-monorepo-and-independent-services.md: external link https://example.com
+caught [C7] untracked target in 0001: exit 1; ✘ C7 0001-monorepo-and-independent-services.md: not a tracked file ../../backend/internal/missing.go
+caught [C7] anchor link in 0002: exit 1; ✘ C7 0002-decimal-arithmetic-and-string-numbers.md: anchor link ../spec/srs.md#scope
+caught [C7] directory link in 0003: exit 1; ✘ C7 0003-provider-owned-openapi-contract.md: not a tracked file ../../scripts/ci/
+caught [C8] deferred in 0007: exit 1; ✘ C8 0007-split-and-embedded-delivery.md: forbidden wording at line 53 /deferred/
+caught [C8] section sign, T5, task ID, tier in 0008: exit 1; ✘ C8 0008-observability-and-drain-aware-readiness.md: forbidden wording at line 56 /\btier\s*\d/
+caught [C10] unknown requirement ID in 0002: exit 1; ✘ C10 0002-decimal-arithmetic-and-string-numbers.md: unknown requirement IDs ['RF-CALC-99']
+caught [C11] invented path in 0005: exit 1; ✘ C11 0005-stdlib-http-and-consumer-interfaces.md: path-like span not found in tracked files or records: 'backend/internal/bogus/x.go'
+caught [C9] swap two index rows: exit 1; ✘ C9 README.md: index rows differ from the expected eight (8 rows found)
+caught [C9] change an index title: exit 1; ✘ C9 README.md: index rows differ from the expected eight (8 rows found)
+caught [C9] index status Proposed: exit 1; ✘ C9 README.md: index rows differ from the expected eight (8 rows found)
+caught [C9] duplicate the 0003 index row: exit 1; ✘ C9 README.md: index rows differ from the expected eight (8 rows found)
+caught [C9] index link to a missing file: exit 1; ✘ C9 README.md: index rows differ from the expected eight (8 rows found)
+caught [C12] cut 0004 to 30 lines: exit 1; ✘ C12 0004-problem-details-and-status-semantics.md: 30 lines (want 50-150), srs.md links 1
+
+25/25 mutations caught
+exit 0
