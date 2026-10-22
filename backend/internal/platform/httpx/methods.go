@@ -21,9 +21,10 @@ func (m Methods) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	allow := strings.Join(slices.Sorted(maps.Keys(m)), ", ")
 	w.Header().Set("Allow", allow)
-	// r.Method is the only reflected token; net/http bounds it to the HTTP
-	// token grammar and it is JSON-encoded.
-	WriteProblem(w, r, NewProblem(CodeMethodNotAllowed, fmt.Sprintf("%s is not allowed; use %s", r.Method, allow)))
+	// r.Method is the only reflected token. net/http limits it to the HTTP token
+	// grammar but not its length (the 16 KiB header limit is the only bound), so
+	// it is cut to maxLoggedChars like the access log and JSON-encoded.
+	WriteProblem(w, r, NewProblem(CodeMethodNotAllowed, fmt.Sprintf("%s is not allowed; use %s", truncateChars(r.Method, maxLoggedChars), allow)))
 }
 
 // NotFound answers unmatched routes with a problem. The detail is fixed so no

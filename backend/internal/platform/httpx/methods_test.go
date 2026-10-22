@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -40,6 +41,38 @@ func TestMethodsRejectsWithSortedAllow(t *testing.T) {
 	if body["code"] != "METHOD_NOT_ALLOWED" || body["detail"] != "DELETE is not allowed; use GET, POST, PUT" ||
 		body["instance"] != "/things/1" || body["requestId"] != rec.Header().Get(HeaderRequestID) || body["requestId"] == "" {
 		t.Fatalf("body = %v", body)
+	}
+}
+
+func TestMethodsBoundsReflectedMethod(t *testing.T) {
+	t.Parallel()
+	ok := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusNoContent) })
+	m := Methods{http.MethodGet: ok}
+	for _, tc := range []struct {
+		name   string
+		method string
+		want   string
+	}{
+		{"short method unchanged", "PURGE", "PURGE"},
+		{"256 characters unchanged", strings.Repeat("A", 256), strings.Repeat("A", 256)},
+		{"300 characters cut to 256", strings.Repeat("A", 300), strings.Repeat("A", 256)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			rec := httptest.NewRecorder()
+			req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
+			req.Method = tc.method
+			RequestContext(m).ServeHTTP(rec, req)
+			var p struct {
+				Detail string `json:"detail"`
+			}
+			if err := json.Unmarshal(rec.Body.Bytes(), &p); err != nil {
+				t.Fatalf("body is not JSON: %v", err)
+			}
+			if want := tc.want + " is not allowed; use GET"; rec.Code != 405 || p.Detail != want {
+				t.Fatalf("status %d, detail %q, want 405 and %q", rec.Code, p.Detail, want)
+			}
+		})
 	}
 }
 
