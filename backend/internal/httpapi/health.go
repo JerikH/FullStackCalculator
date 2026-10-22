@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"log/slog"
 	"net/http"
 	"sync/atomic"
 
@@ -35,6 +36,9 @@ func (h *healthHandler) live(w http.ResponseWriter, r *http.Request) {
 
 func (h *healthHandler) ready(w http.ResponseWriter, r *http.Request) {
 	if h.readiness.Draining() {
+		// Draining is an expected state, not a server fault: keep it out of the
+		// error-level alerting that the 5xx rule feeds.
+		httpx.SetAccessLevel(r.Context(), slog.LevelInfo)
 		httpx.WriteJSON(w, r, http.StatusServiceUnavailable, healthResponse{Status: "draining", Version: h.build.Version, Commit: h.build.Commit})
 		return
 	}

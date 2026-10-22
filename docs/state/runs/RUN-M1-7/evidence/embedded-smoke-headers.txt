@@ -1,0 +1,181 @@
+=== GET /
+HTTP/1.1 200 OK
+Accept-Ranges: bytes
+Cache-Control: no-cache
+Content-Length: 69
+Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'none'
+Content-Type: text/html; charset=utf-8
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Resource-Policy: same-origin
+Etag: "6137daf96b583a18"
+Permissions-Policy: camera=(), microphone=(), geolocation=()
+Referrer-Policy: no-referrer
+X-Content-Type-Options: nosniff
+X-Request-Id: F646NUOA4IZBJTXOXZLNHLTIA3
+Date: Thu, 22 Oct 2026 21:22:58 GMT
+
+<!doctype html><title>t</title><script src="/theme-init.js"></script>=== GET /index.html
+HTTP/1.1 200 OK
+Accept-Ranges: bytes
+Cache-Control: no-cache
+Content-Length: 69
+Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'none'
+Content-Type: text/html; charset=utf-8
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Resource-Policy: same-origin
+Etag: "6137daf96b583a18"
+Permissions-Policy: camera=(), microphone=(), geolocation=()
+Referrer-Policy: no-referrer
+X-Content-Type-Options: nosniff
+X-Request-Id: OBL57ORCX7ORPYB2LXJBV63NFE
+Date: Thu, 22 Oct 2026 21:22:58 GMT
+
+<!doctype html><title>t</title><script src="/theme-init.js"></script>=== GET /assets/x-abc.js
+HTTP/1.1 200 OK
+Accept-Ranges: bytes
+Cache-Control: public, max-age=31536000, immutable
+Content-Length: 15
+Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'none'
+Content-Type: text/javascript; charset=utf-8
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Resource-Policy: same-origin
+Etag: "3879a5d930ae1999"
+Permissions-Policy: camera=(), microphone=(), geolocation=()
+Referrer-Policy: no-referrer
+X-Content-Type-Options: nosniff
+X-Request-Id: JU4IJMLVA27NMLAI3CFVEPO32J
+Date: Thu, 22 Oct 2026 21:22:58 GMT
+
+console.log(1)
+=== GET /assets/x-abc.js.map
+HTTP/1.1 200 OK
+Accept-Ranges: bytes
+Cache-Control: public, max-age=31536000, immutable
+Content-Length: 14
+Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'none'
+Content-Type: application/json
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Resource-Policy: same-origin
+Etag: "fcef7b4fb29d3eab"
+Permissions-Policy: camera=(), microphone=(), geolocation=()
+Referrer-Policy: no-referrer
+X-Content-Type-Options: nosniff
+X-Request-Id: YCE7MZAWWA5NWN7B3TPU2Q23W5
+Date: Thu, 22 Oct 2026 21:22:58 GMT
+
+{"version":3}
+=== GET /theme-init.js
+HTTP/1.1 200 OK
+Accept-Ranges: bytes
+Cache-Control: no-cache
+Content-Length: 6
+Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'none'
+Content-Type: text/javascript; charset=utf-8
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Resource-Policy: same-origin
+Etag: "49fcd76c56e0a0ff"
+Permissions-Policy: camera=(), microphone=(), geolocation=()
+Referrer-Policy: no-referrer
+X-Content-Type-Options: nosniff
+X-Request-Id: LW7APHWNJMXRJRY3V56IN5JWWX
+Date: Thu, 22 Oct 2026 21:22:58 GMT
+
+/*t*/
+=== GET /favicon.ico
+HTTP/1.1 200 OK
+Accept-Ranges: bytes
+Cache-Control: no-cache
+Content-Length: 1
+Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'none'
+Content-Type: image/x-icon
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Resource-Policy: same-origin
+Etag: "2d711642b726b044"
+Permissions-Policy: camera=(), microphone=(), geolocation=()
+Referrer-Policy: no-referrer
+X-Content-Type-Options: nosniff
+X-Request-Id: MLWKWNSDIC7TWZSKBRINQDYC2J
+Date: Thu, 22 Oct 2026 21:22:58 GMT
+
+x=== GET /assets/
+HTTP/1.1 404 Not Found
+Cache-Control: no-store
+Content-Length: 215
+Content-Security-Policy: default-src 'none'; frame-ancestors 'none'
+Content-Type: application/problem+json
+Cross-Origin-Resource-Policy: same-origin
+Referrer-Policy: no-referrer
+X-Content-Type-Options: nosniff
+X-Request-Id: QCJCF7QDQYRSOCJ3L7D7MN2BGJ
+Date: Thu, 22 Oct 2026 21:22:58 GMT
+
+{"type":"urn:calculator:problem:not-found","title":"Not found","status":404,"detail":"no route matches the request method and path","instance":"/assets/","code":"NOT_FOUND","requestId":"QCJCF7QDQYRSOCJ3L7D7MN2BGJ"}
+=== GET /assets/missing.js
+HTTP/1.1 404 Not Found
+Cache-Control: no-store
+Content-Length: 225
+Content-Security-Policy: default-src 'none'; frame-ancestors 'none'
+Content-Type: application/problem+json
+Cross-Origin-Resource-Policy: same-origin
+Referrer-Policy: no-referrer
+X-Content-Type-Options: nosniff
+X-Request-Id: 6XSBEJBJFOUVS673IAED4BBZ73
+Date: Thu, 22 Oct 2026 21:22:58 GMT
+
+{"type":"urn:calculator:problem:not-found","title":"Not found","status":404,"detail":"no route matches the request method and path","instance":"/assets/missing.js","code":"NOT_FOUND","requestId":"6XSBEJBJFOUVS673IAED4BBZ73"}
+=== GET /.gitkeep
+HTTP/1.1 404 Not Found
+Cache-Control: no-store
+Content-Length: 216
+Content-Security-Policy: default-src 'none'; frame-ancestors 'none'
+Content-Type: application/problem+json
+Cross-Origin-Resource-Policy: same-origin
+Referrer-Policy: no-referrer
+X-Content-Type-Options: nosniff
+X-Request-Id: 24SK37DVNO5PWREWNT6Z4UBROP
+Date: Thu, 22 Oct 2026 21:22:58 GMT
+
+{"type":"urn:calculator:problem:not-found","title":"Not found","status":404,"detail":"no route matches the request method and path","instance":"/.gitkeep","code":"NOT_FOUND","requestId":"24SK37DVNO5PWREWNT6Z4UBROP"}
+=== GET /api/v1/operations
+HTTP/1.1 200 OK
+Cache-Control: no-store
+Content-Length: 614
+Content-Security-Policy: default-src 'none'; frame-ancestors 'none'
+Content-Type: application/json; charset=utf-8
+Cross-Origin-Resource-Policy: same-origin
+Referrer-Policy: no-referrer
+X-Content-Type-Options: nosniff
+X-Request-Id: EJFJHS3ETTW3PAKNKWSWGPQRQY
+Date: Thu, 22 Oct 2026 21:22:58 GMT
+
+{"operations":[{"name":"add","symbol":"+","arity":2,"description":"Sum of two numbers"},{"name":"subtract","symbol":"−","arity":2,"description":"Difference of two numbers"},{"name":"multiply","symbol":"×","arity":2,"description":"Product of two numbers"},{"name":"divide","symbol":"÷","arity":2,"description":"Quotient of two numbers"},{"name":"power","symbol":"^","arity":2,"description":"First number raised to the power of the second"},{"name":"sqrt","symbol":"√","arity":1,"description":"Principal square root"},{"name":"percentage","symbol":"%","arity":1,"description":"Value divided by one hundred"}]}
+=== GET /healthz
+HTTP/1.1 200 OK
+Cache-Control: no-store
+Content-Length: 56
+Content-Security-Policy: default-src 'none'; frame-ancestors 'none'
+Content-Type: application/json; charset=utf-8
+Cross-Origin-Resource-Policy: same-origin
+Referrer-Policy: no-referrer
+X-Content-Type-Options: nosniff
+X-Request-Id: 54CMJSYAYK6KHRONQIIDJYPWJE
+Date: Thu, 22 Oct 2026 21:22:58 GMT
+
+{"status":"ok","version":"dev","commit":"cbc341e2b3cb"}
+=== 304 on revalidation
+HTTP/1.1 304 Not Modified
+=== POST /
+HTTP/1.1 405 Method Not Allowed
+Allow: GET, HEAD
+Cache-Control: no-store
+Content-Length: 225
+Content-Security-Policy: default-src 'none'; frame-ancestors 'none'
+Content-Type: application/problem+json
+Cross-Origin-Resource-Policy: same-origin
+Referrer-Policy: no-referrer
+X-Content-Type-Options: nosniff
+X-Request-Id: IG4HC2J6BELREXJQZ3ZXIRM34C
+Date: Thu, 22 Oct 2026 21:22:58 GMT
+
+{"type":"urn:calculator:problem:method-not-allowed","title":"Method not allowed","status":405,"detail":"POST is not allowed; use GET, HEAD","instance":"/","code":"METHOD_NOT_ALLOWED","requestId":"IG4HC2J6BELREXJQZ3ZXIRM34C"}
+error lines in the embedded run: 0

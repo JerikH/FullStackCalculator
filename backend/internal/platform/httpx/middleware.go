@@ -19,9 +19,15 @@ func Chain(h http.Handler, mws ...Middleware) http.Handler {
 	return h
 }
 
+// maxLoggedChars bounds the client-controlled path and user agent in the
+// access line.
+const maxLoggedChars = 256
+
 // AccessLog writes one structured line per request; 5xx responses log at
-// error level so they surface in alerting. The line is written in a defer so
-// a request that unwinds with a panic (http.ErrAbortHandler) is still logged.
+// error level so they surface in alerting, unless the answering handler set
+// the level with SetAccessLevel. The path and user agent are cut to their
+// first 256 characters. The line is written in a defer so a request that
+// unwinds with a panic (http.ErrAbortHandler) is still logged.
 func AccessLog(logger *slog.Logger) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -36,21 +42,30 @@ func logAccess(ctx context.Context, logger *slog.Logger, r *http.Request, start 
 	if info == nil {
 		info = &RequestInfo{Route: "unmatched"}
 	}
-	status := info.StatusOrOK()
-	level := slog.LevelInfo
-	if status >= http.StatusInternalServerError {
-		level = slog.LevelError
-	}
-	logger.LogAttrs(ctx, level, "http request",
+	logger.LogAttrs(ctx, info.accessLevel(), "http request",
 		slog.String("method", r.Method),
 		slog.String("route", info.Route),
-		slog.String("path", r.URL.Path),
-		slog.Int("status", status),
+		slog.String("path", truncateChars(r.URL.Path, maxLoggedChars)),
+		slog.Int("status", info.StatusOrOK()),
 		slog.Int64("bytes", info.Bytes),
 		slog.Float64("duration_ms", float64(time.Since(start).Microseconds())/1000),
 		slog.String("remote_addr", r.RemoteAddr),
-		slog.String("user_agent", r.UserAgent()),
+		slog.String("user_agent", truncateChars(r.UserAgent(), maxLoggedChars)),
 	)
+}
+
+// truncateChars returns s cut to its first limit characters (runes), never
+// inside a UTF-8 sequence; each invalid byte counts as one character. It stops
+// walking as soon as the limit is exceeded and returns s itself when it fits.
+func truncateChars(s string, limit int) string {
+	n := 0
+	for i := range s {
+		if n == limit {
+			return s[:i]
+		}
+		n++
+	}
+	return s
 }
 
 // Recover converts a panic into a 500 problem without leaking its value, and
@@ -80,12 +95,16 @@ func recoverPanic(logger *slog.Logger, w http.ResponseWriter, r *http.Request, t
 	if v == nil {
 		return
 	}
+	ctx := r.Context()
+	info := Info(ctx)
+	if info != nil {
+		// A level the handler set before unwinding must not hide the failure.
+		info.levelSet = false
+	}
 	if v == http.ErrAbortHandler { //nolint:errorlint // net/http documents identity comparison
 		panic(v)
 	}
-	ctx := r.Context()
 	logger.ErrorContext(ctx, "panic recovered", slog.Any("panic", v), slog.String("stack", string(debug.Stack())))
-	info := Info(ctx)
 	if (info != nil && info.Status != 0) || (tracker != nil && tracker.committed) {
 		// The response has started: a problem can no longer be sent, and a
 		// truncated body must not look complete. Record the 500 for the access
