@@ -28,8 +28,8 @@ importers:
         specifier: 1.64.1
         version: 1.64.1
       '@redocly/cli':
-        specifier: 2.69.0
-        version: 2.69.0
+        specifier: 2.70.0
+        version: 2.70.0
       '@testing-library/dom':
         specifier: 10.4.2
         version: 10.4.2
@@ -399,8 +399,8 @@ packages:
   '@redocly/ajv@8.11.2':
     resolution: {integrity: sha512-io1JpnwtIcvojV7QKDUSIuMN/ikdOUd1ReEnUnMKGfDVridQZ31J0MmIuqwuRjWDZfmvr+Q0MqCcfHM2gTivOg==}
 
-  '@redocly/cli@2.69.0':
-    resolution: {integrity: sha512-un2CnJ+2OO82wArjuH132mD9lHs2oNJL8DtX50aCt6YrFTWIMWywCBRgxjznHdJ1lJAgck1giQgMc6yUL4kD0A==}
+  '@redocly/cli@2.70.0':
+    resolution: {integrity: sha512-eZEIQlfAVRFCK0je6pTorg2nbGdfQ7U+eFg3wr46YwDXDwwGU2W+q7chbiZiDSrlVoJsxAd5uEwEx83tlaTTsA==}
     engines: {node: '>=22.12.0 || >=20.19.0 <21.0.0', npm: '>=10'}
     hasBin: true
 
@@ -2436,7 +2436,7 @@ snapshots:
       require-from-string: 2.0.2
       uri-js-replace: 1.0.1
 
-  '@redocly/cli@2.69.0': {}
+  '@redocly/cli@2.70.0': {}
 
   '@redocly/config@0.22.0': {}
 
