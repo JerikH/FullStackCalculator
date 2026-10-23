@@ -1,7 +1,7 @@
 # All-in-one image: the Go service with the built web app embedded.
 # Build from the repository root: docker build -t calculator:local .
 
-FROM --platform=$BUILDPLATFORM node:24.22.1-alpine3.24@sha256:06d7adf3e0ef61a13f1d28682726366f97a15aa1888c934d3ecec86c33918b53 AS web-build
+FROM --platform=$BUILDPLATFORM node:26.12.0-alpine3.24@sha256:6f08a523443ddedf52941874c203475b0ad503e859ad70cb26ab8be9a517dbd5 AS web-build
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
     CI=true
 WORKDIR /src/frontend
